@@ -335,7 +335,7 @@ gtfs2gps <- function(gtfs_data,
   {
     # number of cores
     if (is.null(ncores))
-      ncores <- max(1, future::availableCores() - 1)
+      ncores <- parallelly::availableCores(omit = 1)
 
     message(paste('Using', ncores, 'CPU cores'))
     
