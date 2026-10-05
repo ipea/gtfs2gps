@@ -44,7 +44,7 @@ The GTFS data, invisibly.
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/RtmptxC49M/gtfsio:
+#> Unzipped the following files to /tmp/RtmpvsnyV4/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -62,7 +62,7 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps")) |>
 
 # write GTFS data into a zip file
 write_gtfs(poa, paste0(tempdir(), "/mypoa.zip"))
-#> Writing text files to /tmp/RtmptxC49M/gtfsio1a735ba3781d
+#> Writing text files to /tmp/RtmpvsnyV4/gtfsio1ab3c450d00
 #>   - Writing agency.txt
 #>   - Writing calendar.txt
 #>   - Writing routes.txt
@@ -70,5 +70,5 @@ write_gtfs(poa, paste0(tempdir(), "/mypoa.zip"))
 #>   - Writing stop_times.txt
 #>   - Writing stops.txt
 #>   - Writing trips.txt
-#> GTFS object successfully zipped to /tmp/RtmptxC49M/mypoa.zip
+#> GTFS object successfully zipped to /tmp/RtmpvsnyV4/mypoa.zip
 ```

@@ -29,7 +29,7 @@ A simple feature (sf) object with point data.
 library(gtfs2gps)
 
 fortaleza <- read_gtfs(system.file("extdata/fortaleza.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmptxC49M/gtfsio:
+#> Unzipped the following files to /tmp/RtmpvsnyV4/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -55,6 +55,6 @@ for_gps <- gtfs2gps(subset)
 #> Converting shapes to sf objects
 #> Using 3 CPU cores
 #> Processing the data
-#> Warning: UNRELIABLE VALUE: Future (<unnamed-4>) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future <unnamed-4> (6723dff3434ce70808d35cd082496c3d-4); on 6723dff3434ce70808d35cd082496c3d@runnervma94yk<6771>]
+#> Warning: UNRELIABLE VALUE: Future (<unnamed-4>) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future <unnamed-4> (8cf93210de46dee6cd3f3c8db4df4611-4); on 8cf93210de46dee6cd3f3c8db4df4611@runnervma94yk<6835>]
 for_gps_sf_points <- gps_as_sfpoints(for_gps)
 ```

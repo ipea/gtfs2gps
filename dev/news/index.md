@@ -20,7 +20,24 @@
     `geometry` and `length`. `shape_id` must be character and
     `shape_pt_sequence` integer, as produced by
     [`read_gtfs()`](https://ipeagit.github.io/gtfs2gps/dev/reference/read_gtfs.md).
+  - Fixed two bugs in
+    [`gtfs2gps()`](https://ipeagit.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+    for shapes used by several trips:
+    - Trips were silently dropped when a shape was shared by more than
+      one route; only the first route’s trips were converted (e.g. 170
+      of the 348 trips in the bundled Berlin feed). All trips of a shape
+      that have a `route_id` are now converted, each with its own
+      `route_type`, and `trip_number` is the trip’s index among all
+      trips of the shape.
+    - Trips with a different stop pattern from the shape’s longest trip
+      had their times attached to the wrong stops, and could gain stops
+      they do not serve. Stops are now snapped separately for each
+      distinct stop pattern on a shape.
 - Minor changes
+  - [`gtfs2gps()`](https://ipeagit.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+    is faster: speeds and timestamps between stops are now interpolated
+    on plain vectors instead of per-segment data.table sub-assignments.
+    Output is unchanged.
   - [`write_gtfs()`](https://ipeagit.github.io/gtfs2gps/dev/reference/write_gtfs.md)
     now validates its arguments, and its documentation gives the correct
     default of `quiet` (`FALSE`) and return value (the GTFS data,

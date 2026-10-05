@@ -28,7 +28,7 @@ A simple feature (sf) object.
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmptxC49M/gtfsio:
+#> Unzipped the following files to /tmp/RtmpvsnyV4/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
