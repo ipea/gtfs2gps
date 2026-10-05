@@ -17,6 +17,8 @@ difference is smaller than \`min_lag\`, it reduces the \`arrival_time\`
 and increases \`departure_time\` so that the difference will be exactly
 \`min_lag\`.
 
+The input GTFS data is not modified.
+
 ## Usage
 
 ``` r
@@ -45,7 +47,7 @@ data.table \`stop_times\`.
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpjnlsdY/gtfsio:
+#> Unzipped the following files to /tmp/RtmptxC49M/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt

@@ -46,11 +46,19 @@
 <ul><li>Major changes
 <ul><li>The package now requires R &gt;= 4.1.0, because it uses the native pipe <code>|&gt;</code>.</li>
 <li>Fixed a bug in <code><a href="../reference/write_gtfs.html">write_gtfs()</a></code>, which ignored the <code>overwrite</code> argument and silently overwrote an existing file. With <code>overwrite = FALSE</code> it now raises an error of class <code>gtfs2gps_file_exists_error</code> if <code>zipfile</code> already exists.</li>
+<li>
+<code><a href="../reference/gtfs_shapes_as_sf.html">gtfs_shapes_as_sf()</a></code> now wraps <code><a href="https://rdrr.io/pkg/gtfstools/man/convert_shapes_to_sf.html" class="external-link">gtfstools::convert_shapes_to_sf()</a></code>. The <code>crs</code> argument transforms the shapes from WGS84 instead of relabelling their coordinates, and must be a valid CRS (<code>NA</code> is no longer accepted). The input is not modified. The result is a plain <code>sf</code> object (no longer also a <code>data.table</code>) with columns <code>shape_id</code>, <code>geometry</code> and <code>length</code>. <code>shape_id</code> must be character and <code>shape_pt_sequence</code> integer, as produced by <code><a href="../reference/read_gtfs.html">read_gtfs()</a></code>.</li>
 </ul></li>
 <li>Minor changes
 <ul><li>
 <code><a href="../reference/write_gtfs.html">write_gtfs()</a></code> now validates its arguments, and its documentation gives the correct default of <code>quiet</code> (<code>FALSE</code>) and return value (the GTFS data, invisibly).</li>
 <li>New dependency: {cli}, used for the new classed error in <code><a href="../reference/write_gtfs.html">write_gtfs()</a></code>. Existing messages will be migrated to it gradually.</li>
+<li>Internal code that duplicated {gtfstools} was removed: the frequency expansion inside <code><a href="../reference/gtfs2gps.html">gtfs2gps()</a></code> (unreachable since v2.1-1, when <code><a href="https://rdrr.io/pkg/gtfstools/man/frequencies_to_stop_times.html" class="external-link">gtfstools::frequencies_to_stop_times()</a></code> took over) and the R-level time parser, now <code><a href="https://rdrr.io/pkg/gtfstools/man/convert_time_to_seconds.html" class="external-link">gtfstools::convert_time_to_seconds()</a></code>. No output change for well-formed <code>H:MM:SS</code> times. In <code><a href="../reference/gtfs2gps.html">gtfs2gps()</a></code> and <code><a href="../reference/adjust_arrival_departure.html">adjust_arrival_departure()</a></code>, malformed time strings (e.g. <code>"05:21"</code>, which used to parse to an arbitrary value) are now treated as missing.</li>
+<li>
+<code><a href="../reference/adjust_arrival_departure.html">adjust_arrival_departure()</a></code> no longer modifies the input GTFS, works when <code>arrival_time</code> or <code>departure_time</code> is absent from <code>stop_times</code>, and returns a <code>dt_gtfs</code> object even for plain-list input.</li>
+<li>
+<code><a href="../reference/filter_valid_stop_times.html">filter_valid_stop_times()</a></code> now drops any time that is not of the form <code>H:MM:SS</code> (e.g. <code>"05:21"</code>, which used to be kept) and no longer re-formats the strings it keeps.</li>
+<li>{gtfstools} &gt;= 1.3.0 is now required.</li>
 </ul></li>
 </ul></div>
     <div class="section level2">

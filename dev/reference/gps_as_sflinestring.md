@@ -26,7 +26,7 @@ A simple feature (sf) object with LineString data.
 library(gtfs2gps)
 
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpjnlsdY/gtfsio:
+#> Unzipped the following files to /tmp/RtmptxC49M/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -48,8 +48,8 @@ poa_gps <- gtfs2gps(poa_subset)
 #> Converting shapes to sf objects
 #> Using 3 CPU cores
 #> Processing the data
-#> Warning: UNRELIABLE VALUE: Future (<unnamed-2>) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future <unnamed-2> (c7a7ba50756f7e6f165e41141b5e3ab4-2); on c7a7ba50756f7e6f165e41141b5e3ab4@runnervma94yk<7174>]
-#> Warning: UNRELIABLE VALUE: Future (<unnamed-3>) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future <unnamed-3> (c7a7ba50756f7e6f165e41141b5e3ab4-3); on c7a7ba50756f7e6f165e41141b5e3ab4@runnervma94yk<7174>]
+#> Warning: UNRELIABLE VALUE: Future (<unnamed-2>) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future <unnamed-2> (6723dff3434ce70808d35cd082496c3d-2); on 6723dff3434ce70808d35cd082496c3d@runnervma94yk<6771>]
+#> Warning: UNRELIABLE VALUE: Future (<unnamed-3>) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future <unnamed-3> (6723dff3434ce70808d35cd082496c3d-3); on 6723dff3434ce70808d35cd082496c3d@runnervma94yk<6771>]
 #> Some 'speed' values are NA in the returned data.
 
 poa_gps_sf <- gps_as_sflinestring(poa_gps)

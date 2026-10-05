@@ -10,6 +10,16 @@
     which ignored the `overwrite` argument and silently overwrote an
     existing file. With `overwrite = FALSE` it now raises an error of
     class `gtfs2gps_file_exists_error` if `zipfile` already exists.
+  - [`gtfs_shapes_as_sf()`](https://ipeagit.github.io/gtfs2gps/dev/reference/gtfs_shapes_as_sf.md)
+    now wraps
+    [`gtfstools::convert_shapes_to_sf()`](https://rdrr.io/pkg/gtfstools/man/convert_shapes_to_sf.html).
+    The `crs` argument transforms the shapes from WGS84 instead of
+    relabelling their coordinates, and must be a valid CRS (`NA` is no
+    longer accepted). The input is not modified. The result is a plain
+    `sf` object (no longer also a `data.table`) with columns `shape_id`,
+    `geometry` and `length`. `shape_id` must be character and
+    `shape_pt_sequence` integer, as produced by
+    [`read_gtfs()`](https://ipeagit.github.io/gtfs2gps/dev/reference/read_gtfs.md).
 - Minor changes
   - [`write_gtfs()`](https://ipeagit.github.io/gtfs2gps/dev/reference/write_gtfs.md)
     now validates its arguments, and its documentation gives the correct
@@ -18,6 +28,28 @@
   - New dependency: {cli}, used for the new classed error in
     [`write_gtfs()`](https://ipeagit.github.io/gtfs2gps/dev/reference/write_gtfs.md).
     Existing messages will be migrated to it gradually.
+  - Internal code that duplicated {gtfstools} was removed: the frequency
+    expansion inside
+    [`gtfs2gps()`](https://ipeagit.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+    (unreachable since v2.1-1, when
+    [`gtfstools::frequencies_to_stop_times()`](https://rdrr.io/pkg/gtfstools/man/frequencies_to_stop_times.html)
+    took over) and the R-level time parser, now
+    [`gtfstools::convert_time_to_seconds()`](https://rdrr.io/pkg/gtfstools/man/convert_time_to_seconds.html).
+    No output change for well-formed `H:MM:SS` times. In
+    [`gtfs2gps()`](https://ipeagit.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+    and
+    [`adjust_arrival_departure()`](https://ipeagit.github.io/gtfs2gps/dev/reference/adjust_arrival_departure.md),
+    malformed time strings (e.g. `"05:21"`, which used to parse to an
+    arbitrary value) are now treated as missing.
+  - [`adjust_arrival_departure()`](https://ipeagit.github.io/gtfs2gps/dev/reference/adjust_arrival_departure.md)
+    no longer modifies the input GTFS, works when `arrival_time` or
+    `departure_time` is absent from `stop_times`, and returns a
+    `dt_gtfs` object even for plain-list input.
+  - [`filter_valid_stop_times()`](https://ipeagit.github.io/gtfs2gps/dev/reference/filter_valid_stop_times.md)
+    now drops any time that is not of the form `H:MM:SS`
+    (e.g. `"05:21"`, which used to be kept) and no longer re-formats the
+    strings it keeps.
+  - {gtfstools} \>= 1.3.0 is now required.
 
 ## gtfs2gps v2.1-2
 
