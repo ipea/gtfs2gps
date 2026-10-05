@@ -1,9 +1,9 @@
-pandoc: 3.1.11
-pkgdown: 2.1.1
+pandoc: 3.8.3
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   intro_to_gtfs2gps: intro_to_gtfs2gps.html
-last_built: 2025-01-21T14:46Z
+last_built: 2026-10-05T17:21Z
 urls:
   reference: https://ipeagit.github.io/gtfs2gps/reference
   article: https://ipeagit.github.io/gtfs2gps/articles

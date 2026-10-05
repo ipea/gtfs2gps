@@ -6,15 +6,14 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Converting Transport Data from GTFS Format to GPS-Like Records • gtfs2gps</title>
-<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="apple-touch-icon.png">
-<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="apple-touch-icon-120x120.png">
-<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="apple-touch-icon-76x76.png">
-<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="apple-touch-icon-60x60.png">
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" sizes="any" href="favicon.ico">
+<link rel="manifest" href="site.webmanifest">
 <script src="lightswitch.js"></script><script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Converting Transport Data from GTFS Format to GPS-Like Records">
 <meta name="description" content="Convert general transit feed specification (GTFS) data to global positioning system (GPS) records in data.table format. It also has some functions to subset GTFS data in time and space and to convert both representations to simple feature format.">
@@ -29,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="index.html">gtfs2gps</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">2.1-2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">2.1-4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,7 +71,7 @@
 <img src="logo.png" class="logo" alt=""><h1 id="gtfs2gps-converting-public-transport-data-from-gtfs-format-to-gps-like-records-">gtfs2gps: Converting public transport data from GTFS format to GPS-like records <a class="anchor" aria-label="anchor" href="#gtfs2gps-converting-public-transport-data-from-gtfs-format-to-gps-like-records-"></a>
 </h1>
 </div>
-<p><a href="https://CRAN.R-project.org/package=gtfs2gps" class="external-link"><img src="https://www.r-pkg.org/badges/version/gtfs2gps" alt="CRAN/METACRAN Version"></a>.<a href="https://CRAN.R-project.org/package=gtfs2gps" class="external-link"><img src="https://cranlogs.r-pkg.org/badges/grand-total/gtfs2gps?color=blue" alt="CRAN/METACRAN Total downloads"></a> <a href="https://github.com/ipeaGIT/gtfs2gps/actions" class="external-link"><img src="https://github.com/ipeaGIT/gtfs2gps/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a> <a href="https://codecov.io/gh/ipeaGIT/gtfs2gps?branch=master" class="external-link"><img src="https://codecov.io/gh/ipeaGIT/gtfs2gps/branch/master/graph/badge.svg" alt="Codecov test coverage"></a> <a href="https://link.springer.com/article/10.1007/s10109-022-00400-x" class="external-link"><img src="https://img.shields.io/badge/DOI-10.1007%2Fs10109--022--00400--x-blue" alt="Paper"></a></p>
+<p><a href="https://CRAN.R-project.org/package=gtfs2gps" class="external-link"><img src="https://www.r-pkg.org/badges/version/gtfs2gps" alt="CRAN/METACRAN Version"></a>.<a href="https://CRAN.R-project.org/package=gtfs2gps" class="external-link"><img src="https://cranlogs.r-pkg.org/badges/grand-total/gtfs2gps?color=blue" alt="CRAN/METACRAN Total downloads"></a> <a href="https://github.com/ipea/gtfs2gps/actions" class="external-link"><img src="https://github.com/ipea/gtfs2gps/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a> <a href="https://codecov.io/gh/ipeaGIT/gtfs2gps?branch=master" class="external-link"><img src="https://codecov.io/gh/ipeaGIT/gtfs2gps/branch/master/graph/badge.svg" alt="Codecov test coverage"></a> <a href="https://link.springer.com/article/10.1007/s10109-022-00400-x" class="external-link"><img src="https://img.shields.io/badge/DOI-10.1007%2Fs10109--022--00400--x-blue" alt="Paper"></a></p>
 <p><strong>gtfs2gps</strong> is an R package that converts public transportation data in GTFS format to GPS-like records in a <code>data.frame</code>/<code>data.table</code>, which can then be used in various applications such as running transport simulations or scenario analyses.</p>
 <p>The core function of the package takes a <code>GTFS.zip</code> file and interpolates the space-time position of each vehicle in each trip considering the network distance and average speed between stops. The output is a <code>data.table</code> where each row represents the timestamp of each vehicle at a given spatial resolution. The package also has some functions to subset GTFS data in time and space and to convert both representations to <a href="https://CRAN.R-project.org/package=sf" class="external-link">simple feature</a> format. More information about the methods used in the package can be found in this <a href="https://osf.io/preprints/socarxiv/qydr6/" class="external-link">preprint</a>.</p>
 <div class="section level3">
@@ -88,7 +87,7 @@
 </h3>
 <p>Please see our vignette:</p>
 <ul>
-<li><a href="https://ipeagit.github.io/gtfs2gps/articles/intro_to_gtfs2gps.html">gtfs2gps: Converting GTFS data to GPS format</a></li>
+<li><a href="https://ipea.github.io/gtfs2gps/articles/intro_to_gtfs2gps.html" class="external-link">gtfs2gps: Converting GTFS data to GPS format</a></li>
 </ul>
 <hr>
 </div>
@@ -131,10 +130,10 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Rafael H. M. Pereira <br><small class="roles"> Author </small> <a href="https://orcid.org/0000-0003-2125-7465" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a> </li>
-<li>Pedro R. Andrade <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0000-0001-8675-4046" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a> </li>
-<li>Joao Bazzo <br><small class="roles"> Author </small> <a href="https://orcid.org/0000-0003-4536-5006" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a> </li>
-<li>Ipea - Institue for Applied Economic Research <br><small class="roles"> Copyright holder, funder </small>  </li>
+<li>Rafael H. M. Pereira <br><small class="roles"> Author </small> <a href="https://orcid.org/0000-0003-2125-7465" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>Pedro R. Andrade <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0000-0001-8675-4046" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>Joao Bazzo <br><small class="roles"> Author </small> <a href="https://orcid.org/0000-0003-4536-5006" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>Ipea - Institue for Applied Economic Research <br><small class="roles"> Copyright holder, funder </small>   </li>
 <li><a href="authors.html">More about authors...</a></li>
 </ul>
 </div>
@@ -150,7 +149,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>
