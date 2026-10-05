@@ -12,6 +12,9 @@
 
 * Minor changes
   * `gtfs2gps()` is faster: speeds and timestamps between stops are now interpolated on plain vectors instead of per-segment data.table sub-assignments. Output is unchanged.
+  * `gtfs2gps(parallel = TRUE)` no longer copies the whole feed to every worker: each worker receives only the trips, stop times, stops and geometry of the shapes it converts. This removes the "total size of the globals exported ... exceeds the maximum allowed size" failure on large feeds (#277) and lowers memory use. Shapes are also no longer looked up by scanning the full `trips` and `stop_times` tables, which makes the sequential path somewhat faster too. Output is unchanged.
+  * The report of shapes that failed with an internal error (with the code to reproduce it) now also works with `parallel = TRUE`; it was silently lost before.
+  * A `trip_id` listed under two different shapes (invalid GTFS) is now converted once, with the first shape in `trips`, instead of once per shape.
   * `write_gtfs()` now validates its arguments, and its documentation gives the correct default of `quiet` (`FALSE`) and return value (the GTFS data, invisibly).
   * New dependency: {cli}, used for the new classed error in `write_gtfs()`. Existing messages will be migrated to it gradually.
   * Internal code that duplicated {gtfstools} was removed: the frequency expansion inside `gtfs2gps()` (unreachable since v2.1-1, when `gtfstools::frequencies_to_stop_times()` took over) and the R-level time parser, now `gtfstools::convert_time_to_seconds()`. No output change for well-formed `H:MM:SS` times. In `gtfs2gps()` and `adjust_arrival_departure()`, malformed time strings (e.g. `"05:21"`, which used to parse to an arbitrary value) are now treated as missing.

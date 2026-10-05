@@ -240,3 +240,52 @@ test_that("gtfs2gps keeps interpolated timestamps past midnight and matches in p
     par_res <- gtfs2gps(poa, parallel = TRUE, ncores = 2, spatial_resolution = 50, quiet = TRUE)
     expect_identical(as.list(seq_res), as.list(par_res))
 })
+
+test_that("gtfs2gps skips shapes without stops or stop coordinates with a message", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+      gtfstools::filter_by_shape_id("T2-1") |>
+      filter_single_trip()
+    # filepath: with no output at all, the final speed checks would fail on an empty table
+    out_dir <- tempfile("g2g_"); dir.create(out_dir); on.exit(unlink(out_dir, recursive = TRUE), add = TRUE)
+
+    no_stop_times <- data.table::copy(poa)
+    no_stop_times$stop_times <- no_stop_times$stop_times[0]
+    expect_message(res <- gtfs2gps(no_stop_times, parallel = FALSE, filepath = out_dir),
+                   "has zero stops")
+    expect_null(res)
+
+    no_stops <- data.table::copy(poa)
+    no_stops$stops <- no_stops$stops[0]
+    expect_message(res <- gtfs2gps(no_stops, parallel = FALSE, filepath = out_dir),
+                   "no snapped stops")
+    expect_null(res)
+
+    expect_length(list.files(out_dir, pattern = "^T2-1"), 0)
+})
+
+test_that("gtfs2gps reports an error inside a worker when running in parallel", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+      gtfstools::filter_by_shape_id("T2-1") |>
+      filter_single_trip()
+    poa$stops[, stop_lon := NULL]  # makes the stop join inside the worker fail
+    out_dir <- tempfile("g2g_"); dir.create(out_dir); on.exit(unlink(out_dir, recursive = TRUE), add = TRUE)
+
+    expect_message(res <- gtfs2gps(poa, parallel = TRUE, ncores = 2, filepath = out_dir),
+                   "Some internal bug occurred")
+    expect_null(res)
+    expect_length(list.files(out_dir, pattern = "^T2-1"), 0)
+})
+
+test_that("gtfs2gps converts a shape whose id is the empty string", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+      gtfstools::filter_by_shape_id("T2-1") |>
+      filter_single_trip()
+    ref <- gtfs2gps(poa, parallel = FALSE, spatial_resolution = 50, quiet = TRUE)
+
+    poa$trips[, shape_id := ""]
+    poa$shapes[, shape_id := ""]
+    res <- gtfs2gps(poa, parallel = FALSE, spatial_resolution = 50, quiet = TRUE)
+
+    expect_equal(nrow(res), nrow(ref))
+    expect_true(all(res$shape_id == ""))
+})
