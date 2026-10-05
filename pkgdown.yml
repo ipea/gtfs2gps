@@ -3,7 +3,7 @@ pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   intro_to_gtfs2gps: intro_to_gtfs2gps.html
-last_built: 2026-10-05T17:21Z
+last_built: 2026-10-05T20:23Z
 urls:
   reference: https://ipeagit.github.io/gtfs2gps/reference
   article: https://ipeagit.github.io/gtfs2gps/articles

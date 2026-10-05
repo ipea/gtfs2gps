@@ -109,7 +109,7 @@ names without extension.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/ipeaGIT/gtfs2gps" class="external-link">"gtfs2gps"</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; gtfs2gps version 2.1-4 is now loaded</span></span>
 <span><span class="va">poa</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_gtfs.html">read_gtfs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata/poa.zip"</span>, package <span class="op">=</span><span class="st">"gtfs2gps"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Unzipped the following files to /tmp/Rtmp7QKX2P/gtfsio:</span></span>
+<span><span class="co">#&gt; Unzipped the following files to /tmp/RtmpI8AhbM/gtfsio:</span></span>
 <span><span class="co">#&gt;   * agency.txt</span></span>
 <span><span class="co">#&gt;   * calendar.txt</span></span>
 <span><span class="co">#&gt;   * routes.txt</span></span>
@@ -188,16 +188,16 @@ by default, but the user can set a different value in the
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-1&gt;</span></span>
-<span><span class="co">#&gt; (473e9800f9b6bea9d33ab8149b4b4f57-1); on</span></span>
-<span><span class="co">#&gt; 473e9800f9b6bea9d33ab8149b4b4f57@runnervma94yk&lt;7803&gt;]</span></span>
+<span><span class="co">#&gt; (fe01b9596dba0a17977d11250f223c3d-1); on</span></span>
+<span><span class="co">#&gt; fe01b9596dba0a17977d11250f223c3d@runnervma94yk&lt;7910&gt;]</span></span>
 <span><span class="co">#&gt; Warning: UNRELIABLE VALUE: Future (&lt;unnamed-2&gt;) unexpectedly generated random</span></span>
 <span><span class="co">#&gt; numbers without specifying argument 'seed'. There is a risk that those random</span></span>
 <span><span class="co">#&gt; numbers are not statistically sound and the overall results might be invalid.</span></span>
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-2&gt;</span></span>
-<span><span class="co">#&gt; (473e9800f9b6bea9d33ab8149b4b4f57-2); on</span></span>
-<span><span class="co">#&gt; 473e9800f9b6bea9d33ab8149b4b4f57@runnervma94yk&lt;7803&gt;]</span></span>
+<span><span class="co">#&gt; (fe01b9596dba0a17977d11250f223c3d-2); on</span></span>
+<span><span class="co">#&gt; fe01b9596dba0a17977d11250f223c3d@runnervma94yk&lt;7910&gt;]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">poa_gps</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    shape_id     trip_id route_type    id timestamp shape_pt_lon shape_pt_lat</span></span>
 <span><span class="co">#&gt;      &lt;char&gt;      &lt;char&gt;      &lt;int&gt; &lt;int&gt;   &lt;ITime&gt;        &lt;num&gt;        &lt;num&gt;</span></span>
@@ -254,24 +254,24 @@ GTFS with detailed <code>stop_times.txt</code> cab be found below:</p>
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-3&gt;</span></span>
-<span><span class="co">#&gt; (473e9800f9b6bea9d33ab8149b4b4f57-3); on</span></span>
-<span><span class="co">#&gt; 473e9800f9b6bea9d33ab8149b4b4f57@runnervma94yk&lt;7803&gt;]</span></span>
+<span><span class="co">#&gt; (fe01b9596dba0a17977d11250f223c3d-3); on</span></span>
+<span><span class="co">#&gt; fe01b9596dba0a17977d11250f223c3d@runnervma94yk&lt;7910&gt;]</span></span>
 <span><span class="co">#&gt; Warning: UNRELIABLE VALUE: Future (&lt;unnamed-4&gt;) unexpectedly generated random</span></span>
 <span><span class="co">#&gt; numbers without specifying argument 'seed'. There is a risk that those random</span></span>
 <span><span class="co">#&gt; numbers are not statistically sound and the overall results might be invalid.</span></span>
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-4&gt;</span></span>
-<span><span class="co">#&gt; (473e9800f9b6bea9d33ab8149b4b4f57-4); on</span></span>
-<span><span class="co">#&gt; 473e9800f9b6bea9d33ab8149b4b4f57@runnervma94yk&lt;7803&gt;]</span></span>
+<span><span class="co">#&gt; (fe01b9596dba0a17977d11250f223c3d-4); on</span></span>
+<span><span class="co">#&gt; fe01b9596dba0a17977d11250f223c3d@runnervma94yk&lt;7910&gt;]</span></span>
 <span><span class="co">#&gt; Warning: UNRELIABLE VALUE: Future (&lt;unnamed-5&gt;) unexpectedly generated random</span></span>
 <span><span class="co">#&gt; numbers without specifying argument 'seed'. There is a risk that those random</span></span>
 <span><span class="co">#&gt; numbers are not statistically sound and the overall results might be invalid.</span></span>
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-5&gt;</span></span>
-<span><span class="co">#&gt; (473e9800f9b6bea9d33ab8149b4b4f57-5); on</span></span>
-<span><span class="co">#&gt; 473e9800f9b6bea9d33ab8149b4b4f57@runnervma94yk&lt;7803&gt;]</span></span>
+<span><span class="co">#&gt; (fe01b9596dba0a17977d11250f223c3d-5); on</span></span>
+<span><span class="co">#&gt; fe01b9596dba0a17977d11250f223c3d@runnervma94yk&lt;7910&gt;]</span></span>
 <span></span>
 <span><span class="va">poa_gps_sflinestrig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gps_as_sfpoints.html">gps_as_sfpoints</a></span><span class="op">(</span><span class="va">poa_gps</span><span class="op">)</span></span>
 <span></span>

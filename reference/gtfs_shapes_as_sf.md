@@ -40,7 +40,7 @@ A simple feature (sf) object with columns `shape_id`, `geometry` and
 
 ``` r
 poa <- read_gtfs(system.file("extdata/saopaulo.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpA2JNhW/gtfsio:
+#> Unzipped the following files to /tmp/Rtmppl8S8P/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * frequencies.txt
