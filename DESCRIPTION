@@ -1,7 +1,7 @@
 Type: Package
 Package: gtfs2gps
 Title: Converting Transport Data from GTFS Format to GPS-Like Records
-Version: 2.1-2.9000
+Version: 2.1-4.9000
 Authors@R: c(person(given="Rafael H. M.", family="Pereira", email="rafa.pereira.br@gmail.com", role="aut", comment = c(ORCID = "0000-0003-2125-7465")),
             person(given="Pedro R.", family="Andrade", email="pedro.andrade@inpe.br", role=c("aut", "cre"), comment = c(ORCID = "0000-0001-8675-4046")),
             person(given="Joao", family="Bazzo", role="aut", comment = c(ORCID = "0000-0003-4536-5006")),
@@ -9,8 +9,8 @@ Authors@R: c(person(given="Rafael H. M.", family="Pereira", email="rafa.pereira.
             person(given="Marcin", family="Stepniak", role="ctb"),
             person(given="Marcus", family="Saraiva", email="marcus.saraiva@gmail.com", role="ctb", comment = c(ORCID = "0000-0001-6218-2338")),
             person("Ipea - Institue for Applied Economic Research", role = c("cph", "fnd")))
-URL: https://github.com/ipeaGIT/gtfs2gps, https://ipeagit.github.io/gtfs2gps/
-BugReports: https://github.com/ipeaGIT/gtfs2gps/issues
+URL: https://github.com/ipea/gtfs2gps, https://ipea.github.io/gtfs2gps/
+BugReports: https://github.com/ipea/gtfs2gps/issues
 Description: Convert general transit feed specification (GTFS) data to global positioning system (GPS) records in 'data.table' format. It also has some functions to subset GTFS data in time and space and to convert both representations to simple feature format.
 License: MIT + file LICENSE
 Encoding: UTF-8
@@ -36,7 +36,8 @@ Imports:
       progressr,
       lwgeom,
       checkmate,
+      parallelly,
       cli
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 VignetteBuilder: knitr
 LinkingTo: Rcpp

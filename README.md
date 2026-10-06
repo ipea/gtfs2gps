@@ -2,7 +2,7 @@
 
 [![CRAN/METACRAN Version](https://www.r-pkg.org/badges/version/gtfs2gps)](https://CRAN.R-project.org/package=gtfs2gps).[![CRAN/METACRAN Total downloads](https://cranlogs.r-pkg.org/badges/grand-total/gtfs2gps?color=blue)](https://CRAN.R-project.org/package=gtfs2gps)
 [![R-CMD-check](https://github.com/ipea/gtfs2gps/workflows/R-CMD-check/badge.svg)](https://github.com/ipea/gtfs2gps/actions)
-[![Codecov test coverage](https://codecov.io/gh/ipeaGIT/gtfs2gps/branch/master/graph/badge.svg)](https://codecov.io/gh/ipeaGIT/gtfs2gps?branch=master)
+[![Codecov test coverage](https://codecov.io/gh/ipea/gtfs2gps/branch/master/graph/badge.svg)](https://codecov.io/gh/ipea/gtfs2gps?branch=master)
 [![Paper](https://img.shields.io/badge/DOI-10.1007%2Fs10109--022--00400--x-blue)](https://link.springer.com/article/10.1007/s10109-022-00400-x)
 
 
