@@ -5,6 +5,7 @@
 * Major changes
   * The package now requires R >= 4.1.0, because it uses the native pipe `|>`.
   * Fixed a bug in `write_gtfs()`, which ignored the `overwrite` argument and silently overwrote an existing file. With `overwrite = FALSE` it now raises an error of class `gtfs2gps_file_exists_error` if `zipfile` already exists.
+  * Fixed a bug in `gtfs2gps(continue = TRUE)` with `compress = TRUE`: it looked for `.rda` files while saving `.rds`, so shapes already saved were converted and written again instead of being skipped.
   * `gtfs_shapes_as_sf()` now wraps `gtfstools::convert_shapes_to_sf()`. The `crs` argument transforms the shapes from WGS84 instead of relabelling their coordinates, and must be a valid CRS (`NA` is no longer accepted). The input is not modified. The result is a plain `sf` object (no longer also a `data.table`) with columns `shape_id`, `geometry` and `length`. `shape_id` must be character and `shape_pt_sequence` integer, as produced by `read_gtfs()`.
   * Fixed two bugs in `gtfs2gps()` for shapes used by several trips:
     * Trips were silently dropped when a shape was shared by more than one route; only the first route's trips were converted (e.g. 170 of the 348 trips in the bundled Berlin feed). All trips of a shape that have a `route_id` are now converted, each with its own `route_type`, and `trip_number` is the trip's index among all trips of the shape.

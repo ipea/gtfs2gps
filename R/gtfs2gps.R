@@ -23,7 +23,7 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
                          compress, continue){
   shapeid <- slice$shape_id
   if(continue){
-    extension <- ifelse(compress, ".rda", ".txt")
+    extension <- ifelse(compress, ".rds", ".txt")
     file <- paste0(filepath, "/", shapeid, extension)
     if(file.exists(file)) return(NULL)
   }
