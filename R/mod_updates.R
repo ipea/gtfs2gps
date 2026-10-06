@@ -1,66 +1,51 @@
 # UPDATE NEWSTOPTIMES DATA.FRAME
-update_dt <- function(tripid, new_stoptimes, gtfs_data, all_tripids){
-  # each trip starts from its own copy of the shape template
-  new_stoptimes <- data.table::copy(new_stoptimes)
-
-  # internal test
-  # tripid <- "176-1@1#1800" all_tripids[1]
-  # add trip_id 
-  new_stoptimes[, trip_id := all_tripids[tripid]]
-  
-  # add cummulative distance
-  new_stoptimes[, cumdist := cumsum(dist)]
-  
-  # subset original stoptimes to get original travel_times btwn stops
-  stoptimes_temp <- gtfs_data$stop_times[trip_id == all_tripids[tripid]]
-  
-  # add departure_time based on stop sequence
-  new_stoptimes[stoptimes_temp, on = 'stop_sequence', `:=`(
-    'departure_time' = i.departure_time,
-    'arrival_time' = i.arrival_time)]
-  
-  # get a 'stop_sequence' of the stops which have proper info on 'departure_time'
-  stop_id_ok <- gtfs_data$stop_times[trip_id == all_tripids[tripid] & 
-                                       is.na(departure_time) == FALSE,]$stop_sequence
-  
+# one trip: tripid is its index in all_tripids, stoptimes_trip its rows of stop_times and
+# new_stoptimes the shape template of its stop pattern, which is not modified
+update_dt <- function(tripid, stoptimes_trip, new_stoptimes, all_tripids){
   # ignore trip_id if original departure_time values are missing
-  if(is.null(length(stop_id_ok)) == TRUE | length(stop_id_ok) == 1 | length(stop_id_ok) == 0){ 
+  if(sum(!is.na(stoptimes_trip$departure_time)) < 2){
     cli::cli_inform( # nocov start
       "Trip {.val {all_tripids[tripid]}} has less than two stop_ids. Ignoring it.") # nocov end
     return(NULL) # nocov
   }
-  
-  new_stoptimes[, speed := numeric()]
-  
-  # lim0: 'id' in which stop_times intervals STARTS
-  lim0 <- new_stoptimes[ !is.na(departure_time) & !is.na(stop_id), id]
-  
-  new_points <- data.table::copy(new_stoptimes[lim0, ])
-  new_points[, departure_time := arrival_time]
-  new_points[, id := id - 0.1]
-  
-  new_stoptimes[lim0, dist := 0]
-  
-  new_stoptimes <- rbind(new_stoptimes, new_points)
-  data.table::setorder(new_stoptimes, "id")
-  new_stoptimes$id <- 1:dim(new_stoptimes)[1]
-  
-  new_stoptimes[, timestamp := data.table::as.ITime(departure_time)]
-  
-  new_stoptimes[1, speed := 1e-12]
-  new_stoptimes[, cumtime := 0]
+
+  # the trip's times by stop_sequence, on plain vectors. Same result as an update-join
+  # on = "stop_sequence": rows without a match keep the template's value, NA matches NA,
+  # and a duplicated stop_sequence takes the trip's last row
+  m <- nrow(stoptimes_trip) + 1L - match(new_stoptimes$stop_sequence
+                                         , rev(stoptimes_trip$stop_sequence))
+  hit <- !is.na(m)
+  dep <- new_stoptimes$departure_time
+  arr <- new_stoptimes$arrival_time
+  dep[hit] <- stoptimes_trip$departure_time[m[hit]]
+  arr[hit] <- stoptimes_trip$arrival_time[m[hit]]
+
+  # each stop with a time gets an extra row just before it, at its arrival_time, which
+  # keeps the original dist; the stop row itself gets dist 0. The template's id is its
+  # row position, so rows are selected by position
+  lim0 <- which(!is.na(dep) & !is.na(new_stoptimes$stop_id))
+  src <- sort(c(seq_len(nrow(new_stoptimes)), lim0))
+  new_stoptimes <- new_stoptimes[src]
+
+  extra <- duplicated(src, fromLast = TRUE)
+  dep <- dep[src]
+  arr <- arr[src]
+  dep[extra] <- arr[extra]
+  dist <- new_stoptimes$dist
+  dist[duplicated(src)] <- 0
 
   last_point_was_stop <- FALSE
-
-  lim0 <- new_stoptimes[ !is.na(timestamp) & !is.na(stop_id), id]
 
   # speed, cumtime and timestamp are computed on plain vectors: a data.table
   # sub-assignment per segment dominated gtfs2gps() run time. ts is unclassed so
   # that [.ITime and round.ITime (which rounds to hours) never dispatch.
-  ts  <- as.integer(new_stoptimes$timestamp)
+  ts  <- as.integer(data.table::as.ITime(dep))
   cd  <- new_stoptimes$cumdist
-  spd <- new_stoptimes$speed
-  ctm <- new_stoptimes$cumtime
+  spd <- rep(NA_real_, length(src))
+  spd[1] <- 1e-12
+  ctm <- numeric(length(src))
+
+  lim0 <- which(!is.na(ts) & !is.na(new_stoptimes$stop_id))
 
   for(i in 1:(length(lim0) - 1)){
     a <- lim0[i]
@@ -94,12 +79,15 @@ update_dt <- function(tripid, new_stoptimes, gtfs_data, all_tripids){
     last_point_was_stop <- FALSE
   }
 
+  ctm[is.na(spd)] <- NA
+
   # structure() rather than as.ITime(): the latter wraps values >= 86400, which
   # interpolated rows past midnight legitimately carry (adjust_speed() unwraps)
-  data.table::set(new_stoptimes, j = c("speed", "cumtime", "timestamp")
-                  , value = list(spd, ctm, structure(ts, class = "ITime")))
-
-  new_stoptimes[is.na(speed), cumtime := NA]
+  data.table::set(new_stoptimes
+                  , j = c("departure_time", "arrival_time", "dist", "id", "trip_id"
+                          , "speed", "timestamp", "cumtime", "trip_number")
+                  , value = list(dep, arr, dist, seq_along(src), all_tripids[tripid]
+                                 , spd, structure(ts, class = "ITime"), ctm, tripid))
   
   # Get lag
   #new_stoptimes[!is.na(departure_time) & !is.na(stop_id)
@@ -109,8 +97,6 @@ update_dt <- function(tripid, new_stoptimes, gtfs_data, all_tripids){
   # Get trip duration in seconds
   #  new_stoptimes[, cumtime := cumsum(3.6 * dist / speed)]
   
-  new_stoptimes[, trip_number := tripid]
-
   # reorder columns
   data.table::setcolorder(new_stoptimes, c("trip_id", "route_type", "id", 
                                            "shape_pt_lon", "shape_pt_lat", 

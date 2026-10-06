@@ -60,6 +60,12 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
                        , by = trip_id]
   pattern_trips <- split(patterns$trip_id, factor(patterns$pattern, levels = unique(patterns$pattern)))
 
+  # the shape in high resolution, prepared once for all stop patterns
+  new_shape <- sf::st_segmentize(x = slice$shape
+                                 ,dfMaxLength =  units::set_units(spatial_resolution / 1000, "km"))
+  new_shape <- sfheaders::sf_cast(new_shape, "POINT")
+  temp_shape_coords <- sf::st_coordinates(new_shape)
+
   process_pattern <- function(tripids){
     # stop sequence of this pattern
     stops_seq <- slice$stop_times[trip_id == tripids[1]
@@ -74,15 +80,8 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
     stops_sf <- sfheaders::sf_point(stops_seq, x = "stop_lon", y = "stop_lat", keep = TRUE)
     sf::st_crs(stops_sf) <- sf::st_crs(slice$shape)
 
-    # new faster version using sfheaders
-    new_shape <- slice$shape
-    new_shape <- sf::st_segmentize(x = new_shape
-                                   ,dfMaxLength =  units::set_units(spatial_resolution / 1000, "km"))
-    new_shape <- sfheaders::sf_cast(new_shape, "POINT")
-
     # snap stops the nodes of the shape route
     temp_stops_coords <- sf::st_coordinates(stops_sf)
-    temp_shape_coords <- sf::st_coordinates(new_shape)
 
     mymethod <- cpp_snap_points_nearest2
 
@@ -109,8 +108,8 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
     # get shape points in high resolution
     new_stoptimes <- data.table::data.table(shape_id = new_shape$shape_id[1],
                                             id = seq_len(nrow(new_shape)),
-                                            shape_pt_lon = sf::st_coordinates(new_shape)[,1],
-                                            shape_pt_lat = sf::st_coordinates(new_shape)[,2])
+                                            shape_pt_lon = temp_shape_coords[,1],
+                                            shape_pt_lat = temp_shape_coords[,2])
 
     # route type is filled per trip after all patterns are processed
     new_stoptimes[, route_type := routes$route_type[NA_integer_]]
@@ -143,9 +142,22 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
     }
 
     ###### PART 2.2 recalculate new stop_times for each trip of this pattern ------------------------------
+    # cumulative distance is the same for every trip of the pattern
+    new_stoptimes[, cumdist := cumsum(dist)]
+
+    # stop_times of each trip, split once per pattern instead of looked up per trip.
+    # Grouped by position: an NA trip_id gets no rows, as `trip_id == NA` did, and a
+    # trip named "NA" is not confused with it. split() keeps the row order within a
+    # trip, on which update_dt() relies when a stop_sequence is duplicated.
+    st <- slice$stop_times[trip_id %chin% tripids
+                           , .(trip_id, stop_sequence, departure_time, arrival_time)]
+    st_rows <- split(seq_len(nrow(st))
+                     , factor(match(st$trip_id, tripids, incomparables = NA)
+                              , levels = seq_along(tripids)))
+
     # match() keeps trip_number as the trip's index among all trips of the shape
-    new_stoptimes <- lapply(X = match(tripids, all_tripids), FUN = update_dt,
-                            new_stoptimes, slice, all_tripids)
+    new_stoptimes <- lapply(seq_along(tripids), function(k)
+      update_dt(match(tripids[k], all_tripids), st[st_rows[[k]]], new_stoptimes, all_tripids))
 
     return(data.table::rbindlist(new_stoptimes))
   }

@@ -13,6 +13,7 @@
 * Minor changes
   * `gtfs2gps()` is faster: speeds and timestamps between stops are now interpolated on plain vectors instead of per-segment data.table sub-assignments. Output is unchanged.
   * `gtfs2gps(parallel = TRUE)` no longer copies the whole feed to every worker: each worker receives only the trips, stop times, stops and geometry of the shapes it converts. This removes the "total size of the globals exported ... exceeds the maximum allowed size" failure on large feeds (#277) and lowers memory use. Shapes are also no longer looked up by scanning the full `trips` and `stop_times` tables, which makes the sequential path somewhat faster too. Output is unchanged.
+  * `gtfs2gps()` spends less time on each trip: stop times are split by trip once per stop pattern instead of being looked up for every trip, and each trip's GPS points are built on plain vectors instead of about 15 data.table operations. Output is unchanged.
   * The report of shapes that failed with an internal error (with the code to reproduce it) now also works with `parallel = TRUE`; it was silently lost before.
   * A `trip_id` listed under two different shapes (invalid GTFS) is now converted once, with the first shape in `trips`, instead of once per shape.
   * `write_gtfs()` now validates its arguments, and its documentation gives the correct default of `quiet` (`FALSE`) and return value (the GTFS data, invisibly).
