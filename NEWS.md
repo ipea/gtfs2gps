@@ -5,14 +5,17 @@
 * Major changes
   * The package now requires R >= 4.1.0, because it uses the native pipe `|>`.
   * Fixed a bug in `write_gtfs()`, which ignored the `overwrite` argument and silently overwrote an existing file. With `overwrite = FALSE` it now raises an error of class `gtfs2gps_file_exists_error` if `zipfile` already exists.
+  * Fixed a bug in `gtfs2gps(continue = TRUE)` with `compress = TRUE`: it looked for `.rda` files while saving `.rds`, so shapes already saved were converted and written again instead of being skipped.
   * `gtfs_shapes_as_sf()` now wraps `gtfstools::convert_shapes_to_sf()`. The `crs` argument transforms the shapes from WGS84 instead of relabelling their coordinates, and must be a valid CRS (`NA` is no longer accepted). The input is not modified. The result is a plain `sf` object (no longer also a `data.table`) with columns `shape_id`, `geometry` and `length`. `shape_id` must be character and `shape_pt_sequence` integer, as produced by `read_gtfs()`.
   * Fixed two bugs in `gtfs2gps()` for shapes used by several trips:
     * Trips were silently dropped when a shape was shared by more than one route; only the first route's trips were converted (e.g. 170 of the 348 trips in the bundled Berlin feed). All trips of a shape that have a `route_id` are now converted, each with its own `route_type`, and `trip_number` is the trip's index among all trips of the shape.
     * Trips with a different stop pattern from the shape's longest trip had their times attached to the wrong stops, and could gain stops they do not serve. Stops are now snapped separately for each distinct stop pattern on a shape.
 
 * Minor changes
+  * Compared with v2.1-4, `gtfs2gps()` is at least 3× faster on the poa feed and, on the São Paulo feed, at least 7× faster with about 80% lower peak memory (sequential runs).
   * `gtfs2gps()` is faster: speeds and timestamps between stops are now interpolated on plain vectors instead of per-segment data.table sub-assignments. Output is unchanged.
   * `gtfs2gps(parallel = TRUE)` no longer copies the whole feed to every worker: each worker receives only the trips, stop times, stops and geometry of the shapes it converts. This removes the "total size of the globals exported ... exceeds the maximum allowed size" failure on large feeds (#277) and lowers memory use. Shapes are also no longer looked up by scanning the full `trips` and `stop_times` tables, which makes the sequential path somewhat faster too. Output is unchanged.
+  * `gtfs2gps()` spends less time on each trip: stop times are split by trip once per stop pattern instead of being looked up for every trip, and each trip's GPS points are built on plain vectors instead of about 15 data.table operations. Output is unchanged.
   * The report of shapes that failed with an internal error (with the code to reproduce it) now also works with `parallel = TRUE`; it was silently lost before.
   * A `trip_id` listed under two different shapes (invalid GTFS) is now converted once, with the first shape in `trips`, instead of once per shape.
   * `write_gtfs()` now validates its arguments, and its documentation gives the correct default of `quiet` (`FALSE`) and return value (the GTFS data, invisibly).
@@ -53,13 +56,13 @@
 
 * Minor changes
   * Fixing CRAN error and warning related to the vignette.
-  * The function `adjust_speed()` now does not change very low speed (1.000000e-12 [km/h]) because these values indicate a situation of a stopped vehicle. Closed [249](https://github.com/ipeaGIT/gtfs2gps/issues/249).
+  * The function `adjust_speed()` now does not change very low speed (1.000000e-12 [km/h]) because these values indicate a situation of a stopped vehicle. Closed [249](https://github.com/ipea/gtfs2gps/issues/249).
 
 
 # gtfs2gps v2.0-1
 
 * Minor changes
-  * `gtfs2gps()` now prints a message alerting if there are any trips with negative speed values in the output. [Closes #172](https://github.com/ipeaGIT/gtfs2gps/issues/172).
+  * `gtfs2gps()` now prints a message alerting if there are any trips with negative speed values in the output. [Closes #172](https://github.com/ipea/gtfs2gps/issues/172).
   * Fixing small bugs in the output of gtfs2gps().
 
 
@@ -119,7 +122,7 @@
 
 * Major changes
   * New function to merge GTFS feeds. Closes #34
-  * New pkgdown website. https://ipeagit.github.io/gtfs2gps/ . Closes #146
+  * New pkgdown website. https://ipea.github.io/gtfs2gps/ . Closes #146
   * Distance of 1st point of GPS trip now start with distance zero. Closes #136
 
 * Minor changes

@@ -289,3 +289,25 @@ test_that("gtfs2gps converts a shape whose id is the empty string", {
     expect_equal(nrow(res), nrow(ref))
     expect_true(all(res$shape_id == ""))
 })
+
+test_that("gtfs2gps(continue = TRUE) skips shapes already saved, with and without compress", {
+    shapes <- c("T2-1", "A141-1")
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+      gtfstools::filter_by_shape_id(shapes) |>
+      filter_single_trip()
+
+    for (compress in c(FALSE, TRUE)) {
+      out_dir <- tempfile("g2g_"); dir.create(out_dir); on.exit(unlink(out_dir, recursive = TRUE), add = TRUE)
+      files <- file.path(out_dir, paste0(shapes, if (compress) ".rds" else ".txt"))
+
+      gtfs2gps(poa, parallel = FALSE, filepath = out_dir, compress = compress, quiet = TRUE)
+      expect_true(all(file.exists(files)))
+
+      # a saved shape must be skipped (its file left as it is), a missing one written again
+      writeLines("already saved", files[1])
+      unlink(files[2])
+      gtfs2gps(poa, parallel = FALSE, filepath = out_dir, compress = compress, continue = TRUE, quiet = TRUE)
+      expect_identical(readLines(files[1]), "already saved")
+      expect_true(file.exists(files[2]))
+    }
+})
