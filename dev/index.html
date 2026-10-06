@@ -18,7 +18,7 @@
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Converting Transport Data from GTFS Format to GPS-Like Records">
 <meta name="description" content="Convert general transit feed specification (GTFS) data to global positioning system (GPS) records in data.table format. It also has some functions to subset GTFS data in time and space and to convert both representations to simple feature format.">
 <meta property="og:description" content="Convert general transit feed specification (GTFS) data to global positioning system (GPS) records in data.table format. It also has some functions to subset GTFS data in time and space and to convert both representations to simple feature format.">
-<meta property="og:image" content="https://ipeagit.github.io/gtfs2gps/logo.png">
+<meta property="og:image" content="https://ipea.github.io/gtfs2gps/logo.png">
 <meta name="robots" content="noindex">
 </head>
 <body>
@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="index.html">gtfs2gps</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">2.1-2.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">2.1-4.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,7 +51,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/ipeaGIT/gtfs2gps/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/ipea/gtfs2gps/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
@@ -72,7 +72,7 @@
 <img src="logo.png" class="logo" alt=""><h1 id="gtfs2gps-converting-public-transport-data-from-gtfs-format-to-gps-like-records-">gtfs2gps: Converting public transport data from GTFS format to GPS-like records <a class="anchor" aria-label="anchor" href="#gtfs2gps-converting-public-transport-data-from-gtfs-format-to-gps-like-records-"></a>
 </h1>
 </div>
-<p><a href="https://CRAN.R-project.org/package=gtfs2gps" class="external-link"><img src="https://www.r-pkg.org/badges/version/gtfs2gps" alt="CRAN/METACRAN Version"></a>.<a href="https://CRAN.R-project.org/package=gtfs2gps" class="external-link"><img src="https://cranlogs.r-pkg.org/badges/grand-total/gtfs2gps?color=blue" alt="CRAN/METACRAN Total downloads"></a> <a href="https://github.com/ipea/gtfs2gps/actions" class="external-link"><img src="https://github.com/ipea/gtfs2gps/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a> <a href="https://codecov.io/gh/ipeaGIT/gtfs2gps?branch=master" class="external-link"><img src="https://codecov.io/gh/ipeaGIT/gtfs2gps/branch/master/graph/badge.svg" alt="Codecov test coverage"></a> <a href="https://link.springer.com/article/10.1007/s10109-022-00400-x" class="external-link"><img src="https://img.shields.io/badge/DOI-10.1007%2Fs10109--022--00400--x-blue" alt="Paper"></a></p>
+<p><a href="https://CRAN.R-project.org/package=gtfs2gps" class="external-link"><img src="https://www.r-pkg.org/badges/version/gtfs2gps" alt="CRAN/METACRAN Version"></a>.<a href="https://CRAN.R-project.org/package=gtfs2gps" class="external-link"><img src="https://cranlogs.r-pkg.org/badges/grand-total/gtfs2gps?color=blue" alt="CRAN/METACRAN Total downloads"></a> <a href="https://github.com/ipea/gtfs2gps/actions" class="external-link"><img src="https://github.com/ipea/gtfs2gps/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a> <a href="https://codecov.io/gh/ipea/gtfs2gps?branch=master" class="external-link"><img src="https://codecov.io/gh/ipea/gtfs2gps/branch/master/graph/badge.svg" alt="Codecov test coverage"></a> <a href="https://link.springer.com/article/10.1007/s10109-022-00400-x" class="external-link"><img src="https://img.shields.io/badge/DOI-10.1007%2Fs10109--022--00400--x-blue" alt="Paper"></a></p>
 <p><strong>gtfs2gps</strong> is an R package that converts public transportation data in GTFS format to GPS-like records in a <code>data.frame</code>/<code>data.table</code>, which can then be used in various applications such as running transport simulations or scenario analyses.</p>
 <p>The core function of the package takes a <code>GTFS.zip</code> file and interpolates the space-time position of each vehicle in each trip considering the network distance and average speed between stops. The output is a <code>data.table</code> where each row represents the timestamp of each vehicle at a given spatial resolution. The package also has some functions to subset GTFS data in time and space and to convert both representations to <a href="https://CRAN.R-project.org/package=sf" class="external-link">simple feature</a> format. More information about the methods used in the package can be found in this <a href="https://osf.io/preprints/socarxiv/qydr6/" class="external-link">preprint</a>.</p>
 <div class="section level3">
@@ -81,14 +81,14 @@
 <p>Please install <strong>gtfs2gps</strong> package from CRAN to get the stable version.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"gtfs2gps"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ipeaGIT/gtfs2gps" class="external-link">gtfs2gps</a></span><span class="op">)</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ipea/gtfs2gps" class="external-link">gtfs2gps</a></span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="vignette">Vignette<a class="anchor" aria-label="anchor" href="#vignette"></a>
 </h3>
 <p>Please see our vignette:</p>
 <ul>
-<li><a href="https://ipea.github.io/gtfs2gps/articles/intro_to_gtfs2gps.html" class="external-link">gtfs2gps: Converting GTFS data to GPS format</a></li>
+<li><a href="https://ipea.github.io/gtfs2gps/articles/intro_to_gtfs2gps.html">gtfs2gps: Converting GTFS data to GPS format</a></li>
 </ul>
 <hr>
 </div>
@@ -106,8 +106,8 @@
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
 <li><a href="https://cloud.r-project.org/package=gtfs2gps" class="external-link">View on CRAN</a></li>
-<li><a href="https://github.com/ipeaGIT/gtfs2gps/" class="external-link">Browse source code</a></li>
-<li><a href="https://github.com/ipeaGIT/gtfs2gps/issues" class="external-link">Report a bug</a></li>
+<li><a href="https://github.com/ipea/gtfs2gps/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/ipea/gtfs2gps/issues" class="external-link">Report a bug</a></li>
 </ul>
 </div>
 

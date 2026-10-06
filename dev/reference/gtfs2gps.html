@@ -11,7 +11,7 @@ guarantee that two points in a same trip will have at most a given
 distance, indicated as a spatial resolution. It is possible to use future package
 to parallelize the execution (or use argument plan). This function also
 uses progressr internally to show progress bars. See the example below on how
-to show a progress bar while executing this function."><meta property="og:image" content="https://ipeagit.github.io/gtfs2gps/logo.png"><meta name="robots" content="noindex"></head><body>
+to show a progress bar while executing this function."><meta property="og:image" content="https://ipea.github.io/gtfs2gps/logo.png"><meta name="robots" content="noindex"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -19,7 +19,7 @@ to show a progress bar while executing this function."><meta property="og:image"
 
     <a class="navbar-brand me-2" href="../index.html">gtfs2gps</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">2.1-2.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">2.1-4.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,7 +35,7 @@ to show a progress bar while executing this function."><meta property="og:image"
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/ipeaGIT/gtfs2gps/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/ipea/gtfs2gps/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch"><li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
@@ -50,7 +50,7 @@ to show a progress bar while executing this function."><meta property="og:image"
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Convert GTFS to GPS-like data given a spatial resolution</h1>
-      <small class="dont-index">Source: <a href="https://github.com/ipeaGIT/gtfs2gps/blob/master/R/gtfs2gps.R" class="external-link"><code>R/gtfs2gps.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/ipea/gtfs2gps/blob/master/R/gtfs2gps.R" class="external-link"><code>R/gtfs2gps.R</code></a></small>
       <div class="d-none name"><code>gtfs2gps.Rd</code></div>
     </div>
 
@@ -195,12 +195,12 @@ vehicle will spend at stops to embark/disembark passengers.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ipeaGIT/gtfs2gps" class="external-link">gtfs2gps</a></span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ipea/gtfs2gps" class="external-link">gtfs2gps</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">gtfs</span> <span class="op">&lt;-</span> <span class="fu"><a href="read_gtfs.html">read_gtfs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata/poa.zip"</span>, package <span class="op">=</span> <span class="st">"gtfs2gps"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">gtfstools</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/gtfstools/man/filter_by_shape_id.html" class="external-link">filter_by_shape_id</a></span><span class="op">(</span><span class="st">"T2-1"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="filter_single_trip.html">filter_single_trip</a></span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Unzipped the following files to /tmp/RtmpvsnyV4/gtfsio:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Unzipped the following files to /tmp/RtmpGEQshD/gtfsio:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * agency.txt</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * calendar.txt</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * routes.txt</span>
@@ -217,7 +217,7 @@ vehicle will spend at stops to embark/disembark passengers.</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Reading trips</span>
 <span class="r-in"><span>  </span></span>
 <span class="r-in"><span><span class="va">poa_gps</span> <span class="op">&lt;-</span> <span class="fu">progressr</span><span class="fu">::</span><span class="fu"><a href="https://progressr.futureverse.org/reference/with_progress.html" class="external-link">with_progress</a></span><span class="op">(</span><span class="fu">gtfs2gps</span><span class="op">(</span><span class="va">gtfs</span>, quiet<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>UNRELIABLE VALUE: Future (&lt;unnamed-5&gt;) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-5&gt; (8cf93210de46dee6cd3f3c8db4df4611-5); on 8cf93210de46dee6cd3f3c8db4df4611@runnervma94yk&lt;6835&gt;]</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>UNRELIABLE VALUE: Future (&lt;unnamed-5&gt;) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-5&gt; (0acfe8b143d2cc33640a4bfee98b78d9-5); on 0acfe8b143d2cc33640a4bfee98b78d9@runnervmwvtoz&lt;6587&gt;]</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

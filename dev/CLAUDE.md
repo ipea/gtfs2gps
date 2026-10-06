@@ -26,7 +26,7 @@ M. Pereira and Joao Bazzo. License MIT. Docs:
   ([`data.table::copy()`](https://rdrr.io/pkg/data.table/man/copy.html),
   or an explicit `clone` argument).
 - **Parallel = sequential.**
-  [`gtfs2gps()`](https://ipeagit.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+  [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
   must give the same result with `parallel = TRUE` and
   `parallel = FALSE`.
 - **CRAN-ready at all times.** `R CMD check --as-cran`: 0 errors, 0
@@ -52,9 +52,9 @@ M. Pereira and Joao Bazzo. License MIT. Docs:
   editing.
 
 Conventions are in
-[`.claude/rules/r-package-conventions.md`](https://ipeagit.github.io/gtfs2gps/dev/.claude/rules/r-package-conventions.md);
+[`.claude/rules/r-package-conventions.md`](https://ipea.github.io/gtfs2gps/dev/.claude/rules/r-package-conventions.md);
 gates are in
-[`.claude/rules/quality-gates.md`](https://ipeagit.github.io/gtfs2gps/dev/.claude/rules/quality-gates.md).
+[`.claude/rules/quality-gates.md`](https://ipea.github.io/gtfs2gps/dev/.claude/rules/quality-gates.md).
 
 ------------------------------------------------------------------------
 
@@ -111,7 +111,7 @@ covr::package_coverage()
 - Compiled code needs a toolchain (Rtools on Windows).
   `core.autocrlf=true` here, so regenerated files can show
   line-ending-only diffs: check drift with `git diff`, not `git status`.
-- [`gtfs2gps()`](https://ipeagit.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+- [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
   defaults to `parallel = TRUE` with `availableCores() - 1` workers; for
   quick local checks pass `parallel = FALSE`.
 

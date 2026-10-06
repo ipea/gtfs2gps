@@ -22,7 +22,7 @@ install.packages("gtfs2gps")
 ## Loading data
 
 After loading the package, GTFS data can be read into R by using
-[`read_gtfs()`](https://ipeagit.github.io/gtfs2gps/dev/reference/read_gtfs.md).
+[`read_gtfs()`](https://ipea.github.io/gtfs2gps/dev/reference/read_gtfs.md).
 This function gets a zipped GTFS file and returns a list of `data.table`
 objects. The returning list contains the data of each GTFS file indexed
 according to their file names without extension.
@@ -30,11 +30,9 @@ according to their file names without extension.
 ``` r
 
 library("gtfs2gps")
-#> gtfs2gps version 2.1-2.9000 is now loaded
-#> NOTE: All filter functions from gtfs2gps were removed
-#> Please replace them by similar functions from gtfstools
+#> gtfs2gps version 2.1-4.9000 is now loaded
 poa <- read_gtfs(system.file("extdata/poa.zip", package ="gtfs2gps"))
-#> Unzipped the following files to /tmp/Rtmp4uht71/gtfsio:
+#> Unzipped the following files to /tmp/RtmpmfEYJs/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -69,7 +67,7 @@ which are: “shapes.txt”, “stop_times.txt”, “stops.txt”, “trips.txt
 “agency.txt”, “calendar.txt”, “routes.txt”, and “frequencies.txt”, with
 this last four being optional. If a given GTFS zipped file does not
 contain all of these required files then
-[`read_gtfs()`](https://ipeagit.github.io/gtfs2gps/dev/reference/read_gtfs.md)
+[`read_gtfs()`](https://ipea.github.io/gtfs2gps/dev/reference/read_gtfs.md)
 will stop with an error.
 
 In the code below we filter only the shape ids \`c(“T2-1”, “A141-1”) to
@@ -100,7 +98,7 @@ box()
 
 After subsetting the data, it is also possible to save it as a new GTFS
 file using
-[`write_gtfs()`](https://ipeagit.github.io/gtfs2gps/dev/reference/write_gtfs.md),
+[`write_gtfs()`](https://ipea.github.io/gtfs2gps/dev/reference/write_gtfs.md),
 as shown below.
 
 ``` r
@@ -113,7 +111,7 @@ gtfs2gps::write_gtfs(poa_small, temp_gtfs)
 ## Converting to GPS-like format
 
 To convert GTFS to GPS-like format, use
-[`gtfs2gps()`](https://ipeagit.github.io/gtfs2gps/dev/reference/gtfs2gps.md).
+[`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md).
 This is the core function of the package. It takes a GTFS zipped file as
 an input and returns a `data.table` where each row represents a
 ‘GPS-like’ data point for every trip in the GTFS file. In summary, this
@@ -132,16 +130,16 @@ poa_gps <- gtfs2gps(temp_gtfs, spatial_resolution = 100)
 #> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
 #> random numbers are produced. To disable this check, use 'seed=NULL', or set
 #> option 'future.rng.onMisuse' to "ignore". [future <unnamed-1>
-#> (c046284c0ec503020422baa8d1d43af4-1); on
-#> c046284c0ec503020422baa8d1d43af4@runnervma94yk<7906>]
+#> (d923d4797e7effdfb07105872e3c44b9-1); on
+#> d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz<7669>]
 #> Warning: UNRELIABLE VALUE: Future (<unnamed-2>) unexpectedly generated random
 #> numbers without specifying argument 'seed'. There is a risk that those random
 #> numbers are not statistically sound and the overall results might be invalid.
 #> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
 #> random numbers are produced. To disable this check, use 'seed=NULL', or set
 #> option 'future.rng.onMisuse' to "ignore". [future <unnamed-2>
-#> (c046284c0ec503020422baa8d1d43af4-2); on
-#> c046284c0ec503020422baa8d1d43af4@runnervma94yk<7906>]
+#> (d923d4797e7effdfb07105872e3c44b9-2); on
+#> d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz<7669>]
 head(poa_gps)
 #>    shape_id     trip_id route_type    id timestamp shape_pt_lon shape_pt_lat
 #>      <char>      <char>      <int> <int>   <ITime>        <num>        <num>
@@ -192,7 +190,7 @@ box()
 ![](intro_to_gtfs2gps_files/figure-html/unnamed-chunk-7-1.png)
 
 The function
-[`gtfs2gps()`](https://ipeagit.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+[`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
 automatically recognizes whether the GTFS data brings detailed
 `stop_times.txt` information or whether it is a `frequency.txt` GTFS
 file. A sample data of a GTFS with detailed `stop_times.txt` cab be
@@ -209,24 +207,24 @@ poa_gps <- gtfs2gps(poa, spatial_resolution = 50)
 #> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
 #> random numbers are produced. To disable this check, use 'seed=NULL', or set
 #> option 'future.rng.onMisuse' to "ignore". [future <unnamed-3>
-#> (c046284c0ec503020422baa8d1d43af4-3); on
-#> c046284c0ec503020422baa8d1d43af4@runnervma94yk<7906>]
+#> (d923d4797e7effdfb07105872e3c44b9-3); on
+#> d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz<7669>]
 #> Warning: UNRELIABLE VALUE: Future (<unnamed-4>) unexpectedly generated random
 #> numbers without specifying argument 'seed'. There is a risk that those random
 #> numbers are not statistically sound and the overall results might be invalid.
 #> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
 #> random numbers are produced. To disable this check, use 'seed=NULL', or set
 #> option 'future.rng.onMisuse' to "ignore". [future <unnamed-4>
-#> (c046284c0ec503020422baa8d1d43af4-4); on
-#> c046284c0ec503020422baa8d1d43af4@runnervma94yk<7906>]
+#> (d923d4797e7effdfb07105872e3c44b9-4); on
+#> d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz<7669>]
 #> Warning: UNRELIABLE VALUE: Future (<unnamed-5>) unexpectedly generated random
 #> numbers without specifying argument 'seed'. There is a risk that those random
 #> numbers are not statistically sound and the overall results might be invalid.
 #> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
 #> random numbers are produced. To disable this check, use 'seed=NULL', or set
 #> option 'future.rng.onMisuse' to "ignore". [future <unnamed-5>
-#> (c046284c0ec503020422baa8d1d43af4-5); on
-#> c046284c0ec503020422baa8d1d43af4@runnervma94yk<7906>]
+#> (d923d4797e7effdfb07105872e3c44b9-5); on
+#> d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz<7669>]
 
 poa_gps_sflinestrig <- gps_as_sfpoints(poa_gps)
 

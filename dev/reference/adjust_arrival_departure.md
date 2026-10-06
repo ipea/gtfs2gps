@@ -30,7 +30,7 @@ adjust_arrival_departure(gtfs_data, min_lag = 20)
 - gtfs_data:
 
   A GTFS data created with
-  [`read_gtfs`](https://ipeagit.github.io/gtfs2gps/dev/reference/read_gtfs.md).
+  [`read_gtfs`](https://ipea.github.io/gtfs2gps/dev/reference/read_gtfs.md).
 
 - min_lag:
 
@@ -47,7 +47,7 @@ data.table \`stop_times\`.
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpvsnyV4/gtfsio:
+#> Unzipped the following files to /tmp/RtmpGEQshD/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt

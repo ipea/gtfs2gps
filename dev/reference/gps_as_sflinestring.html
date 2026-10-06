@@ -3,7 +3,7 @@
  converted into a linestring segment. The output assumes constant average speed
  between consecutive stops."><meta property="og:description" content="Every interval of GPS data points between stops for each trip_id is
  converted into a linestring segment. The output assumes constant average speed
- between consecutive stops."><meta property="og:image" content="https://ipeagit.github.io/gtfs2gps/logo.png"><meta name="robots" content="noindex"></head><body>
+ between consecutive stops."><meta property="og:image" content="https://ipea.github.io/gtfs2gps/logo.png"><meta name="robots" content="noindex"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -11,7 +11,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gtfs2gps</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">2.1-2.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">2.1-4.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -27,7 +27,7 @@
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/ipeaGIT/gtfs2gps/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/ipea/gtfs2gps/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch"><li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
@@ -42,7 +42,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Converts a GPS-like data.table to a LineString Simple Feature (sf) object</h1>
-      <small class="dont-index">Source: <a href="https://github.com/ipeaGIT/gtfs2gps/blob/master/R/gps_as_sflinestring.R" class="external-link"><code>R/gps_as_sflinestring.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/ipea/gtfs2gps/blob/master/R/gps_as_sflinestring.R" class="external-link"><code>R/gps_as_sflinestring.R</code></a></small>
       <div class="d-none name"><code>gps_as_sflinestring.Rd</code></div>
     </div>
 
@@ -72,10 +72,10 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ipeaGIT/gtfs2gps" class="external-link">gtfs2gps</a></span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ipea/gtfs2gps" class="external-link">gtfs2gps</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">poa</span> <span class="op">&lt;-</span> <span class="fu"><a href="read_gtfs.html">read_gtfs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata/poa.zip"</span>, package <span class="op">=</span> <span class="st">"gtfs2gps"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Unzipped the following files to /tmp/RtmpvsnyV4/gtfsio:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Unzipped the following files to /tmp/RtmpGEQshD/gtfsio:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * agency.txt</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * calendar.txt</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * routes.txt</span>
@@ -97,8 +97,8 @@
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Converting shapes to sf objects</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Using 3 CPU cores</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Processing the data</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>UNRELIABLE VALUE: Future (&lt;unnamed-2&gt;) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-2&gt; (8cf93210de46dee6cd3f3c8db4df4611-2); on 8cf93210de46dee6cd3f3c8db4df4611@runnervma94yk&lt;6835&gt;]</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>UNRELIABLE VALUE: Future (&lt;unnamed-3&gt;) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-3&gt; (8cf93210de46dee6cd3f3c8db4df4611-3); on 8cf93210de46dee6cd3f3c8db4df4611@runnervma94yk&lt;6835&gt;]</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>UNRELIABLE VALUE: Future (&lt;unnamed-2&gt;) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-2&gt; (0acfe8b143d2cc33640a4bfee98b78d9-2); on 0acfe8b143d2cc33640a4bfee98b78d9@runnervmwvtoz&lt;6587&gt;]</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>UNRELIABLE VALUE: Future (&lt;unnamed-3&gt;) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-3&gt; (0acfe8b143d2cc33640a4bfee98b78d9-3); on 0acfe8b143d2cc33640a4bfee98b78d9@runnervmwvtoz&lt;6587&gt;]</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Some 'speed' values are NA in the returned data.</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">poa_gps_sf</span> <span class="op">&lt;-</span> <span class="fu">gps_as_sflinestring</span><span class="op">(</span><span class="va">poa_gps</span><span class="op">)</span></span></span>

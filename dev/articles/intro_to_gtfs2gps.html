@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gtfs2gps</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">2.1-2.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">2.1-4.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,7 +48,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/ipeaGIT/gtfs2gps/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/ipea/gtfs2gps/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
@@ -74,7 +74,7 @@
 Pereira, Pedro R. Andrade, Joao Bazzo</h4>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/ipeaGIT/gtfs2gps/blob/master/vignettes/intro_to_gtfs2gps.Rmd" class="external-link"><code>vignettes/intro_to_gtfs2gps.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/ipea/gtfs2gps/blob/master/vignettes/intro_to_gtfs2gps.Rmd" class="external-link"><code>vignettes/intro_to_gtfs2gps.Rmd</code></a></small>
       <div class="d-none name"><code>intro_to_gtfs2gps.Rmd</code></div>
     </div>
 
@@ -107,12 +107,10 @@ returns a list of <code>data.table</code> objects. The returning list
 contains the data of each GTFS file indexed according to their file
 names without extension.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/ipeaGIT/gtfs2gps" class="external-link">"gtfs2gps"</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; gtfs2gps version 2.1-2.9000 is now loaded</span></span>
-<span><span class="co">#&gt; NOTE: All filter functions from gtfs2gps were removed</span></span>
-<span><span class="co">#&gt; Please replace them by similar functions from gtfstools</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/ipea/gtfs2gps" class="external-link">"gtfs2gps"</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; gtfs2gps version 2.1-4.9000 is now loaded</span></span>
 <span><span class="va">poa</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_gtfs.html">read_gtfs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata/poa.zip"</span>, package <span class="op">=</span><span class="st">"gtfs2gps"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Unzipped the following files to /tmp/Rtmp4uht71/gtfsio:</span></span>
+<span><span class="co">#&gt; Unzipped the following files to /tmp/RtmpmfEYJs/gtfsio:</span></span>
 <span><span class="co">#&gt;   * agency.txt</span></span>
 <span><span class="co">#&gt;   * calendar.txt</span></span>
 <span><span class="co">#&gt;   * routes.txt</span></span>
@@ -191,16 +189,16 @@ by default, but the user can set a different value in the
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-1&gt;</span></span>
-<span><span class="co">#&gt; (c046284c0ec503020422baa8d1d43af4-1); on</span></span>
-<span><span class="co">#&gt; c046284c0ec503020422baa8d1d43af4@runnervma94yk&lt;7906&gt;]</span></span>
+<span><span class="co">#&gt; (d923d4797e7effdfb07105872e3c44b9-1); on</span></span>
+<span><span class="co">#&gt; d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz&lt;7669&gt;]</span></span>
 <span><span class="co">#&gt; Warning: UNRELIABLE VALUE: Future (&lt;unnamed-2&gt;) unexpectedly generated random</span></span>
 <span><span class="co">#&gt; numbers without specifying argument 'seed'. There is a risk that those random</span></span>
 <span><span class="co">#&gt; numbers are not statistically sound and the overall results might be invalid.</span></span>
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-2&gt;</span></span>
-<span><span class="co">#&gt; (c046284c0ec503020422baa8d1d43af4-2); on</span></span>
-<span><span class="co">#&gt; c046284c0ec503020422baa8d1d43af4@runnervma94yk&lt;7906&gt;]</span></span>
+<span><span class="co">#&gt; (d923d4797e7effdfb07105872e3c44b9-2); on</span></span>
+<span><span class="co">#&gt; d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz&lt;7669&gt;]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">poa_gps</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    shape_id     trip_id route_type    id timestamp shape_pt_lon shape_pt_lat</span></span>
 <span><span class="co">#&gt;      &lt;char&gt;      &lt;char&gt;      &lt;int&gt; &lt;int&gt;   &lt;ITime&gt;        &lt;num&gt;        &lt;num&gt;</span></span>
@@ -257,24 +255,24 @@ GTFS with detailed <code>stop_times.txt</code> cab be found below:</p>
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-3&gt;</span></span>
-<span><span class="co">#&gt; (c046284c0ec503020422baa8d1d43af4-3); on</span></span>
-<span><span class="co">#&gt; c046284c0ec503020422baa8d1d43af4@runnervma94yk&lt;7906&gt;]</span></span>
+<span><span class="co">#&gt; (d923d4797e7effdfb07105872e3c44b9-3); on</span></span>
+<span><span class="co">#&gt; d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz&lt;7669&gt;]</span></span>
 <span><span class="co">#&gt; Warning: UNRELIABLE VALUE: Future (&lt;unnamed-4&gt;) unexpectedly generated random</span></span>
 <span><span class="co">#&gt; numbers without specifying argument 'seed'. There is a risk that those random</span></span>
 <span><span class="co">#&gt; numbers are not statistically sound and the overall results might be invalid.</span></span>
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-4&gt;</span></span>
-<span><span class="co">#&gt; (c046284c0ec503020422baa8d1d43af4-4); on</span></span>
-<span><span class="co">#&gt; c046284c0ec503020422baa8d1d43af4@runnervma94yk&lt;7906&gt;]</span></span>
+<span><span class="co">#&gt; (d923d4797e7effdfb07105872e3c44b9-4); on</span></span>
+<span><span class="co">#&gt; d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz&lt;7669&gt;]</span></span>
 <span><span class="co">#&gt; Warning: UNRELIABLE VALUE: Future (&lt;unnamed-5&gt;) unexpectedly generated random</span></span>
 <span><span class="co">#&gt; numbers without specifying argument 'seed'. There is a risk that those random</span></span>
 <span><span class="co">#&gt; numbers are not statistically sound and the overall results might be invalid.</span></span>
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-5&gt;</span></span>
-<span><span class="co">#&gt; (c046284c0ec503020422baa8d1d43af4-5); on</span></span>
-<span><span class="co">#&gt; c046284c0ec503020422baa8d1d43af4@runnervma94yk&lt;7906&gt;]</span></span>
+<span><span class="co">#&gt; (d923d4797e7effdfb07105872e3c44b9-5); on</span></span>
+<span><span class="co">#&gt; d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz&lt;7669&gt;]</span></span>
 <span></span>
 <span><span class="va">poa_gps_sflinestrig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gps_as_sfpoints.html">gps_as_sfpoints</a></span><span class="op">(</span><span class="va">poa_gps</span><span class="op">)</span></span>
 <span></span>

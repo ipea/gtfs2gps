@@ -24,16 +24,16 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/ipeaGIT/gtfs2gps/blob/master/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/ipea/gtfs2gps/blob/master/DESCRIPTION)
 
 Pereira R, Andrade P, Bazzo J (2026). *gtfs2gps: Converting Transport
 Data from GTFS Format to GPS-Like Records*. R package version
-2.1-2.9000, <https://github.com/ipeaGIT/gtfs2gps>.
+2.1-4.9000, <https://github.com/ipea/gtfs2gps>.
 
     @Manual{,
       title = {gtfs2gps: Converting Transport Data from GTFS Format to GPS-Like Records},
       author = {Rafael H. M. Pereira and Pedro R. Andrade and Joao Bazzo},
       year = {2026},
-      note = {R package version 2.1-2.9000},
-      url = {https://github.com/ipeaGIT/gtfs2gps},
+      note = {R package version 2.1-4.9000},
+      url = {https://github.com/ipea/gtfs2gps},
     }

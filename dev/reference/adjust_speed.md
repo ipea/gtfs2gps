@@ -1,4 +1,4 @@
-# Adjust the speeds of a gps-like table created with [`gtfs2gps`](https://ipeagit.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+# Adjust the speeds of a gps-like table created with [`gtfs2gps`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
 
 Some GTFS.zip data sets might have quality issues, for example by
 assuming that a trip speed is unreasonably high (e.g. an urban bus
@@ -28,7 +28,7 @@ adjust_speed(
 - gps_data:
 
   A GPS-like data.table created with
-  [`gtfs2gps`](https://ipeagit.github.io/gtfs2gps/dev/reference/gtfs2gps.md).
+  [`gtfs2gps`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md).
 
 - min_speed:
 
@@ -65,7 +65,7 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   gtfstools::filter_by_weekday(c("monday", "wednesday")) |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/RtmpvsnyV4/gtfsio:
+#> Unzipped the following files to /tmp/RtmpGEQshD/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -85,7 +85,7 @@ poa_gps <- gtfs2gps(poa)
 #> Converting shapes to sf objects
 #> Using 3 CPU cores
 #> Processing the data
-#> Warning: UNRELIABLE VALUE: Future (<unnamed-1>) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future <unnamed-1> (8cf93210de46dee6cd3f3c8db4df4611-1); on 8cf93210de46dee6cd3f3c8db4df4611@runnervma94yk<6835>]
+#> Warning: UNRELIABLE VALUE: Future (<unnamed-1>) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future <unnamed-1> (0acfe8b143d2cc33640a4bfee98b78d9-1); on 0acfe8b143d2cc33640a4bfee98b78d9@runnervmwvtoz<6587>]
 #> Some 'speed' values are NA in the returned data.
 poa_gps_new <- adjust_speed(poa_gps)
 ```
