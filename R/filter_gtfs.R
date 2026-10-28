@@ -41,7 +41,8 @@ remove_invalid <- function(gtfs_data, only_essential = TRUE, prompt_invalid = FA
     size <- newsize
     
     # agency-routes relation (agency_id)
-    if(!only_essential && !is.null(gtfs_data$agency) && !is.null(gtfs_data$routes)){
+    if(!only_essential && !is.null(gtfs_data$agency) && !is.null(gtfs_data$routes) &&
+       (nrow(gtfs_data$agency) > 1 || !all(gtfs_data$routes$agency_id %in% c(NA, "")))){ # agency_id is optional in single-agency feeds
       agency_ids <- intersect(gtfs_data$agency$agency_id, gtfs_data$routes$agency_id)
       removed$agency_ids <- c(removed$agency_ids, setdiff(gtfs_data$agency$agency_id, gtfs_data$routes$agency_id))
 
@@ -66,12 +67,8 @@ remove_invalid <- function(gtfs_data, only_essential = TRUE, prompt_invalid = FA
     gtfs_data$shapes <- subset(gtfs_data$shapes, shape_id %in% shape_ids)
     
     # trips-frequencies relation (trip_id)
-    if(test_gtfs_freq(gtfs_data) == 'frequency'){
-      trip_ids <- intersect(gtfs_data$trips$trip_id, gtfs_data$frequencies$trip_id)
-      removed$trip_ids <- c(removed$trip_ids, setdiff(gtfs_data$trips$trip_id, gtfs_data$frequencies$trip_id))
-
-      gtfs_data$trips       <- subset(gtfs_data$trips,       trip_id %chin% trip_ids)
-      gtfs_data$frequencies <- subset(gtfs_data$frequencies, trip_id %chin% trip_ids)
+    if(!is.null(gtfs_data$frequencies)){
+      gtfs_data$frequencies <- subset(gtfs_data$frequencies, trip_id %chin% gtfs_data$trips$trip_id)
     }
     
     # trips-stop_times relation (trip_id)
@@ -90,8 +87,8 @@ remove_invalid <- function(gtfs_data, only_essential = TRUE, prompt_invalid = FA
   
     # trips-calendar relation (service_id)
     if(!only_essential & !is.null(gtfs_data$calendar)){
-      service_ids <- intersect(gtfs_data$trips$service_id, gtfs_data$calendar$service_id)
-      removed$service_ids <- c(removed$service_ids, setdiff(gtfs_data$trips$service_id, gtfs_data$calendar$service_id))
+      service_ids <- intersect(gtfs_data$trips$service_id, c(gtfs_data$calendar$service_id, gtfs_data$calendar_dates$service_id))
+      removed$service_ids <- c(removed$service_ids, setdiff(gtfs_data$trips$service_id, c(gtfs_data$calendar$service_id, gtfs_data$calendar_dates$service_id)))
 
       gtfs_data$trips    <- subset(gtfs_data$trips,    service_id %chin% service_ids)
       gtfs_data$calendar <- subset(gtfs_data$calendar, service_id %chin% service_ids)
@@ -99,8 +96,8 @@ remove_invalid <- function(gtfs_data, only_essential = TRUE, prompt_invalid = FA
 
     # trips-calendar_dates relation (service_id)
     if(!only_essential & !is.null(gtfs_data$calendar_dates)){
-      service_ids <- intersect(gtfs_data$trips$service_id, gtfs_data$calendar_dates$service_id)
-      removed$service_ids <- c(removed$service_ids, setdiff(gtfs_data$trips$service_id, gtfs_data$calendar_dates$service_id))
+      service_ids <- intersect(gtfs_data$trips$service_id, c(gtfs_data$calendar$service_id, gtfs_data$calendar_dates$service_id))
+      removed$service_ids <- c(removed$service_ids, setdiff(gtfs_data$trips$service_id, c(gtfs_data$calendar$service_id, gtfs_data$calendar_dates$service_id)))
       
       gtfs_data$trips          <- subset(gtfs_data$trips,          service_id %chin% service_ids)
       gtfs_data$calendar_dates <- subset(gtfs_data$calendar_dates, service_id %chin% service_ids)

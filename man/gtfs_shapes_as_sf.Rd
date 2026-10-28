@@ -23,7 +23,7 @@ A simple feature (sf) object with columns \code{shape_id},
 \description{
 Convert the shapes of a GTFS data loaded using
 \code{\link{read_gtfs}} into a LINESTRING simple feature (sf) object, using
-\code{\link[gtfstools]{convert_shapes_to_sf}}, and add the length of each
+\code{\link[gtfstools]{get_shapes_geometry}}, and add the length of each
 shape in kilometres. The input data is not modified.
 }
 \examples{

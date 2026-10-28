@@ -73,9 +73,10 @@ gtfs2gps handles two kinds of objects:
   arguments are validated with `checkmate::assert_*` (already in Imports);
   enumerated options with `checkmate::assert_choice()` for a single value
   (e.g. `snap_method`), or `assert_names(subset.of =)` for several.
-- Times: `stop_times_to_seconds()` (in place; the caller copies first; strings not
-  matching `valid_gtfs_time` become `NA`) and `seconds_to_string()` in `R/utils.R`
-  (`seconds_to_string()` needs an integer; wrap doubles in `as.integer()`).
+- Times: `stop_times_to_seconds()` in `R/utils.R` (in place; the caller copies
+  first; gtfstools turns malformed strings into `NA` with a
+  `gtfstools_malformed_time` warning) and `gtfstools::convert_seconds_to_time()`
+  back to strings (non-negative whole seconds only; `NA` becomes `""`).
   GTFS times may exceed 24:00:00, but every `timestamp` returned by
   `gtfs2gps()`, `adjust_speed()` and `gps_as_sflinestring()` wraps at 86400 s;
   elapsed time is carried by `cumtime`. Keep that consistent when touching

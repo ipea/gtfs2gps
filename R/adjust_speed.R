@@ -16,7 +16,7 @@
 #' timestamp keep \code{NA} timestamps. Timestamps wrap at 24:00:00.
 #' \code{gps_data} must be ordered as \code{\link{gtfs2gps}} returns it.
 #' To cap speeds in the GTFS data before converting it, see
-#' \code{set_max_speed()} in gtfstools (>= 2.0.0).
+#' \code{\link[gtfstools]{set_max_speed}}.
 #'
 #' @param gps_data A GPS-like data.table created with \code{\link{gtfs2gps}}.
 #' @param min_speed Minimum speed to be considered as valid. It can

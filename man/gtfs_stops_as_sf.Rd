@@ -9,8 +9,9 @@ gtfs_stops_as_sf(gtfs, crs = 4326)
 \arguments{
 \item{gtfs}{A GTFS data.}
 
-\item{crs}{The coordinate reference system represented as an EPSG code.
-The default value is 4326 (latlong WGS84)}
+\item{crs}{The coordinate reference system of the output, as accepted by
+\code{\link[sf]{st_crs}}. Stops are read as WGS84 (EPSG:4326) and
+transformed to \code{crs}. The default value is 4326 (no transformation).}
 }
 \value{
 A simple feature (sf) object.

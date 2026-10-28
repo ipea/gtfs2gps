@@ -238,7 +238,12 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
 #' to parallelize the execution (or use argument plan). This function also
 #' uses progressr internally to show progress bars. See the example below on how
 #' to show a progress bar while executing this function.
-#' 
+#'
+#' Stops without times are placed along the shape at constant speed between the
+#' timed stops. \code{\link[gtfstools]{fix_gtfs}} can clean a feed before
+#' converting it (e.g. duplicated rows and unused ids), but the stop times it
+#' interpolates may give spiky or infinite speeds here.
+#'
 #' @param gtfs_data A path to a GTFS file to be converted to GPS, or a GTFS data
 #' represented as a list of data.tables.
 #' @param spatial_resolution The spatial resolution in meters. Default is 100m.
@@ -491,6 +496,9 @@ gtfs2gps <- function(gtfs_data,
   }
   
   if(is.null(filepath)){
+    # no shape converted: there is nothing to check
+    if(is.null(output) || dim(output)[1] == 0) return(NULL)
+
     if(sum(is.na(output$speed)) > 1)
       message("Some 'speed' values are NA in the returned data.")
     
@@ -502,9 +510,7 @@ gtfs2gps <- function(gtfs_data,
     
     if(length(trips_negative_speed) > 0 ){
       message(paste0("There are negative speeds reported in the GTFS for the following trip_id's: ",  paste0(trips_negative_speed, collapse=", ")))}
-    
-    if(is.null(output) || dim(output)[1] == 0) return(NULL)
-    
+
     return(output)
   }
   else

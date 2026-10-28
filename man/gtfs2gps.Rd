@@ -78,6 +78,11 @@ distance, indicated as a spatial resolution. It is possible to use future packag
 to parallelize the execution (or use argument plan). This function also
 uses progressr internally to show progress bars. See the example below on how
 to show a progress bar while executing this function.
+
+Stops without times are placed along the shape at constant speed between the
+timed stops. \code{\link[gtfstools]{fix_gtfs}} can clean a feed before
+converting it (e.g. duplicated rows and unused ids), but the stop times it
+interpolates may give spiky or infinite speeds here.
 }
 \details{
 After creating geometry points for a given shape id, the `gtfs2gps()`

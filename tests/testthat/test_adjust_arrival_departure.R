@@ -58,10 +58,12 @@ test_that("adjust_arrival_departure treats malformed times as missing", {
 
     poa$stop_times[1, `:=`(arrival_time = "abc", departure_time = "05:21")]
 
-    poa_adj <- adjust_arrival_departure(poa)
+    expect_warning(poa_adj <- adjust_arrival_departure(poa), class = "gtfstools_malformed_time")
 
     expect_equal(poa_adj$stop_times$arrival_time[1], "")
     expect_equal(poa_adj$stop_times$departure_time[1], "")
+
+    expect_error(adjust_arrival_departure(poa, min_lag = -1))
 })
 
 test_that("adjust_arrival_departure keeps times non-negative and whole seconds", {

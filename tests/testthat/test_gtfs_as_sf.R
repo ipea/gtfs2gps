@@ -64,4 +64,10 @@ test_that("gtfs_stops_as_sf", {
 
   expect_true(inherits(poa_sf, "sf"))
   expect_equal(dim(poa_sf)[1], 212)
+  expect_equal(sf::st_crs(poa_sf), sf::st_crs(4326))
+
+  # crs transforms the points instead of relabelling the degrees
+  poa_utm <- gtfs_stops_as_sf(poa, crs = 31982)
+  expect_equal(sf::st_crs(poa_utm), sf::st_crs(31982))
+  expect_equal(sf::st_coordinates(poa_utm), sf::st_coordinates(sf::st_transform(poa_sf, 31982)))
 })
