@@ -105,7 +105,7 @@
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span>filter <span class="op">=</span> <span class="st">"adjust_speed"</span><span class="op">)</span>      <span class="co"># matches tests/testthat/test_adjust_speed.R</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span>args <span class="op">=</span> <span class="st">"--as-cran"</span><span class="op">)</span>          <span class="co"># ~5 min; run in background</span></span>
 <span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">covr</span><span class="fu">::</span><span class="fu"><a href="http://covr.r-lib.org/reference/package_coverage.html" class="external-link">package_coverage</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">covr</span><span class="fu">::</span><span class="fu">package_coverage</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <ul><li>Compiled code needs a toolchain (Rtools on Windows). <code>core.autocrlf=true</code> here, so regenerated files can show line-ending-only diffs: check drift with <code>git diff</code>, not <code>git status</code>.</li>
 <li>
 <code><a href="reference/gtfs2gps.html">gtfs2gps()</a></code> defaults to <code>parallel = TRUE</code> with <code>availableCores() - 1</code> workers; for quick local checks pass <code>parallel = FALSE</code>.</li>

@@ -33,7 +33,7 @@ file name.
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpGEQshD/gtfsio:
+#> Unzipped the following files to /tmp/RtmpcQiv0z/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt

@@ -8,7 +8,10 @@ column by summing the arrival plus a pre-defined `min_lag`.
 column by subtracting a pre-defined `min_lag` from the departure.
 3. If there is an `arrival_time` and a `departure_time` but their difference
 is smaller than `min_lag`, it reduces the `arrival_time` and increases
-`departure_time` so that the difference will be exactly `min_lag`.
+`departure_time` so that the difference will be exactly `min_lag`. Odd
+differences give the extra second to the departure.
+Arrivals before 00:00:00 are set to 00:00:00 and the departure moved to
+keep `min_lag`. Times are not kept increasing across consecutive stops.
 The input GTFS data is not modified."><meta property="og:description" content="Some GTFS.zip data have issues related to arrival and departure
 time on stops. This function makes sure the GTFS has dis/embarking times at
 each stop. For each stop time row, this function applies the following steps:
@@ -18,7 +21,10 @@ column by summing the arrival plus a pre-defined `min_lag`.
 column by subtracting a pre-defined `min_lag` from the departure.
 3. If there is an `arrival_time` and a `departure_time` but their difference
 is smaller than `min_lag`, it reduces the `arrival_time` and increases
-`departure_time` so that the difference will be exactly `min_lag`.
+`departure_time` so that the difference will be exactly `min_lag`. Odd
+differences give the extra second to the departure.
+Arrivals before 00:00:00 are set to 00:00:00 and the departure moved to
+keep `min_lag`. Times are not kept increasing across consecutive stops.
 The input GTFS data is not modified."><meta property="og:image" content="https://ipea.github.io/gtfs2gps/logo.png"><meta name="robots" content="noindex"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
@@ -72,7 +78,10 @@ column by summing the arrival plus a pre-defined `min_lag`.</p>
 column by subtracting a pre-defined `min_lag` from the departure.</p>
 <p>3. If there is an `arrival_time` and a `departure_time` but their difference
 is smaller than `min_lag`, it reduces the `arrival_time` and increases
-`departure_time` so that the difference will be exactly `min_lag`.</p>
+`departure_time` so that the difference will be exactly `min_lag`. Odd
+differences give the extra second to the departure.</p>
+<p>Arrivals before 00:00:00 are set to 00:00:00 and the departure moved to
+keep `min_lag`. Times are not kept increasing across consecutive stops.</p>
 <p>The input GTFS data is not modified.</p>
     </div>
 
@@ -92,7 +101,7 @@ is smaller than `min_lag`, it reduces the `arrival_time` and increases
 <dt id="arg-min-lag">min_lag<a class="anchor" aria-label="anchor" href="#arg-min-lag"></a></dt>
 <dd><p>Numeric. Minimum waiting time when a vehicle arrives
 at a stop. It can be a numeric or a units value that can be converted
-to seconds. Default is 20s.</p></dd>
+to seconds, rounded to whole seconds. Default is 20s.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -104,7 +113,7 @@ data.table `stop_times`.</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">poa</span> <span class="op">&lt;-</span> <span class="fu"><a href="read_gtfs.html">read_gtfs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata/poa.zip"</span>, package<span class="op">=</span><span class="st">"gtfs2gps"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Unzipped the following files to /tmp/RtmpGEQshD/gtfsio:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Unzipped the following files to /tmp/RtmpcQiv0z/gtfsio:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * agency.txt</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * calendar.txt</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * routes.txt</span>

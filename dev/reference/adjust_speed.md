@@ -11,6 +11,15 @@ speeds by either setting a custom constant value, or by considering the
 average of all valid trips speed (Default). The columns \`timestamp\`
 and \`cumtime\` are updated accordingly.
 
+Each trip keeps the timestamp of its first timed point, and dwell times
+at stops are kept, so stop timestamps don't change when every speed is
+within range; segments whose speeds are replaced are re-timed. Trips
+without any timestamp keep `NA` timestamps. Timestamps wrap at 24:00:00.
+`gps_data` must be ordered as
+[`gtfs2gps`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+returns it. To cap speeds in the GTFS data before converting it, see
+`set_max_speed()` in gtfstools (\>= 2.0.0).
+
 ## Usage
 
 ``` r
@@ -55,8 +64,10 @@ adjust_speed(
 
 ## Value
 
-A GPS-like data with adjusted \`speed\` values. The columns
-\`timestamp\` and \`cumtime\` are also updated accordingly.
+A GPS-like data with adjusted `speed` values and the same columns as
+`gps_data`. The columns `timestamp` and `cumtime` are also updated
+accordingly. An error is raised if no speed is within range and
+`new_speed` is not given.
 
 ## Examples
 
@@ -65,7 +76,7 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   gtfstools::filter_by_weekday(c("monday", "wednesday")) |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/RtmpGEQshD/gtfsio:
+#> Unzipped the following files to /tmp/RtmpcQiv0z/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -85,7 +96,7 @@ poa_gps <- gtfs2gps(poa)
 #> Converting shapes to sf objects
 #> Using 3 CPU cores
 #> Processing the data
-#> Warning: UNRELIABLE VALUE: Future (<unnamed-1>) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future <unnamed-1> (0acfe8b143d2cc33640a4bfee98b78d9-1); on 0acfe8b143d2cc33640a4bfee98b78d9@runnervmwvtoz<6587>]
+#> Warning: UNRELIABLE VALUE: Future (<unnamed-1>) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future <unnamed-1> (b227855a8a286c74416936508b220fd9-1); on b227855a8a286c74416936508b220fd9@runnervmcwoy2<7057>]
 #> Some 'speed' values are NA in the returned data.
 poa_gps_new <- adjust_speed(poa_gps)
 ```

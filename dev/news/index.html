@@ -44,7 +44,11 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="gtfs2gps-development-version">gtfs2gps (development version)<a class="anchor" aria-label="anchor" href="#gtfs2gps-development-version"></a></h2>
 <ul><li>Major changes
-<ul><li>The package now requires R &gt;= 4.1.0, because it uses the native pipe <code>|&gt;</code>.</li>
+<ul><li>Fixed <code><a href="../reference/adjust_speed.html">adjust_speed()</a></code>, which shifted every trip’s timestamps (by about 3 minutes on the poa feed) even when no speed was replaced, made timestamps run backwards before the first stop and dropped dwell times. Each trip now keeps the timestamp of its first timed point and its dwell times, so stop timestamps only change where speeds are replaced. It no longer adds a <code>time</code> column, and raises an error of class <code>gtfs2gps_no_valid_speed_error</code> instead of returning all-<code>NA</code> speeds when no speed is between <code>min_speed</code> and <code>max_speed</code> and <code>new_speed</code> is not given. A <code>new_speed</code> that is not a single positive speed raises an error of class <code>gtfs2gps_invalid_speed_error</code>.</li>
+<li>Fixed <code><a href="../reference/gps_as_sflinestring.html">gps_as_sflinestring()</a></code>, which split trips only at stops with times (2 segments instead of 89 in its own example). It now returns one segment per interval between consecutive stops, keeps the timestamps when <code>gps</code> is a file, and computes <code>cumtime</code> also when <code><a href="../reference/adjust_speed.html">adjust_speed()</a></code> was not run first.</li>
+<li>
+<code><a href="../reference/gtfs2gps.html">gtfs2gps()</a></code> timestamps now wrap at midnight, as stop rows already did: a trip crossing midnight no longer mixes values past 24:00:00 with values after 00:00:00. Use <code>cumtime</code> for the elapsed time.</li>
+<li>The package now requires R &gt;= 4.1.0, because it uses the native pipe <code>|&gt;</code>.</li>
 <li>Fixed a bug in <code><a href="../reference/write_gtfs.html">write_gtfs()</a></code>, which ignored the <code>overwrite</code> argument and silently overwrote an existing file. With <code>overwrite = FALSE</code> it now raises an error of class <code>gtfs2gps_file_exists_error</code> if <code>zipfile</code> already exists.</li>
 <li>Fixed a bug in <code>gtfs2gps(continue = TRUE)</code> with <code>compress = TRUE</code>: it looked for <code>.rda</code> files while saving <code>.rds</code>, so shapes already saved were converted and written again instead of being skipped.</li>
 <li>
@@ -55,7 +59,9 @@
 </ul></li>
 </ul></li>
 <li>Minor changes
-<ul><li>Compared with v2.1-4, <code><a href="../reference/gtfs2gps.html">gtfs2gps()</a></code> is at least 3× faster on the poa feed and, on the São Paulo feed, at least 7× faster with about 80% lower peak memory (sequential runs).</li>
+<ul><li>
+<code><a href="../reference/adjust_arrival_departure.html">adjust_arrival_departure()</a></code> no longer writes negative times near 00:00:00 (e.g. <code>"-1:59:50"</code>): such arrivals are set to 00:00:00 and the departure moved to keep <code>min_lag</code>, so a first stop with arrival and departure both at 00:00:00 (as in frequency-based feeds) now departs <code>min_lag</code> after midnight (it was <code>min_lag / 2</code>). Odd differences are split in whole seconds without truncation warnings, and <code>min_lag</code> is rounded to whole seconds.</li>
+<li>Compared with v2.1-4, <code><a href="../reference/gtfs2gps.html">gtfs2gps()</a></code> is at least 3× faster on the poa feed and, on the São Paulo feed, at least 7× faster with about 80% lower peak memory (sequential runs).</li>
 <li>
 <code><a href="../reference/gtfs2gps.html">gtfs2gps()</a></code> is faster: speeds and timestamps between stops are now interpolated on plain vectors instead of per-segment data.table sub-assignments. Output is unchanged.</li>
 <li>

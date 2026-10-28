@@ -32,7 +32,7 @@ according to their file names without extension.
 library("gtfs2gps")
 #> gtfs2gps version 2.1-4.9000 is now loaded
 poa <- read_gtfs(system.file("extdata/poa.zip", package ="gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpmfEYJs/gtfsio:
+#> Unzipped the following files to /tmp/RtmpCBUm2C/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -130,16 +130,16 @@ poa_gps <- gtfs2gps(temp_gtfs, spatial_resolution = 100)
 #> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
 #> random numbers are produced. To disable this check, use 'seed=NULL', or set
 #> option 'future.rng.onMisuse' to "ignore". [future <unnamed-1>
-#> (d923d4797e7effdfb07105872e3c44b9-1); on
-#> d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz<7669>]
+#> (165afd343cc775138321b8e9c4923142-1); on
+#> 165afd343cc775138321b8e9c4923142@runnervmcwoy2<8131>]
 #> Warning: UNRELIABLE VALUE: Future (<unnamed-2>) unexpectedly generated random
 #> numbers without specifying argument 'seed'. There is a risk that those random
 #> numbers are not statistically sound and the overall results might be invalid.
 #> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
 #> random numbers are produced. To disable this check, use 'seed=NULL', or set
 #> option 'future.rng.onMisuse' to "ignore". [future <unnamed-2>
-#> (d923d4797e7effdfb07105872e3c44b9-2); on
-#> d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz<7669>]
+#> (165afd343cc775138321b8e9c4923142-2); on
+#> 165afd343cc775138321b8e9c4923142@runnervmcwoy2<8131>]
 head(poa_gps)
 #>    shape_id     trip_id route_type    id timestamp shape_pt_lon shape_pt_lat
 #>      <char>      <char>      <int> <int>   <ITime>        <num>        <num>
@@ -207,24 +207,24 @@ poa_gps <- gtfs2gps(poa, spatial_resolution = 50)
 #> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
 #> random numbers are produced. To disable this check, use 'seed=NULL', or set
 #> option 'future.rng.onMisuse' to "ignore". [future <unnamed-3>
-#> (d923d4797e7effdfb07105872e3c44b9-3); on
-#> d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz<7669>]
+#> (165afd343cc775138321b8e9c4923142-3); on
+#> 165afd343cc775138321b8e9c4923142@runnervmcwoy2<8131>]
 #> Warning: UNRELIABLE VALUE: Future (<unnamed-4>) unexpectedly generated random
 #> numbers without specifying argument 'seed'. There is a risk that those random
 #> numbers are not statistically sound and the overall results might be invalid.
 #> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
 #> random numbers are produced. To disable this check, use 'seed=NULL', or set
 #> option 'future.rng.onMisuse' to "ignore". [future <unnamed-4>
-#> (d923d4797e7effdfb07105872e3c44b9-4); on
-#> d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz<7669>]
+#> (165afd343cc775138321b8e9c4923142-4); on
+#> 165afd343cc775138321b8e9c4923142@runnervmcwoy2<8131>]
 #> Warning: UNRELIABLE VALUE: Future (<unnamed-5>) unexpectedly generated random
 #> numbers without specifying argument 'seed'. There is a risk that those random
 #> numbers are not statistically sound and the overall results might be invalid.
 #> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
 #> random numbers are produced. To disable this check, use 'seed=NULL', or set
 #> option 'future.rng.onMisuse' to "ignore". [future <unnamed-5>
-#> (d923d4797e7effdfb07105872e3c44b9-5); on
-#> d923d4797e7effdfb07105872e3c44b9@runnervmwvtoz<7669>]
+#> (165afd343cc775138321b8e9c4923142-5); on
+#> 165afd343cc775138321b8e9c4923142@runnervmcwoy2<8131>]
 
 poa_gps_sflinestrig <- gps_as_sfpoints(poa_gps)
 
