@@ -11,7 +11,7 @@ adjust_arrival_departure(gtfs_data, min_lag = 20)
 
 \item{min_lag}{Numeric. Minimum waiting time when a vehicle arrives 
 at a stop. It can be a numeric or a units value that can be converted
-to seconds. Default is 20s.}
+to seconds, rounded to whole seconds. Default is 20s.}
 }
 \value{
 A GTFS with adjusted `arrival_time` and `departure_time` on
@@ -30,7 +30,11 @@ column by subtracting a pre-defined `min_lag` from the departure.
 
 3. If there is an `arrival_time` and a `departure_time` but their difference
 is smaller than `min_lag`, it reduces the `arrival_time` and increases
-`departure_time` so that the difference will be exactly `min_lag`.
+`departure_time` so that the difference will be exactly `min_lag`. Odd
+differences give the extra second to the departure.
+
+Arrivals before 00:00:00 are set to 00:00:00 and the departure moved to
+keep `min_lag`. Times are not kept increasing across consecutive stops.
 
 The input GTFS data is not modified.
 }

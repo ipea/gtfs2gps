@@ -64,6 +64,23 @@ test_that("adjust_arrival_departure treats malformed times as missing", {
     expect_equal(poa_adj$stop_times$departure_time[1], "")
 })
 
+test_that("adjust_arrival_departure keeps times non-negative and whole seconds", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps"))
+
+    poa$stop_times[1:4, `:=`(arrival_time = c("00:00:05", NA, NA, "05:20:00"),
+                             departure_time = c("00:00:05", "00:00:10", "00:00:00", "05:20:05"))]
+
+    expect_warning(poa_adj <- adjust_arrival_departure(poa), NA)
+
+    expect_equal(poa_adj$stop_times$arrival_time[1:4],
+                 c("00:00:00", "00:00:00", "00:00:00", "05:19:53"))
+    expect_equal(poa_adj$stop_times$departure_time[1:4],
+                 c("00:00:20", "00:00:20", "00:00:20", "05:20:13"))
+
+    # min_lag is rounded to whole seconds
+    expect_identical(adjust_arrival_departure(poa, min_lag = 20.4), poa_adj)
+})
+
 test_that("adjust_arrival_departure accepts a plain list and returns a dt_gtfs", {
     poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps"))
 

@@ -10,6 +10,14 @@
 #' custom constant value, or by considering the average of all valid trips speed
 #' (Default). The columns `timestamp` and `cumtime` are updated accordingly.
 #'
+#' Each trip keeps the timestamp of its first timed point, and dwell times at
+#' stops are kept, so stop timestamps don't change when every speed is within
+#' range; segments whose speeds are replaced are re-timed. Trips without any
+#' timestamp keep \code{NA} timestamps. Timestamps wrap at 24:00:00.
+#' \code{gps_data} must be ordered as \code{\link{gtfs2gps}} returns it.
+#' To cap speeds in the GTFS data before converting it, see
+#' \code{set_max_speed()} in gtfstools (>= 2.0.0).
+#'
 #' @param gps_data A GPS-like data.table created with \code{\link{gtfs2gps}}.
 #' @param min_speed Minimum speed to be considered as valid. It can
 #' be a numeric (in km/h) or a units value able to be converted to km/h. Values 
@@ -23,8 +31,10 @@
 #' By default, `new_speed = NULL` and the
 #' function considers the average speed of the entire gps data.
 #' @param clone Use a copy of the gps_data? Defaults to TRUE.
-#' @return A GPS-like data with adjusted `speed` values. The columns
-#' `timestamp` and `cumtime` are also updated accordingly.
+#' @return A GPS-like data with adjusted \code{speed} values and the same
+#' columns as \code{gps_data}. The columns \code{timestamp} and \code{cumtime}
+#' are also updated accordingly. An error is raised if no speed is within range
+#' and \code{new_speed} is not given.
 #' @export
 #' @examples
 #' poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>
@@ -45,80 +55,59 @@ adjust_speed <- function(gps_data, min_speed = 2, max_speed = 80, new_speed = NU
     units::set_units("m/s") |>
     units::drop_units()
   
-  gps_data[, speed := units::drop_units(units::set_units(speed, "m/s"))]
-  gps_data[speed == "Inf" | is.na(speed) | is.nan(speed), speed := NA]
-  gps_data[,stopped_bus := data.table::fifelse(!is.na(stop_sequence) 
-                                               & round(as.numeric(dist)) == 0
-                                               & !is.na(speed),
-                                               TRUE,
-                                               FALSE)]
-  gps_data[!stopped_bus & 
-             !data.table::between(x = speed
-                                  , lower = min_speed
-                                  , upper = max_speed), speed := NA]
-  
-  if(is.null(new_speed))
-    new_speed <- weighted.mean(x = gps_data[stopped_bus == FALSE,speed]
-                               ,w = gps_data[stopped_bus == FALSE,as.numeric(dist)]
+  checkmate::assert_names(names(gps_data), must.include = c("shape_id", "trip_id", "trip_number"
+                                                            , "stop_sequence", "timestamp", "speed"
+                                                            , "dist", "cumdist", "cumtime"))
+
+  # work on vectors first, so that an error leaves gps_data untouched (clone = FALSE)
+  spd <- units::drop_units(units::set_units(gps_data$speed, "m/s"))
+  spd[!is.finite(spd)] <- NA
+  stopped <- !is.na(gps_data$stop_sequence) & round(as.numeric(gps_data$dist)) == 0 & !is.na(spd)
+  spd[which(!stopped & !data.table::between(spd, min_speed, max_speed))] <- NA
+
+  if(is.null(new_speed)){
+    new_speed <- stats::weighted.mean(x = spd[!stopped]
+                               ,w = as.numeric(gps_data$dist)[!stopped]
                                ,na.rm=TRUE)
-  else
+    if(!is.finite(new_speed))
+      cli::cli_abort(c("No speed between {.arg min_speed} and {.arg max_speed} to average.",
+                       "i" = "Supply {.arg new_speed} or widen the range."),
+                     class = "gtfs2gps_no_valid_speed_error")
+  } else {
     new_speed <- units::set_units(new_speed, "km/h") |>
-    units::set_units("m/s") |>
-    units::drop_units()
-  
+      units::set_units("m/s") |>
+      units::drop_units()
+    if(length(new_speed) != 1 || !is.finite(new_speed) || new_speed <= 0)
+      cli::cli_abort("{.arg new_speed} must be a single positive speed.",
+                     class = "gtfs2gps_invalid_speed_error")
+  }
+
+  data.table::set(gps_data, j = c("speed", "stopped_bus"), value = list(spd, stopped))
+
   gps_data[, dist := units::drop_units(dist)]
   gps_data[, cumdist := units::drop_units(cumdist)]
   gps_data[, cumtime := units::drop_units(cumtime)]
   
   gps_data[is.na(speed) & stopped_bus == FALSE, speed := new_speed]
   
-  gps_data[, time := dist / speed]
+  gps_data[, time := data.table::fifelse(stopped_bus,
+                                         data.table::fcoalesce((as.numeric(timestamp) - data.table::shift(as.numeric(timestamp))) %% 86400, 0),
+                                         dist / speed), by = .(shape_id, trip_id, trip_number)]
   gps_data[, cumtime := cumsum(time), by = .(shape_id, trip_id, trip_number)]
   
-  gps_data <- lapply(unique(gps_data$shape_id), function(i){
-    tmp_gps_data <- gps_data[shape_id == i, ]
-    
-    if(nrow(tmp_gps_data[!is.na(timestamp)]) < 2){
-      message(paste0("timestamp column of shape_id ", i, " was not adjusted as there are less than two timestamp's."))
-      return(tmp_gps_data)
-    }
-    
-    id_first <- which(!is.na(tmp_gps_data$timestamp))[1]
-    
-    if(length(id_first) == 0){
-      message(paste0("timestamp column of shape_id ", i, " was not adjusted as there is no valid timestamp's."))
-      return(tmp_gps_data)
-    }
-    else if(id_first == 1){
-      tmp_gps_data[, 
-                   timestamp := round(timestamp[1] + cumtime),
-                   by = .(trip_id, trip_number)]
-    }else{
-      # before the first valid observation
-      tmp_gps_data[1:id_first,
-                   timestamp := round(timestamp[id_first] - cumtime),
-                   by = .(trip_id, trip_number)]
-      
-      # after the first valid observation
-      tmp_gps_data[id_first:.N,
-                   timestamp := round(timestamp[id_first] + cumtime),
-                   by = .(trip_id, trip_number)]
-    }
-    
-    # midnight trips fix
-    tmp_gps_data[as.numeric(timestamp) > 86400, timestamp := timestamp - 86400]
-    
-    return(tmp_gps_data)
-  }) |> data.table::rbindlist()
+  # anchor each trip on its own first valid timestamp
+  gps_data[, timestamp := {
+    k <- which(!is.na(timestamp))[1]
+    if(is.na(k)) timestamp
+    else data.table::as.ITime(round(as.numeric(timestamp[k]) + cumtime - cumtime[k]) %% 86400)
+  }, by = .(shape_id, trip_id, trip_number)]
   
   gps_data[, speed := units::set_units(units::set_units(speed, "m/s"), "km/h")]
   gps_data[, dist := units::set_units(dist, "m")]
   gps_data[, cumdist := units::set_units(cumdist, "m")]
-  gps_data[, time := units::set_units(time, "s")]
   gps_data[, cumtime := units::set_units(cumtime, "s")]
   
-  gps_data[, timestamp := data.table::as.ITime(timestamp)]
-  gps_data[,stopped_bus := NULL]
+  gps_data[, c("stopped_bus", "time") := NULL]
   
   return(gps_data)
 }

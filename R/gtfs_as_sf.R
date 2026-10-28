@@ -29,6 +29,11 @@ gtfs_shapes_as_sf <- function(gtfs, crs = 4326){
 
   gtfs <- gtfstools::as_dt_gtfs(gtfs)
 
+  # as_dt_gtfs() returns a dt_gtfs unchanged, and gtfstools >= 2.0.0 expects
+  # shapes to be a data.table. this copies shapes, not the caller's object
+  if(!data.table::is.data.table(gtfs$shapes))
+    gtfs$shapes <- data.table::as.data.table(gtfs$shapes)
+
   shapes_sf <- gtfstools::convert_shapes_to_sf(gtfs, crs = crs, sort_sequence = TRUE)
 
   # length of each shape

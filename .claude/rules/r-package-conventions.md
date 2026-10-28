@@ -76,8 +76,10 @@ gtfs2gps handles two kinds of objects:
 - Times: `stop_times_to_seconds()` (in place; the caller copies first; strings not
   matching `valid_gtfs_time` become `NA`) and `seconds_to_string()` in `R/utils.R`
   (`seconds_to_string()` needs an integer; wrap doubles in `as.integer()`).
-  GTFS times may exceed 24:00:00; `adjust_speed()` wraps timestamps past
-  86400 s. Keep that behaviour consistent when touching time code.
+  GTFS times may exceed 24:00:00, but every `timestamp` returned by
+  `gtfs2gps()`, `adjust_speed()` and `gps_as_sflinestring()` wraps at 86400 s;
+  elapsed time is carried by `cumtime`. Keep that consistent when touching
+  time code.
 
 ## A3. data.table, Rcpp and parallelism
 

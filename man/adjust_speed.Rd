@@ -32,8 +32,10 @@ function considers the average speed of the entire gps data.}
 \item{clone}{Use a copy of the gps_data? Defaults to TRUE.}
 }
 \value{
-A GPS-like data with adjusted `speed` values. The columns
-`timestamp` and `cumtime` are also updated accordingly.
+A GPS-like data with adjusted \code{speed} values and the same
+columns as \code{gps_data}. The columns \code{timestamp} and \code{cumtime}
+are also updated accordingly. An error is raised if no speed is within range
+and \code{new_speed} is not given.
 }
 \description{
 Some GTFS.zip data sets might have quality issues, for example 
@@ -45,6 +47,14 @@ user to adjust the speed of trips and updates `timestamp` values
 accordingly. The user can adjust the problematic speeds by either setting a
 custom constant value, or by considering the average of all valid trips speed
 (Default). The columns `timestamp` and `cumtime` are updated accordingly.
+
+Each trip keeps the timestamp of its first timed point, and dwell times at
+stops are kept, so stop timestamps don't change when every speed is within
+range; segments whose speeds are replaced are re-timed. Trips without any
+timestamp keep \code{NA} timestamps. Timestamps wrap at 24:00:00.
+\code{gps_data} must be ordered as \code{\link{gtfs2gps}} returns it.
+To cap speeds in the GTFS data before converting it, see
+\code{set_max_speed()} in gtfstools (>= 2.0.0).
 }
 \examples{
 poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>

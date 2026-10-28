@@ -3,6 +3,9 @@
 # gtfs2gps (development version)
 
 * Major changes
+  * Fixed `adjust_speed()`, which shifted every trip's timestamps (by about 3 minutes on the poa feed) even when no speed was replaced, made timestamps run backwards before the first stop and dropped dwell times. Each trip now keeps the timestamp of its first timed point and its dwell times, so stop timestamps only change where speeds are replaced. It no longer adds a `time` column, and raises an error of class `gtfs2gps_no_valid_speed_error` instead of returning all-`NA` speeds when no speed is between `min_speed` and `max_speed` and `new_speed` is not given. A `new_speed` that is not a single positive speed raises an error of class `gtfs2gps_invalid_speed_error`.
+  * Fixed `gps_as_sflinestring()`, which split trips only at stops with times (2 segments instead of 89 in its own example). It now returns one segment per interval between consecutive stops, keeps the timestamps when `gps` is a file, and computes `cumtime` also when `adjust_speed()` was not run first.
+  * `gtfs2gps()` timestamps now wrap at midnight, as stop rows already did: a trip crossing midnight no longer mixes values past 24:00:00 with values after 00:00:00. Use `cumtime` for the elapsed time.
   * The package now requires R >= 4.1.0, because it uses the native pipe `|>`.
   * Fixed a bug in `write_gtfs()`, which ignored the `overwrite` argument and silently overwrote an existing file. With `overwrite = FALSE` it now raises an error of class `gtfs2gps_file_exists_error` if `zipfile` already exists.
   * Fixed a bug in `gtfs2gps(continue = TRUE)` with `compress = TRUE`: it looked for `.rda` files while saving `.rds`, so shapes already saved were converted and written again instead of being skipped.
@@ -12,6 +15,7 @@
     * Trips with a different stop pattern from the shape's longest trip had their times attached to the wrong stops, and could gain stops they do not serve. Stops are now snapped separately for each distinct stop pattern on a shape.
 
 * Minor changes
+  * `adjust_arrival_departure()` no longer writes negative times near 00:00:00 (e.g. `"-1:59:50"`): such arrivals are set to 00:00:00 and the departure moved to keep `min_lag`, so a first stop with arrival and departure both at 00:00:00 (as in frequency-based feeds) now departs `min_lag` after midnight (it was `min_lag / 2`). Odd differences are split in whole seconds without truncation warnings, and `min_lag` is rounded to whole seconds.
   * Compared with v2.1-4, `gtfs2gps()` is at least 3× faster on the poa feed and, on the São Paulo feed, at least 7× faster with about 80% lower peak memory (sequential runs).
   * `gtfs2gps()` is faster: speeds and timestamps between stops are now interpolated on plain vectors instead of per-segment data.table sub-assignments. Output is unchanged.
   * `gtfs2gps(parallel = TRUE)` no longer copies the whole feed to every worker: each worker receives only the trips, stop times, stops and geometry of the shapes it converts. This removes the "total size of the globals exported ... exceeds the maximum allowed size" failure on large feeds (#277) and lowers memory use. Shapes are also no longer looked up by scanning the full `trips` and `stop_times` tables, which makes the sequential path somewhat faster too. Output is unchanged.
