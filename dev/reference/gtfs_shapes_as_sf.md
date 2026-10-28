@@ -3,7 +3,7 @@
 Convert the shapes of a GTFS data loaded using
 [`read_gtfs`](https://ipea.github.io/gtfs2gps/dev/reference/read_gtfs.md)
 into a LINESTRING simple feature (sf) object, using
-[`convert_shapes_to_sf`](https://rdrr.io/pkg/gtfstools/man/convert_shapes_to_sf.html),
+[`get_shapes_geometry`](https://ipea.github.io/gtfstools/reference/get_shapes_geometry.html),
 and add the length of each shape in kilometres. The input data is not
 modified.
 
@@ -40,7 +40,7 @@ A simple feature (sf) object with columns `shape_id`, `geometry` and
 
 ``` r
 poa <- read_gtfs(system.file("extdata/saopaulo.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpcQiv0z/gtfsio:
+#> Unzipped the following files to /tmp/RtmpAlS3ps/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * frequencies.txt

@@ -42,7 +42,7 @@ A subset of the input GTFS data.
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpcQiv0z/gtfsio:
+#> Unzipped the following files to /tmp/RtmpAlS3ps/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -58,8 +58,8 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
 #> Reading stops
 #> Reading trips
 object.size(poa)
-#> 1173232 bytes
+#> 1174616 bytes
 subset <- remove_invalid(poa)
 object.size(subset)
-#> 1173232 bytes
+#> 1174616 bytes
 ```

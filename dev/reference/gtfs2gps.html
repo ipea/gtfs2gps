@@ -5,13 +5,21 @@ guarantee that two points in a same trip will have at most a given
 distance, indicated as a spatial resolution. It is possible to use future package
 to parallelize the execution (or use argument plan). This function also
 uses progressr internally to show progress bars. See the example below on how
-to show a progress bar while executing this function."><meta property="og:description" content="Convert GTFS data to GPS format by sampling points using a given
+to show a progress bar while executing this function.
+Stops without times are placed along the shape at constant speed between the
+timed stops. fix_gtfs can clean a feed before
+converting it (e.g. duplicated rows and unused ids), but the stop times it
+interpolates may give spiky or infinite speeds here."><meta property="og:description" content="Convert GTFS data to GPS format by sampling points using a given
 spatial resolution. This function creates additional points in order to
 guarantee that two points in a same trip will have at most a given
 distance, indicated as a spatial resolution. It is possible to use future package
 to parallelize the execution (or use argument plan). This function also
 uses progressr internally to show progress bars. See the example below on how
-to show a progress bar while executing this function."><meta property="og:image" content="https://ipea.github.io/gtfs2gps/logo.png"><meta name="robots" content="noindex"></head><body>
+to show a progress bar while executing this function.
+Stops without times are placed along the shape at constant speed between the
+timed stops. fix_gtfs can clean a feed before
+converting it (e.g. duplicated rows and unused ids), but the stop times it
+interpolates may give spiky or infinite speeds here."><meta property="og:image" content="https://ipea.github.io/gtfs2gps/logo.png"><meta name="robots" content="noindex"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -62,6 +70,10 @@ distance, indicated as a spatial resolution. It is possible to use future packag
 to parallelize the execution (or use argument plan). This function also
 uses progressr internally to show progress bars. See the example below on how
 to show a progress bar while executing this function.</p>
+<p>Stops without times are placed along the shape at constant speed between the
+timed stops. <code><a href="https://ipea.github.io/gtfstools/reference/fix_gtfs.html" class="external-link">fix_gtfs</a></code> can clean a feed before
+converting it (e.g. duplicated rows and unused ids), but the stop times it
+interpolates may give spiky or infinite speeds here.</p>
     </div>
 
     <div class="section level2">
@@ -198,9 +210,9 @@ vehicle will spend at stops to embark/disembark passengers.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ipea/gtfs2gps" class="external-link">gtfs2gps</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">gtfs</span> <span class="op">&lt;-</span> <span class="fu"><a href="read_gtfs.html">read_gtfs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata/poa.zip"</span>, package <span class="op">=</span> <span class="st">"gtfs2gps"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
-<span class="r-in"><span>  <span class="fu">gtfstools</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/gtfstools/man/filter_by_shape_id.html" class="external-link">filter_by_shape_id</a></span><span class="op">(</span><span class="st">"T2-1"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu">gtfstools</span><span class="fu">::</span><span class="fu"><a href="https://ipea.github.io/gtfstools/reference/filter_by_shape_id.html" class="external-link">filter_by_shape_id</a></span><span class="op">(</span><span class="st">"T2-1"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="filter_single_trip.html">filter_single_trip</a></span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Unzipped the following files to /tmp/RtmpcQiv0z/gtfsio:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Unzipped the following files to /tmp/RtmpAlS3ps/gtfsio:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * agency.txt</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * calendar.txt</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * routes.txt</span>
@@ -217,7 +229,7 @@ vehicle will spend at stops to embark/disembark passengers.</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Reading trips</span>
 <span class="r-in"><span>  </span></span>
 <span class="r-in"><span><span class="va">poa_gps</span> <span class="op">&lt;-</span> <span class="fu">progressr</span><span class="fu">::</span><span class="fu"><a href="https://progressr.futureverse.org/reference/with_progress.html" class="external-link">with_progress</a></span><span class="op">(</span><span class="fu">gtfs2gps</span><span class="op">(</span><span class="va">gtfs</span>, quiet<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>UNRELIABLE VALUE: Future (&lt;unnamed-5&gt;) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-5&gt; (b227855a8a286c74416936508b220fd9-5); on b227855a8a286c74416936508b220fd9@runnervmcwoy2&lt;7057&gt;]</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>UNRELIABLE VALUE: Future (&lt;unnamed-5&gt;) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-5&gt; (3a8976944027d6a7ca7329284f57033f-5); on 3a8976944027d6a7ca7329284f57033f@runnervmwhx2h&lt;7094&gt;]</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

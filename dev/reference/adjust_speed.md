@@ -18,7 +18,7 @@ without any timestamp keep `NA` timestamps. Timestamps wrap at 24:00:00.
 `gps_data` must be ordered as
 [`gtfs2gps`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
 returns it. To cap speeds in the GTFS data before converting it, see
-`set_max_speed()` in gtfstools (\>= 2.0.0).
+[`set_max_speed`](https://ipea.github.io/gtfstools/reference/set_max_speed.html).
 
 ## Usage
 
@@ -76,7 +76,7 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   gtfstools::filter_by_weekday(c("monday", "wednesday")) |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/RtmpcQiv0z/gtfsio:
+#> Unzipped the following files to /tmp/RtmpAlS3ps/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -96,7 +96,7 @@ poa_gps <- gtfs2gps(poa)
 #> Converting shapes to sf objects
 #> Using 3 CPU cores
 #> Processing the data
-#> Warning: UNRELIABLE VALUE: Future (<unnamed-1>) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future <unnamed-1> (b227855a8a286c74416936508b220fd9-1); on b227855a8a286c74416936508b220fd9@runnervmcwoy2<7057>]
+#> Warning: UNRELIABLE VALUE: Future (<unnamed-1>) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future <unnamed-1> (3a8976944027d6a7ca7329284f57033f-1); on 3a8976944027d6a7ca7329284f57033f@runnervmwhx2h<7094>]
 #> Some 'speed' values are NA in the returned data.
 poa_gps_new <- adjust_speed(poa_gps)
 ```

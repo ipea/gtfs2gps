@@ -17,8 +17,10 @@ gtfs_stops_as_sf(gtfs, crs = 4326)
 
 - crs:
 
-  The coordinate reference system represented as an EPSG code. The
-  default value is 4326 (latlong WGS84)
+  The coordinate reference system of the output, as accepted by
+  [`st_crs`](https://r-spatial.github.io/sf/reference/st_crs.html).
+  Stops are read as WGS84 (EPSG:4326) and transformed to `crs`. The
+  default value is 4326 (no transformation).
 
 ## Value
 
@@ -28,7 +30,7 @@ A simple feature (sf) object.
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpcQiv0z/gtfsio:
+#> Unzipped the following files to /tmp/RtmpAlS3ps/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt

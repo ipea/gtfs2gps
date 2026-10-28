@@ -4,8 +4,9 @@ Read files of a zipped GTFS feed and load them to memory as a list of
 data.tables. It will load the following files: "shapes.txt",
 "stop_times.txt", "stops.txt", "trips.txt", "agency.txt",
 "calendar.txt", "routes.txt", and "frequencies.txt", with this last four
-being optional. If one of the mandatory files does not exit, this
-function will stop with an error message.
+being optional. If one of the mandatory files is missing or empty, this
+function raises an error of class `gtfs2gps_empty_file_error`. An empty
+"frequencies.txt" is dropped.
 
 ## Usage
 
@@ -33,7 +34,7 @@ file name.
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpcQiv0z/gtfsio:
+#> Unzipped the following files to /tmp/RtmpAlS3ps/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt

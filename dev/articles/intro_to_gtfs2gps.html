@@ -110,7 +110,7 @@ names without extension.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/ipea/gtfs2gps" class="external-link">"gtfs2gps"</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; gtfs2gps version 2.1-4.9000 is now loaded</span></span>
 <span><span class="va">poa</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_gtfs.html">read_gtfs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata/poa.zip"</span>, package <span class="op">=</span><span class="st">"gtfs2gps"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Unzipped the following files to /tmp/RtmpCBUm2C/gtfsio:</span></span>
+<span><span class="co">#&gt; Unzipped the following files to /tmp/Rtmpyh9HZR/gtfsio:</span></span>
 <span><span class="co">#&gt;   * agency.txt</span></span>
 <span><span class="co">#&gt;   * calendar.txt</span></span>
 <span><span class="co">#&gt;   * routes.txt</span></span>
@@ -148,10 +148,10 @@ zipped file does not contain all of these required files then
 to allow faster execution the next scripts.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">object.size</a></span><span class="op">(</span><span class="va">poa</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span>units <span class="op">=</span> <span class="st">"Kb"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "1145.7 Kb"</span></span>
-<span><span class="va">poa_small</span> <span class="op">&lt;-</span> <span class="fu">gtfstools</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/gtfstools/man/filter_by_shape_id.html" class="external-link">filter_by_shape_id</a></span><span class="op">(</span><span class="va">poa</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"T2-1"</span>, <span class="st">"A141-1"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "1147.1 Kb"</span></span>
+<span><span class="va">poa_small</span> <span class="op">&lt;-</span> <span class="fu">gtfstools</span><span class="fu">::</span><span class="fu"><a href="https://ipea.github.io/gtfstools/reference/filter_by_shape_id.html" class="external-link">filter_by_shape_id</a></span><span class="op">(</span><span class="va">poa</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"T2-1"</span>, <span class="st">"A141-1"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">object.size</a></span><span class="op">(</span><span class="va">poa_small</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span>units <span class="op">=</span> <span class="st">"Kb"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "559.5 Kb"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "560.8 Kb"</span></span></code></pre></div>
 <p>We can then easily convert the data to simple feature format and plot
 them.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
@@ -189,16 +189,16 @@ by default, but the user can set a different value in the
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-1&gt;</span></span>
-<span><span class="co">#&gt; (165afd343cc775138321b8e9c4923142-1); on</span></span>
-<span><span class="co">#&gt; 165afd343cc775138321b8e9c4923142@runnervmcwoy2&lt;8131&gt;]</span></span>
+<span><span class="co">#&gt; (125346e83ee1d55d5614dec53e41ba3c-1); on</span></span>
+<span><span class="co">#&gt; 125346e83ee1d55d5614dec53e41ba3c@runnervmwhx2h&lt;8180&gt;]</span></span>
 <span><span class="co">#&gt; Warning: UNRELIABLE VALUE: Future (&lt;unnamed-2&gt;) unexpectedly generated random</span></span>
 <span><span class="co">#&gt; numbers without specifying argument 'seed'. There is a risk that those random</span></span>
 <span><span class="co">#&gt; numbers are not statistically sound and the overall results might be invalid.</span></span>
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-2&gt;</span></span>
-<span><span class="co">#&gt; (165afd343cc775138321b8e9c4923142-2); on</span></span>
-<span><span class="co">#&gt; 165afd343cc775138321b8e9c4923142@runnervmcwoy2&lt;8131&gt;]</span></span>
+<span><span class="co">#&gt; (125346e83ee1d55d5614dec53e41ba3c-2); on</span></span>
+<span><span class="co">#&gt; 125346e83ee1d55d5614dec53e41ba3c@runnervmwhx2h&lt;8180&gt;]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">poa_gps</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    shape_id     trip_id route_type    id timestamp shape_pt_lon shape_pt_lat</span></span>
 <span><span class="co">#&gt;      &lt;char&gt;      &lt;char&gt;      &lt;int&gt; &lt;int&gt;   &lt;ITime&gt;        &lt;num&gt;        &lt;num&gt;</span></span>
@@ -255,24 +255,24 @@ GTFS with detailed <code>stop_times.txt</code> cab be found below:</p>
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-3&gt;</span></span>
-<span><span class="co">#&gt; (165afd343cc775138321b8e9c4923142-3); on</span></span>
-<span><span class="co">#&gt; 165afd343cc775138321b8e9c4923142@runnervmcwoy2&lt;8131&gt;]</span></span>
+<span><span class="co">#&gt; (125346e83ee1d55d5614dec53e41ba3c-3); on</span></span>
+<span><span class="co">#&gt; 125346e83ee1d55d5614dec53e41ba3c@runnervmwhx2h&lt;8180&gt;]</span></span>
 <span><span class="co">#&gt; Warning: UNRELIABLE VALUE: Future (&lt;unnamed-4&gt;) unexpectedly generated random</span></span>
 <span><span class="co">#&gt; numbers without specifying argument 'seed'. There is a risk that those random</span></span>
 <span><span class="co">#&gt; numbers are not statistically sound and the overall results might be invalid.</span></span>
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-4&gt;</span></span>
-<span><span class="co">#&gt; (165afd343cc775138321b8e9c4923142-4); on</span></span>
-<span><span class="co">#&gt; 165afd343cc775138321b8e9c4923142@runnervmcwoy2&lt;8131&gt;]</span></span>
+<span><span class="co">#&gt; (125346e83ee1d55d5614dec53e41ba3c-4); on</span></span>
+<span><span class="co">#&gt; 125346e83ee1d55d5614dec53e41ba3c@runnervmwhx2h&lt;8180&gt;]</span></span>
 <span><span class="co">#&gt; Warning: UNRELIABLE VALUE: Future (&lt;unnamed-5&gt;) unexpectedly generated random</span></span>
 <span><span class="co">#&gt; numbers without specifying argument 'seed'. There is a risk that those random</span></span>
 <span><span class="co">#&gt; numbers are not statistically sound and the overall results might be invalid.</span></span>
 <span><span class="co">#&gt; To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe</span></span>
 <span><span class="co">#&gt; random numbers are produced. To disable this check, use 'seed=NULL', or set</span></span>
 <span><span class="co">#&gt; option 'future.rng.onMisuse' to "ignore". [future &lt;unnamed-5&gt;</span></span>
-<span><span class="co">#&gt; (165afd343cc775138321b8e9c4923142-5); on</span></span>
-<span><span class="co">#&gt; 165afd343cc775138321b8e9c4923142@runnervmcwoy2&lt;8131&gt;]</span></span>
+<span><span class="co">#&gt; (125346e83ee1d55d5614dec53e41ba3c-5); on</span></span>
+<span><span class="co">#&gt; 125346e83ee1d55d5614dec53e41ba3c@runnervmwhx2h&lt;8180&gt;]</span></span>
 <span></span>
 <span><span class="va">poa_gps_sflinestrig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gps_as_sfpoints.html">gps_as_sfpoints</a></span><span class="op">(</span><span class="va">poa_gps</span><span class="op">)</span></span>
 <span></span>

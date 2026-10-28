@@ -2,9 +2,9 @@
 
 Write GTFS stored in memory as a list of data.tables into a zipped GTFS
 feed, using
-[`write_gtfs`](https://rdrr.io/pkg/gtfstools/man/write_gtfs.html). By
-default an existing zip file is overwritten; set `overwrite = FALSE` to
-raise an error instead.
+[`write_gtfs`](https://ipea.github.io/gtfstools/reference/write_gtfs.html).
+By default an existing zip file is overwritten; set `overwrite = FALSE`
+to raise an error instead.
 
 ## Usage
 
@@ -44,7 +44,7 @@ The GTFS data, invisibly.
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/RtmpcQiv0z/gtfsio:
+#> Unzipped the following files to /tmp/RtmpAlS3ps/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -62,7 +62,7 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps")) |>
 
 # write GTFS data into a zip file
 write_gtfs(poa, paste0(tempdir(), "/mypoa.zip"))
-#> Writing text files to /tmp/RtmpcQiv0z/gtfsio1b915325a62c
+#> Writing text files to /tmp/RtmpAlS3ps/gtfsio1bb659b7a10a
 #>   - Writing agency.txt
 #>   - Writing calendar.txt
 #>   - Writing routes.txt
@@ -70,5 +70,5 @@ write_gtfs(poa, paste0(tempdir(), "/mypoa.zip"))
 #>   - Writing stop_times.txt
 #>   - Writing stops.txt
 #>   - Writing trips.txt
-#> GTFS object successfully zipped to /tmp/RtmpcQiv0z/mypoa.zip
+#> GTFS object successfully zipped to /tmp/RtmpAlS3ps/mypoa.zip
 ```

@@ -51,7 +51,7 @@ data.table \`stop_times\`.
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpcQiv0z/gtfsio:
+#> Unzipped the following files to /tmp/RtmpAlS3ps/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt

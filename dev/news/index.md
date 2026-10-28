@@ -3,6 +3,38 @@
 ## gtfs2gps (development version)
 
 - Major changes
+  - gtfs2gps now requires gtfstools \>= 2.0.0. With it,
+    [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+    no longer creates a departure at the `end_time` of a
+    `frequencies.txt` entry (the GTFS specification makes `end_time`
+    exclusive), times with minutes or seconds of 60 or more are treated
+    as missing, and malformed times raise a warning of class
+    `gtfstools_malformed_time`.
+  - [`gtfs_stops_as_sf()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs_stops_as_sf.md)
+    and
+    [`gps_as_sfpoints()`](https://ipea.github.io/gtfs2gps/dev/reference/gps_as_sfpoints.md)
+    now transform the points to `crs` instead of labelling degrees with
+    it, as
+    [`gtfs_shapes_as_sf()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs_shapes_as_sf.md)
+    already did, so `crs = NA` is no longer accepted.
+  - [`adjust_arrival_departure()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_arrival_departure.md)
+    raises an error for a negative `min_lag`, and
+    [`filter_valid_stop_times()`](https://ipea.github.io/gtfs2gps/dev/reference/filter_valid_stop_times.md)
+    also drops times with minutes or seconds of 60 or more.
+  - [`read_gtfs()`](https://ipea.github.io/gtfs2gps/dev/reference/read_gtfs.md)
+    now keeps all the columns of `routes.txt` and reads feeds without
+    `agency_id` or `route_short_name` in it. A header-only
+    `frequencies.txt` (valid GTFS) is dropped instead of raising an
+    error, and empty mandatory files raise an error of class
+    `gtfs2gps_empty_file_error`.
+  - [`remove_invalid()`](https://ipea.github.io/gtfs2gps/dev/reference/remove_invalid.md)
+    keeps trips whose service is in either `calendar.txt` or
+    `calendar_dates.txt` (it used to require both with
+    `only_essential = FALSE`), keeps the timetabled trips of feeds that
+    mix them with frequency-based trips, and no longer empties
+    single-agency feeds whose routes have no `agency_id`.
+  - [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+    returns `NULL` instead of an error when no shape could be converted.
   - Fixed
     [`adjust_speed()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_speed.md),
     which shifted every trip’s timestamps (by about 3 minutes on the poa
@@ -39,7 +71,7 @@
     saved were converted and written again instead of being skipped.
   - [`gtfs_shapes_as_sf()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs_shapes_as_sf.md)
     now wraps
-    [`gtfstools::convert_shapes_to_sf()`](https://rdrr.io/pkg/gtfstools/man/convert_shapes_to_sf.html).
+    [`gtfstools::get_shapes_geometry()`](https://ipea.github.io/gtfstools/reference/get_shapes_geometry.html).
     The `crs` argument transforms the shapes from WGS84 instead of
     relabelling their coordinates, and must be a valid CRS (`NA` is no
     longer accepted). The input is not modified. The result is a plain
@@ -107,9 +139,9 @@
     expansion inside
     [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
     (unreachable since v2.1-1, when
-    [`gtfstools::frequencies_to_stop_times()`](https://rdrr.io/pkg/gtfstools/man/frequencies_to_stop_times.html)
+    [`gtfstools::frequencies_to_stop_times()`](https://ipea.github.io/gtfstools/reference/frequencies_to_stop_times.html)
     took over) and the R-level time parser, now
-    [`gtfstools::convert_time_to_seconds()`](https://rdrr.io/pkg/gtfstools/man/convert_time_to_seconds.html).
+    [`gtfstools::convert_time_to_seconds()`](https://ipea.github.io/gtfstools/reference/convert_time_to_seconds.html).
     No output change for well-formed `H:MM:SS` times. In
     [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
     and
@@ -149,7 +181,7 @@ CRAN release: 2023-04-28
     alredy implements them
   - Function `gtfs2gps` now uses `parallel = TRUE` by default.
   - Function `gtfs2gps` now uses
-    [`gtfstools::frequencies_to_stop_times()`](https://rdrr.io/pkg/gtfstools/man/frequencies_to_stop_times.html)
+    [`gtfstools::frequencies_to_stop_times()`](https://ipea.github.io/gtfstools/reference/frequencies_to_stop_times.html)
     to convert. frequency-based GTFS feeds to stop times before
     processing the data.
 - Minor changes
