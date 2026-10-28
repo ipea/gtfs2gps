@@ -29,6 +29,35 @@ test_that("remove_invalid", {
   expect_equal(length(sp3$stops$stop_id), 0)
 })
 
+test_that("remove_invalid lists every removed id", {
+  sp <- read_gtfs(system.file("extdata/saopaulo.zip", package = "gtfs2gps"), quiet = TRUE)
+  sp$shapes <- sp$shapes[-(1:30000), ]
+
+  msgs <- character()
+  withCallingHandlers(remove_invalid(sp, prompt_invalid = TRUE),
+                      message = function(m){
+                        msgs <<- c(msgs, conditionMessage(m))
+                        invokeRestart("muffleMessage")
+                      })
+
+  # 79 shape ids are removed; cli would otherwise cut the list after 20
+  shape_msg <- grep("shape_ids removed", msgs, value = TRUE)
+  expect_length(shape_msg, 1)
+  expect_false(grepl("…|\\.\\.\\.", shape_msg))
+  expect_true(grepl("52421", shape_msg) && grepl("^79 ", shape_msg))
+})
+
+test_that("filter_single_trip ignores trips without a shape", {
+  poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE)
+  first <- poa$trips$trip_id[1]
+  poa$trips[1, shape_id := NA_character_]
+
+  single <- filter_single_trip(poa)
+
+  expect_false(first %in% single$trips$trip_id)
+  expect_false(anyNA(single$trips$shape_id))
+})
+
 test_that("remove_invalid keeps services from either calendar table and timetabled trips", {
   poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE)
   n_trips <- nrow(poa$trips)

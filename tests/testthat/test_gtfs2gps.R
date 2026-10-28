@@ -86,28 +86,32 @@ test_that("gtfs2gps", {
     expect_equal(dim(poa_gps_30)[1], 200560)
     expect_true(dim(poa_gps_30)[1] > dim(poa_gps)[1])
     
-    # save into file
+    # save into files, in a temporary directory
+    out_dir <- tempfile("g2g_")
+    dir.create(out_dir)
+    on.exit(unlink(out_dir, recursive = TRUE), add = TRUE)
+
     poa_simple <- read_gtfs(poa) |>
       gtfstools::filter_by_shape_id(c("T2-1", "A141-1"))
 
-    poa_gps <- gtfs2gps(poa_simple, filepath = ".", spatial_resolution = 50)
+    poa_gps <- gtfs2gps(poa_simple, filepath = out_dir, spatial_resolution = 50)
     expect_null(poa_gps)
-    
-    poa_gps <- gtfs2gps(poa, filepath = ".", continue = TRUE, spatial_resolution = 50)
+
+    poa_gps <- gtfs2gps(poa, filepath = out_dir, continue = TRUE, spatial_resolution = 50)
 
     expect_null(poa_gps)
-    
-    files1 <- list.files(".", pattern = "\\.txt$")
+
+    files1 <- list.files(out_dir, pattern = "\\.txt$", full.names = TRUE)
     names <- gsub('.{4}$', '', files1)
     
     # poa_shape <- gtfs_shapes_as_sf(read_gtfs(poa))
     # expect_setequal(poa_shape$shape_id[2:3], names[c(1,4)])
 
-    poa_gps <- gtfs2gps(poa, filepath = ".", compress = TRUE, spatial_resolution = 50)
-    
+    poa_gps <- gtfs2gps(poa, filepath = out_dir, compress = TRUE, spatial_resolution = 50)
+
     expect_null(poa_gps)
-  
-    files2 <- list.files(".", pattern = "\\.rds$")
+
+    files2 <- list.files(out_dir, pattern = "\\.rds$", full.names = TRUE)
     names2 <- gsub('.{4}$', '', files2)
     
     data1 <- data.table::fread(files1[1])
@@ -124,13 +128,15 @@ test_that("gtfs2gps", {
     # poa_shape <- gtfs_shapes_as_sf(read_gtfs(poa))
     # expect_setequal(poa_shape$shape_id[2:3], names[c(1,4)])
     
-    file.remove(files1)
-    file.remove(files2)
-
     sp <- system.file("extdata/saopaulo.zip", package="gtfs2gps")
 
-    expect_error(gtfs2gps(sp, continue = TRUE), "Cannot use argument 'continue' without passing a 'filepath'.", fixed = TRUE)
-    expect_error(gtfs2gps(sp, compress = TRUE), "Cannot use argument 'compress' without passing a 'filepath'.", fixed = TRUE)
+    expect_error(gtfs2gps(sp, continue = TRUE), class = "gtfs2gps_filepath_error")
+    expect_error(gtfs2gps(sp, compress = TRUE), class = "gtfs2gps_filepath_error")
+
+    # strategy is deprecated (compress without filepath then stops before any work)
+    expect_error(expect_warning(gtfs2gps(sp, strategy = "sequential", compress = TRUE),
+                                class = "deprecated_strategy"),
+                 class = "gtfs2gps_filepath_error")
     
 
     # sp <- system.file("extdata/saopaulo.zip", package="gtfs2gps")
@@ -283,10 +289,14 @@ test_that("gtfs2gps reports an error inside a worker when running in parallel", 
     poa$stops[, stop_lon := NULL]  # makes the stop join inside the worker fail
     out_dir <- tempfile("g2g_"); dir.create(out_dir); on.exit(unlink(out_dir, recursive = TRUE), add = TRUE)
 
-    expect_message(res <- gtfs2gps(poa, parallel = TRUE, ncores = 2, filepath = out_dir),
-                   "Some internal bug occurred")
+    expect_warning(res <- gtfs2gps(poa, parallel = TRUE, ncores = 2, filepath = out_dir),
+                   class = "gtfs2gps_shape_error")
     expect_null(res)
     expect_length(list.files(out_dir, pattern = "^T2-1"), 0)
+
+    # the report is a warning, so quiet = TRUE does not hide it
+    expect_warning(gtfs2gps(poa, parallel = FALSE, filepath = out_dir, quiet = TRUE),
+                   class = "gtfs2gps_shape_error")
 })
 
 test_that("gtfs2gps converts a shape whose id is the empty string", {

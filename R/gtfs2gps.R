@@ -32,7 +32,7 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
   ## Select corresponding route, route type, stops and shape of that trip
   
   if (NROW(slice$trips) == 0) {
-    message(paste0("Shape '", shapeid, "' is not used by any trip. Ignoring it.")) # nocov
+    cli::cli_inform("Shape {.val {shapeid}} is not used by any trip. Ignoring it.") # nocov
     return(NULL) # nocov
   }
 
@@ -42,7 +42,7 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
   all_tripids <- unique(trips_shape$trip_id)
 
   if (length(all_tripids) == 0) {
-    message(paste0("Shape '", shapeid, "' has no route_id. Ignoring it."))  # nocov
+    cli::cli_inform("Shape {.val {shapeid}} has no route_id. Ignoring it.")  # nocov
     return(NULL) # nocov
   }
 
@@ -51,7 +51,7 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
   st_shape <- slice$stop_times[trip_id %chin% all_tripids, .(trip_id, stop_sequence, stop_id)]
 
   if(nrow(st_shape) == 0){
-    message(paste0("Shape '", shapeid, "' has zero stops. Ignoring it.")) # nocov
+    cli::cli_inform("Shape {.val {shapeid}} has zero stops. Ignoring it.") # nocov
     return(NULL) # nocov
   }
 
@@ -95,8 +95,7 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
 
     # Skip pattern IF there are no snapped stops
     if (is.null(snapped) | length(snapped) == 0 ) {
-      message(paste0("Shape '", shapeid, "': ", length(tripids),
-                     " trip(s) with a stop pattern that has no snapped stops. Ignoring them."))  # nocov
+      cli::cli_inform("Shape {.val {shapeid}}: {length(tripids)} trip{?s} with a stop pattern that has no snapped stops. Ignoring {?it/them}.")  # nocov
       return(NULL) # nocov
     }
 
@@ -130,14 +129,12 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
     new_stoptimes <- na.omit(new_stoptimes, cols = "dist")
 
     if (dim(new_stoptimes)[1] < 2) {
-      message(paste0("Shape '", shapeid, "': ", length(tripids),
-                     " trip(s) with less than two points after conversion. Ignoring them."))  # nocov
+      cli::cli_inform("Shape {.val {shapeid}}: {length(tripids)} trip{?s} with less than two points after conversion. Ignoring {?it/them}.")  # nocov
       return(NULL) # nocov
     }
 
     if (length(which(!is.na(new_stoptimes$stop_sequence))) < 2) {
-      message(paste0("Shape '", shapeid, "': ", length(tripids),
-                     " trip(s) with less than two stops after conversion. Ignoring them."))  # nocov
+      cli::cli_inform("Shape {.val {shapeid}}: {length(tripids)} trip{?s} with less than two stops after conversion. Ignoring {?it/them}.")  # nocov
       return(NULL) # nocov
     }
 
@@ -165,7 +162,7 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
   new_stoptimes <- data.table::rbindlist(lapply(pattern_trips, process_pattern))
 
   if (nrow(new_stoptimes) == 0) {
-    message(paste0("Shape '", shapeid, "': no trip could be converted. Ignoring it.")) # nocov
+    cli::cli_inform("Shape {.val {shapeid}}: no trip could be converted. Ignoring it.") # nocov
     return(NULL) # nocov
   }
 
@@ -179,7 +176,7 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
   }
   
   if (is.null(new_stoptimes$departure_time)) {
-    message(paste0("Shape '", shapeid, "' has no departure_time. Ignoring it."))  # nocov
+    cli::cli_inform("Shape {.val {shapeid}} has no departure_time. Ignoring it.")  # nocov
     return(NULL)  # nocov
   }
   
@@ -202,13 +199,13 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
   infinite_values <- length(which(is.infinite(new_stoptimes$speed)))
   
   if(infinite_values > 0){
-    message(paste0(infinite_values, " 'speed' values are Inf for shapeid '", shapeid, "'."))
+    cli::cli_inform("{infinite_values} {.field speed} value{?s} {?is/are} Inf for shape {.val {shapeid}}.")
   }
   
   negative_values <- length(which(new_stoptimes$speed <= 0))
   
   if(negative_values > 0){
-    message(paste0(negative_values, " 'speed' values are zero or negative for shapeid '", shapeid, "'."))
+    cli::cli_inform("{negative_values} {.field speed} value{?s} {?is/are} zero or negative for shape {.val {shapeid}}.")
   }
   
   new_stoptimes[, speed := units::set_units(speed, "km/h") ]
@@ -347,23 +344,30 @@ gtfs2gps <- function(gtfs_data,
   if(quiet) return(suppressMessages(gtfs2gps(gtfs_data, spatial_resolution, parallel, ncores, strategy, filepath, compress, snap_method, continue)))
   
   if(!is.null(strategy)){
-    warning("Argument 'strategy' is deprecated and will be removed in a future version.") # nocov
+    cli::cli_warn(c("Argument {.arg strategy} is deprecated and will be removed in a future version.",
+                    "i" = "Set the parallel backend with {.fn future::plan} instead."),
+                  class = "deprecated_strategy")
   }
-  
+
   ###### PART 1. Load and prepare data inputs ------------------------------------
   if(compress & is.null(filepath)){
-    stop("Cannot use argument 'compress' without passing a 'filepath'.")
+    cli::cli_abort("Cannot use argument {.arg compress} without passing a {.arg filepath}.",
+                   class = "gtfs2gps_filepath_error")
   }
-  
+
   if(continue & is.null(filepath)){
-    stop("Cannot use argument 'continue' without passing a 'filepath'.")
+    cli::cli_abort("Cannot use argument {.arg continue} without passing a {.arg filepath}.",
+                   class = "gtfs2gps_filepath_error")
   }
+
+  if(!is.null(filepath)) checkmate::assert_directory_exists(filepath, access = "w")
+  checkmate::assert_choice(snap_method, c("nearest1", "nearest2"))
   
-  original_gtfs_data_arg <- deparse(substitute(gtfs_data))
+  original_gtfs_data_arg <- paste(deparse(substitute(gtfs_data)), collapse = " ")
   
   # Unzipping and reading GTFS.zip file
   if(is.character(gtfs_data)){
-    message(paste("Unzipping and reading", basename(gtfs_data)))
+    cli::cli_inform("Unzipping and reading {.file {basename(gtfs_data)}}")
     gtfs_data <- read_gtfs(gtfszip = gtfs_data)
   }
   
@@ -379,7 +383,7 @@ gtfs2gps <- function(gtfs_data,
   gtfs_data <- stop_times_to_seconds(gtfs_data)
   
   # Convert all shapes into sf objects
-  message("Converting shapes to sf objects")
+  cli::cli_inform("Converting shapes to sf objects")
   shapes_sf <- gtfs_shapes_as_sf(gtfs_data)
   
   ###### PART 2. Slice the feed per shape ----------------------------------------
@@ -429,7 +433,7 @@ gtfs2gps <- function(gtfs_data,
     if (is.null(ncores))
       ncores <- parallelly::availableCores(omit = 1)
 
-    message(paste('Using', ncores, 'CPU cores'))
+    cli::cli_inform("Using {ncores} CPU core{?s}")
     
     oplan <- future::plan("multisession", workers = ncores)
     on.exit(future::plan(oplan), add = TRUE)
@@ -437,7 +441,7 @@ gtfs2gps <- function(gtfs_data,
   
   p <- progressr::progressor(steps = length(all_shapeids))
 
-  message("Processing the data")
+  cli::cli_inform("Processing the data")
   requiredPackages = c('data.table', 'sf', 'Rcpp', 'sfheaders', 'units')
   # convert_shape() is a package-level function and every other argument is small,
   # so each worker is sent only its chunk of `slices`
@@ -459,24 +463,25 @@ gtfs2gps <- function(gtfs_data,
   output <- data.table::rbindlist(output[!failed])
   
   if(length(badShapes) > 0){
-    if(original_gtfs_data_arg == ".") original_gtfs_data_arg <- "<your gtfs data>" # nocov
-    
-    
-    message(paste0("Some internal bug occurred while processing gtfs data.\n", # nocov
-                   "Please give us a feedback by creating a GitHub issue\n", # nocov
-                   "(https://github.com/ipeaGIT/gtfs2gps/issues/new)\n"), # nocov
-            "and attaching a subset of your data created from the\n", # nocov
-            "code below:\n", # nocov
-            "################################################") # nocov
-    
-    print(msgs)
-    
-    ids <- paste0("ids <- c('", paste(badShapes, collapse = "', '"), "')") # nocov
-    code1 <- paste0("data <- gtfstools::filter_by_shape_id(", original_gtfs_data_arg, ", ids)") # nocov
-    code2 <- "gtfs2gps::write_gtfs(data, 'shapes_with_error.zip')" # nocov
-    
-    message(paste(ids, code1, code2, sep = "\n")) # nocov
-    message("################################################") # nocov
+    # "gtfs_data" is what the quiet = TRUE recursion sees instead of the user's name
+    if(original_gtfs_data_arg %in% c(".", "gtfs_data")) original_gtfs_data_arg <- "<your gtfs data>"
+
+    # ids and error texts are interpolated by index, never parsed as cli markup
+    errs <- vapply(msgs, conditionMessage, character(1))
+    shape_bullets <- paste0("{.val {badShapes[", seq_along(badShapes), "]}}: {errs[", seq_along(badShapes), "]}")
+    names(shape_bullets) <- rep("x", length(badShapes))
+    code <- c(paste0("ids <- ", paste(deparse(badShapes), collapse = "")),
+              paste0("data <- gtfstools::filter_by_shape_id(", original_gtfs_data_arg, ", ids)"),
+              "gtfs2gps::write_gtfs(data, 'shapes_with_error.zip')")
+
+    cli::cli_warn(c("Some internal bug occurred while converting {length(badShapes)} shape{?s}.",
+                    shape_bullets,
+                    "i" = paste("Please open an issue at {.url https://github.com/ipea/gtfs2gps/issues/new}",
+                                "and attach a subset of your data created with:"),
+                    " " = "{.code {code[1]}}",
+                    " " = "{.code {code[2]}}",
+                    " " = "{.code {code[3]}}"),
+                  class = "gtfs2gps_shape_error")
   }
   
   total_shapes <- data.table::uniqueN(gtfs_data$shapes$shape_id)
@@ -484,7 +489,7 @@ gtfs2gps <- function(gtfs_data,
   
   if(processed_shapes < total_shapes && is.null(filepath)){
     perc <- round(processed_shapes / total_shapes * 100, 2)
-    message(paste0(processed_shapes, " out of ", total_shapes, " shapes (", perc, "%) were properly processed."))
+    cli::cli_inform("{processed_shapes} out of {total_shapes} shapes ({perc}%) were properly processed.")
   }
   
   total_trips <- data.table::uniqueN(gtfs_data$trips$trip_id)
@@ -492,7 +497,7 @@ gtfs2gps <- function(gtfs_data,
   
   if(processed_trips < total_trips && is.null(filepath)){
     perc <- round(processed_trips / total_trips * 100, 2)
-    message(paste0(processed_trips, " out of ", total_trips, " trips (", perc, "%) were properly processed."))
+    cli::cli_inform("{processed_trips} out of {total_trips} trips ({perc}%) were properly processed.")
   }
   
   if(is.null(filepath)){
@@ -500,16 +505,16 @@ gtfs2gps <- function(gtfs_data,
     if(is.null(output) || dim(output)[1] == 0) return(NULL)
 
     if(sum(is.na(output$speed)) > 1)
-      message("Some 'speed' values are NA in the returned data.")
-    
+      cli::cli_inform("Some {.field speed} values are NA in the returned data.")
+
     if(any(is.infinite(output$speed)))
-      message("Some 'speed' values are Inf in the returned data.")
-    
+      cli::cli_inform("Some {.field speed} values are Inf in the returned data.")
+
     # check if there are any trips with negative speed
     trips_negative_speed <- unique(output$trip_id[which(output$speed < units::set_units(0, "km/h"))])
-    
+
     if(length(trips_negative_speed) > 0 ){
-      message(paste0("There are negative speeds reported in the GTFS for the following trip_id's: ",  paste0(trips_negative_speed, collapse=", ")))}
+      cli::cli_inform("There are negative speeds reported in the GTFS for the following {.field trip_id}s: {.val {cli::cli_vec(trips_negative_speed, list('vec-trunc' = Inf))}}")}
 
     return(output)
   }

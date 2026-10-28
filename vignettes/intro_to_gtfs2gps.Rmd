@@ -111,15 +111,15 @@ box()
 For a given trip, the function `gtfs2gps` calculates the average speed between each pair of consecutive stops given by the ratio between cumulative network distance `S` and departure time `t` for a consecutive pair of valid stop_ids (`i`), 
 
 ```{r equation, echo = FALSE, message = FALSE}
-knitr::include_graphics("https://github.com/ipeaGIT/gtfs2gps/blob/master/man/figures/equation1.png?raw=true")
+knitr::include_graphics("https://github.com/ipea/gtfs2gps/blob/master/man/figures/equation1.png?raw=true")
 ```
 
 Since the beginning of each trip usually starts before the first stop_id, the mean speed cannot be calculated as shown in the previous equation because information on `i` period does not exist. In this case, the function consider the mean speed for the whole trip. It also happens after the last valid stop_id (`N`) of the trips, where info on `i + 1` also does not exist. 
 
 ```{r speed, echo = FALSE, message = FALSE}
-knitr::include_graphics("https://github.com/ipeaGIT/gtfs2gps/blob/master/man/figures/speed.PNG?raw=true")
+knitr::include_graphics("https://github.com/ipea/gtfs2gps/blob/master/man/figures/speed.PNG?raw=true")
 ```
 
 # Final remarks
 
-If you have any suggestions or want to report an error, please visit the GitHub page of the package [here](https://github.com/ipeaGIT/gtfs2gps).
+If you have any suggestions or want to report an error, please visit the GitHub page of the package [here](https://github.com/ipea/gtfs2gps).

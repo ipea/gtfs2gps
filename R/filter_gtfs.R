@@ -111,7 +111,7 @@ remove_invalid <- function(gtfs_data, only_essential = TRUE, prompt_invalid = FA
       len <- length(removed[[element]])
       
       if(len > 0)
-        message(paste(len, element, "removed:", paste0(removed[[element]], collapse = ", ")))
+        cli::cli_inform("{len} {element} removed: {.val {cli::cli_vec(removed[[element]], list('vec-trunc' = Inf))}}")
     }
   }
   
@@ -162,7 +162,8 @@ filter_valid_stop_times <- function(gtfs_data){
 #' 
 #' subset <- filter_single_trip(poa)
 filter_single_trip <- function(gtfs_data){
-  gtfs_data$trips <- gtfs_data$trips[!duplicated(gtfs_data$trips$shape_id), ]
+  # one trip per shape; trips without a shape can't be converted
+  gtfs_data$trips <- gtfs_data$trips[!is.na(gtfs_data$trips$shape_id) & !duplicated(gtfs_data$trips$shape_id), ]
 
 
   # unique trips

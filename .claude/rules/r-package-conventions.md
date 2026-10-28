@@ -139,11 +139,10 @@ user-facing conditions. `cli` goes in `Imports`.
 - **Parallel workers:** conditions signalled inside `furrr::future_map()`
   workers are relayed by `future`, but don't rely on that for anything the
   main session must act on (A3); return information as values.
-- **Existing base calls** (~38 in `R/gtfs2gps.R`, `R/read_gtfs.R`,
-  `R/mod_updates.R`, `R/adjust_speed.R`, `R/filter_gtfs.R`) are migrated in a
-  dedicated, planned change, not as drive-bys inside unrelated work. Until
-  then, a function you are already modifying is migrated as a whole (all of its
-  calls), so a function never mixes the two styles.
+- **Migration done (2026-10-28):** no base condition calls remain in `R/`. The
+  one exception is `packageStartupMessage()` in `.onAttach`, which CRAN
+  requires for startup messages. Id lists in messages use
+  `cli::cli_vec(x, list("vec-trunc" = Inf))` so cli doesn't cut them after 20.
 - Deprecations: `cli::cli_warn(class = "deprecated_<thing>", ...)` naming the
   replacement, tested with `expect_warning(..., class = "deprecated_<thing>")`,
   kept for at least one CRAN release (see `strategy` in `gtfs2gps()`).
