@@ -14,7 +14,12 @@ test_that("gps_as_sfpoints", {
   
   expect_true(is(for_gps_sf_points, "sf"))
   expect_equal(dim(coords)[2], 2)
-    
+
+  # crs transforms the points instead of relabelling the degrees
+  utm <- gps_as_sfpoints(for_gps, crs = 31984)
+  expect_equal(sf::st_crs(utm), sf::st_crs(31984))
+  expect_equal(sf::st_coordinates(utm), sf::st_coordinates(sf::st_transform(for_gps_sf_points, 31984)))
+
   for_gps <- append_height(for_gps, srtmfile)
   for_gps_sf_points <- gps_as_sfpoints(for_gps) # with height
   coords <- for_gps_sf_points |> sf::st_coordinates()

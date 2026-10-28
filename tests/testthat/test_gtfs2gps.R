@@ -242,6 +242,18 @@ test_that("gtfs2gps wraps timestamps at midnight and matches in parallel", {
     expect_identical(as.list(seq_res), as.list(par_res))
 })
 
+test_that("gtfs2gps returns NULL when no shape converts", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+      gtfstools::filter_by_shape_id("T2-1") |>
+      filter_single_trip()
+
+    # only the first stop keeps its times, so the trip can't be timed
+    poa$stop_times[stop_sequence == max(stop_sequence),
+                   `:=`(arrival_time = "", departure_time = "")]
+
+    expect_null(suppressMessages(gtfs2gps(poa, parallel = FALSE, quiet = TRUE)))
+})
+
 test_that("gtfs2gps skips shapes without stops or stop coordinates with a message", {
     poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
       gtfstools::filter_by_shape_id("T2-1") |>

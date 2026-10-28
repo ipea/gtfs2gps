@@ -41,7 +41,9 @@ adjust_arrival_departure <- function(gtfs_data, min_lag = 20){
   if(is.null(gtfs_data$stop_times$departure_time))
     gtfs_data$stop_times[, departure_time := NA_character_]
 
-  min_lag <- as.integer(round(as.numeric(units::set_units(min_lag, "s"))))
+  min_lag <- as.numeric(units::set_units(min_lag, "s"))
+  checkmate::assert_number(min_lag, lower = 0, finite = TRUE)
+  min_lag <- as.integer(round(min_lag))
 
   gtfs_data <- stop_times_to_seconds(gtfs_data)
 
@@ -62,8 +64,8 @@ adjust_arrival_departure <- function(gtfs_data, min_lag = 20){
   gtfs_data$stop_times[arrival_time < 0L,
                        `:=`(departure_time = departure_time - arrival_time, arrival_time = 0L)]
 
-  gtfs_data$stop_times[, departure_time := seconds_to_string(departure_time)]
-  gtfs_data$stop_times[, arrival_time := seconds_to_string(arrival_time)]
+  gtfs_data$stop_times[, departure_time := gtfstools::convert_seconds_to_time(departure_time)]
+  gtfs_data$stop_times[, arrival_time := gtfstools::convert_seconds_to_time(arrival_time)]
 
   return(gtfs_data)
 }

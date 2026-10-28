@@ -9,7 +9,9 @@ gps_as_sfpoints(gps, crs = 4326)
 \arguments{
 \item{gps}{A data.table with timestamp data.}
 
-\item{crs}{A Coordinate Reference System. The default value is 4326 (latlong WGS84).}
+\item{crs}{The coordinate reference system of the output, as accepted by
+\code{\link[sf]{st_crs}}. Points are read as WGS84 (EPSG:4326) and
+transformed to \code{crs}. The default value is 4326 (no transformation).}
 }
 \value{
 A simple feature (sf) object with point data.

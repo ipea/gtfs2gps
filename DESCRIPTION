@@ -27,7 +27,7 @@ Imports:
       data.table,
       furrr,
       future,
-      gtfstools (>= 1.3.0),
+      gtfstools (>= 2.0.0),
       Rcpp,
       units,
       sf,
@@ -41,3 +41,4 @@ Imports:
 RoxygenNote: 7.3.3
 VignetteBuilder: knitr
 LinkingTo: Rcpp
+Remotes: ipea/gtfstools

@@ -54,7 +54,7 @@ range; segments whose speeds are replaced are re-timed. Trips without any
 timestamp keep \code{NA} timestamps. Timestamps wrap at 24:00:00.
 \code{gps_data} must be ordered as \code{\link{gtfs2gps}} returns it.
 To cap speeds in the GTFS data before converting it, see
-\code{set_max_speed()} in gtfstools (>= 2.0.0).
+\code{\link[gtfstools]{set_max_speed}}.
 }
 \examples{
 poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>

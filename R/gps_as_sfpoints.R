@@ -3,7 +3,9 @@
 #' @description Convert a GPS data stored in a data.table into Simple Feature points.
 #'
 #' @param gps A data.table with timestamp data.
-#' @param crs A Coordinate Reference System. The default value is 4326 (latlong WGS84).
+#' @param crs The coordinate reference system of the output, as accepted by
+#' \code{\link[sf]{st_crs}}. Points are read as WGS84 (EPSG:4326) and
+#' transformed to \code{crs}. The default value is 4326 (no transformation).
 #' @return A simple feature (sf) object with point data.
 #' @export
 #' @examples
@@ -25,12 +27,8 @@ gps_as_sfpoints <- function(gps, crs = 4326){
   else
     temp_gps <- sfheaders::sf_point(gps, x = "shape_pt_lon", y = "shape_pt_lat", z = "height", keep = TRUE)
 
-  dup <- duplicated(names(temp_gps))
-  
-  if(any(dup))
-    temp_gps<- temp_gps[, -dup]
-  
-  # add projection
-  sf::st_crs(temp_gps) <- crs
+  # points are in WGS84; transform them to crs
+  sf::st_crs(temp_gps) <- 4326
+  temp_gps <- sf::st_transform(temp_gps, crs)
   return(temp_gps)
 }
