@@ -37,7 +37,8 @@ Imports:
       lwgeom,
       checkmate,
       parallelly,
-      cli
+      cli,
+      rlang (>= 1.1.0)
 RoxygenNote: 7.3.3
 VignetteBuilder: knitr
 LinkingTo: Rcpp
