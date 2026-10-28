@@ -21,9 +21,14 @@ gps_as_sflinestring  <- function(gps){
   
   if(is.character(gps)){
     dt <- data.table::fread(gps, colClasses = list(character = c("id", "shape_id", "trip_id", "stop_id")))
+    dt[, `:=`(timestamp = data.table::as.ITime(timestamp), cumdist = units::set_units(cumdist, "m"), cumtime = units::set_units(cumtime, "s"))]
   } else {
     dt <- data.table::copy(gps)
   }
+  
+  # stops without departure_time have one row: duplicate them so that every stop is an arrival/departure pair
+  dt[, numbers := .N, by = .(shape_id, trip_id, stop_id, stop_sequence, trip_number)]
+  dt <- dt[rep(seq_len(.N), data.table::fifelse(!is.na(stop_sequence) & numbers == 1L, 2L, 1L))]
   
   # create new row ids
   dt[, id := .I]
@@ -149,9 +154,9 @@ gps_as_sflinestring  <- function(gps){
   gps_sf[is.na(from_timestamp),from_timestamp := to_timestamp - time]
   gps_sf[is.na(to_timestamp),to_timestamp := from_timestamp + time]
   
-  # rewrite mignight trips
-  gps_sf[from_timestamp > 86400, from_timestamp := from_timestamp - 86400]
-  gps_sf[to_timestamp > 86400, to_timestamp := to_timestamp - 86400]
+  # timestamps wrap at midnight, as in gtfs2gps()
+  gps_sf[, from_timestamp := from_timestamp %% 86400]
+  gps_sf[, to_timestamp := to_timestamp %% 86400]
   
   # final units
   gps_sf[,speed := units::set_units(3.6 * speed,"km/h")] # m/s to km/h
@@ -161,7 +166,10 @@ gps_as_sflinestring  <- function(gps){
   
   # edit columns
   gps_sf[, cumdist := cumsum(dist), by = c("shape_id","trip_id","trip_number")]
-  gps_sf[, cumtime := cumsum(time), by = c("shape_id","trip_id","trip_number")]
+  # the first and last segments of a trip ("-" stops) may have no time; missing
+  # times elsewhere stay NA
+  gps_sf[, cumtime := cumsum(data.table::fifelse(is.na(time) & (from_stop_id == "-" | to_stop_id == "-"), 0, time))
+         , by = c("shape_id","trip_id","trip_number")]
   gps_sf[, time := NULL]
   gps_sf[, stop_id := NULL]
   gps_sf$interval_id <- NULL

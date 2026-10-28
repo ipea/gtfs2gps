@@ -81,13 +81,12 @@ update_dt <- function(tripid, stoptimes_trip, new_stoptimes, all_tripids){
 
   ctm[is.na(spd)] <- NA
 
-  # structure() rather than as.ITime(): the latter wraps values >= 86400, which
-  # interpolated rows past midnight legitimately carry (adjust_speed() unwraps)
+  # timestamps wrap at midnight (elapsed time is in cumtime)
   data.table::set(new_stoptimes
                   , j = c("departure_time", "arrival_time", "dist", "id", "trip_id"
                           , "speed", "timestamp", "cumtime", "trip_number")
                   , value = list(dep, arr, dist, seq_along(src), all_tripids[tripid]
-                                 , spd, structure(ts, class = "ITime"), ctm, tripid))
+                                 , spd, structure(ts %% 86400L, class = "ITime"), ctm, tripid))
   
   # Get lag
   #new_stoptimes[!is.na(departure_time) & !is.na(stop_id)

@@ -3,6 +3,9 @@
 # gtfs2gps (development version)
 
 * Major changes
+  * Fixed `adjust_speed()`, which shifted every trip's timestamps (by about 3 minutes on the poa feed) even when no speed was replaced, made timestamps run backwards before the first stop and dropped dwell times. Each trip now keeps the timestamp of its first timed point and its dwell times, so stop timestamps only change where speeds are replaced. It no longer adds a `time` column, and raises an error of class `gtfs2gps_no_valid_speed_error` instead of returning all-`NA` speeds when no speed is between `min_speed` and `max_speed` and `new_speed` is not given. A `new_speed` that is not a single positive speed raises an error of class `gtfs2gps_invalid_speed_error`.
+  * Fixed `gps_as_sflinestring()`, which split trips only at stops with times (2 segments instead of 89 in its own example). It now returns one segment per interval between consecutive stops, keeps the timestamps when `gps` is a file, and computes `cumtime` also when `adjust_speed()` was not run first.
+  * `gtfs2gps()` timestamps now wrap at midnight, as stop rows already did: a trip crossing midnight no longer mixes values past 24:00:00 with values after 00:00:00. Use `cumtime` for the elapsed time.
   * The package now requires R >= 4.1.0, because it uses the native pipe `|>`.
   * Fixed a bug in `write_gtfs()`, which ignored the `overwrite` argument and silently overwrote an existing file. With `overwrite = FALSE` it now raises an error of class `gtfs2gps_file_exists_error` if `zipfile` already exists.
   * Fixed a bug in `gtfs2gps(continue = TRUE)` with `compress = TRUE`: it looked for `.rda` files while saving `.rds`, so shapes already saved were converted and written again instead of being skipped.
