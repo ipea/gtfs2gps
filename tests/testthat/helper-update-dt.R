@@ -1,9 +1,12 @@
-# UPDATE NEWSTOPTIMES DATA.FRAME
+# Reference implementation of cpp_expand_pattern() (src/expand_pattern.cpp): the R code
+# gtfs2gps() used per trip until 2026-10-28. test_expand_pattern.R checks that the C++
+# gives identical() results.
 # one trip of a stop pattern, on plain vectors: trip_name is its trip_id (for messages),
 # st_seq/st_dep/st_arr are its stop_times and tpl the columns of the pattern's shape
 # template (see process_pattern() in gtfs2gps.R). Returns the template rows of the trip
 # (src) and its dist, speed, timestamp (unclassed seconds, not yet wrapped at midnight)
-# and cumtime, or NULL when the trip is skipped
+# and cumtime, or NULL when the trip is skipped. It errors when fewer than two timed stop
+# rows remain on the shape.
 update_dt <- function(trip_name, st_seq, st_dep, st_arr, tpl){
   # ignore trip_id if original departure_time values are missing
   if(sum(!is.na(st_dep)) < 2){

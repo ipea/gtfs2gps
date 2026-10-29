@@ -46,7 +46,7 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
     return(NULL) # nocov
   }
 
-  # group trips by stop pattern: stops are snapped once per pattern and update_dt()
+  # group trips by stop pattern: stops are snapped once per pattern and cpp_expand_pattern()
   # joins each trip's times by stop_sequence, which is only valid within a pattern
   st_shape <- slice$stop_times[trip_id %chin% all_tripids, .(trip_id, stop_sequence, stop_id)]
 
@@ -147,44 +147,53 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
     # stop_times of each trip, split once per pattern instead of looked up per trip.
     # Grouped by position: an NA trip_id gets no rows, as `trip_id == NA` did, and a
     # trip named "NA" is not confused with it. split() keeps the row order within a
-    # trip, on which update_dt() relies when a stop_sequence is duplicated.
+    # trip, on which cpp_expand_pattern() relies when a stop_sequence is duplicated.
     st <- slice$stop_times[trip_id %chin% tripids
                            , .(trip_id, stop_sequence, departure_time, arrival_time)]
     st_rows <- split(seq_len(nrow(st))
                      , factor(match(st$trip_id, tripids, incomparables = NA)
                               , levels = seq_along(tripids)))
+    rows <- unlist(st_rows, use.names = FALSE)
 
-    # update_dt() works on plain vectors and the pattern's rows are built once below:
-    # a data.table subset per trip dominated the run time
-    tpl <- list(stop_sequence = new_stoptimes$stop_sequence
-                , departure_time = new_stoptimes$departure_time
-                , arrival_time = new_stoptimes$arrival_time
-                , has_stop = !is.na(new_stoptimes$stop_id)
-                , dist = new_stoptimes$dist
-                , cumdist = new_stoptimes$cumdist)
-    trips <- lapply(seq_along(tripids), function(k){
-      rows <- st_rows[[k]]
-      update_dt(tripids[k], st$stop_sequence[rows], st$departure_time[rows]
-                , st$arrival_time[rows], tpl)
-    })
+    # all trips of the pattern at once, in C++ (src/expand_pattern.cpp)
+    res <- cpp_expand_pattern(as.double(new_stoptimes$stop_sequence)
+                              , as.integer(new_stoptimes$departure_time)
+                              , as.integer(new_stoptimes$arrival_time)
+                              , !is.na(new_stoptimes$stop_id)
+                              , new_stoptimes$dist
+                              , new_stoptimes$cumdist
+                              , lengths(st_rows, use.names = FALSE)
+                              , as.double(st$stop_sequence[rows])
+                              , as.integer(st$departure_time[rows])
+                              , as.integer(st$arrival_time[rows])
+                              , capabilities("long.double"))
 
-    converted <- !vapply(trips, is.null, logical(1))
+    # as in the former R code, the trips skipped before a failing trip are reported
+    # first; the failure is caught by convert_shape() and reported for the shape
+    for(k in which(res$status == 1L)){
+      cli::cli_inform( # nocov start
+        "Trip {.val {tripids[k]}} has less than two stop_ids. Ignoring it.") # nocov end
+    }
+    if(any(res$status == 2L)){
+      cli::cli_abort("Trip {.val {tripids[res$status == 2L]}} has fewer than two timed stops on its shape." # nocov
+                     , class = "gtfs2gps_trip_error") # nocov
+    }
+
+    converted <- res$status == 0L
     if(!any(converted)) return(NULL)
-    trips <- trips[converted]
-    n_rows <- vapply(trips, function(x) length(x$src), integer(1))
-    column <- function(name) unlist(lapply(trips, function(x) x[[name]]))
+    n_rows <- res$n_rows[converted]
 
     # departure_time and arrival_time keep the template's values: they are dropped
     # from the output in shape_to_gps()
-    new_stoptimes <- new_stoptimes[column("src")]
+    new_stoptimes <- new_stoptimes[res$src]
     # match() keeps trip_number as the trip's index among all trips of the shape;
     # timestamps wrap at midnight (elapsed time is in cumtime)
     data.table::set(new_stoptimes
                     , j = c("dist", "id", "trip_id", "speed", "timestamp", "cumtime", "trip_number")
-                    , value = list(column("dist"), sequence(n_rows), rep(tripids[converted], n_rows)
-                                   , column("speed")
-                                   , structure(column("timestamp") %% 86400L, class = "ITime")
-                                   , column("cumtime")
+                    , value = list(res$dist, sequence(n_rows), rep(tripids[converted], n_rows)
+                                   , res$speed
+                                   , structure(res$timestamp %% 86400L, class = "ITime")
+                                   , res$cumtime
                                    , rep(match(tripids[converted], all_tripids), n_rows)))
 
     return(new_stoptimes)

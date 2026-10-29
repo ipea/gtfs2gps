@@ -53,7 +53,6 @@ gtfs2gps/
 ├── DESCRIPTION, NAMESPACE        # NAMESPACE is roxygen-generated; never hand-edit
 ├── R/
 │   ├── gtfs2gps.R                # core: per-shape corefun() run via furrr::future_map
-│   ├── mod_updates.R             # internal: per-trip / frequency expansion (update_freq, update_dt)
 │   ├── read_gtfs.R, write_gtfs.R # thin wrappers around gtfstools
 │   ├── filter_gtfs.R             # filter_single_trip, filter_valid_stop_times, remove_invalid
 │   ├── adjust_speed.R, adjust_arrival_departure.R, append_height.R
@@ -62,7 +61,7 @@ gtfs2gps/
 │   ├── utils.R                   # @importFrom, globalVariables, time helpers
 │   ├── zzz.R                     # .onLoad / .onAttach
 │   └── cpp11.R                   # generated; never hand-edit
-├── src/                          # cpp11: snap_points.cpp, distance_calcs.cpp (+ generated cpp11.cpp)
+├── src/                          # cpp11: snap_points.cpp, distance_calcs.cpp, expand_pattern.cpp (trips → GPS points; R reference in tests/testthat/helper-update-dt.R) (+ generated cpp11.cpp)
 ├── tests/testthat/               # test_<function>.R (underscore); suite also runs on CRAN
 ├── inst/extdata/                 # fixtures: poa.zip, saopaulo.zip (frequencies), fortaleza.zip (+ srtm.tif), berlin.zip, warsaw.zip
 ├── vignettes/intro_to_gtfs2gps.Rmd
