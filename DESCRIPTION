@@ -20,7 +20,7 @@ Suggests:
     rmarkdown,
     markdown,
     knitr,
-    testthat,
+    testthat (>= 3.1.7),
     dplyr,
     bit64
 Imports:

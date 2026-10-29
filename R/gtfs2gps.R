@@ -60,11 +60,21 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
                        , by = trip_id]
   pattern_trips <- split(patterns$trip_id, factor(patterns$pattern, levels = unique(patterns$pattern)))
 
-  # the shape in high resolution, prepared once for all stop patterns
-  new_shape <- sf::st_segmentize(x = slice$shape
-                                 ,dfMaxLength =  units::set_units(spatial_resolution / 1000, "km"))
-  new_shape <- sfheaders::sf_cast(new_shape, "POINT")
-  temp_shape_coords <- sf::st_coordinates(new_shape)
+  # the shape in high resolution: gtfs2gps() segmentizes all shapes in one call, and
+  # only when that fails is each shape segmentized here
+  if(is.null(slice$points)){
+    new_shape <- sf::st_segmentize(x = slice$shape
+                                   ,dfMaxLength =  units::set_units(spatial_resolution / 1000, "km"))
+    new_shape <- sfheaders::sf_cast(new_shape, "POINT")
+    slice$points <- list(shape_id = new_shape$shape_id[1], coords = sf::st_coordinates(new_shape))
+  }
+  temp_shape_coords <- slice$points$coords
+
+  mymethod <- cpp_snap_points_nearest2
+
+  if(snap_method == "nearest1"){
+    mymethod <- cpp_snap_points_nearest1
+  }
 
   process_pattern <- function(tripids){
     # stop sequence of this pattern
@@ -76,18 +86,9 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
 
     data.table::setorderv(stops_seq, "stop_sequence")
 
-    # convert stops to sf
-    stops_sf <- sfheaders::sf_point(stops_seq, x = "stop_lon", y = "stop_lat", keep = TRUE)
-    sf::st_crs(stops_sf) <- sf::st_crs(slice$shape)
-
-    # snap stops the nodes of the shape route
-    temp_stops_coords <- sf::st_coordinates(stops_sf)
-
-    mymethod <- cpp_snap_points_nearest2
-
-    if(snap_method == "nearest1"){
-      mymethod <- cpp_snap_points_nearest1
-    }
+    # snap stops the nodes of the shape route (the same doubles as the coordinates of
+    # the stops as sf points)
+    temp_stops_coords <- cbind(as.double(stops_seq$stop_lon), as.double(stops_seq$stop_lat))
 
     # whole metres, truncated, as the C++ function takes an int (a units value in
     # another unit is converted first)
@@ -107,8 +108,8 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
     ### Start building new stop_times.txt file
 
     # get shape points in high resolution
-    new_stoptimes <- data.table::data.table(shape_id = new_shape$shape_id[1],
-                                            id = seq_len(nrow(new_shape)),
+    new_stoptimes <- data.table::data.table(shape_id = slice$points$shape_id,
+                                            id = seq_len(nrow(temp_shape_coords)),
                                             shape_pt_lon = temp_shape_coords[,1],
                                             shape_pt_lat = temp_shape_coords[,2])
 
@@ -208,13 +209,6 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
 
   data.table::setorderv(new_stoptimes, c("trip_number", "id"))
 
-  # route_type of each trip
-  if (!is.null(routes)) {
-    trip_rt <- unique(routes[, .(route_id, route_type)], by = "route_id")[
-      trips_shape[, .(trip_id, route_id)], on = "route_id"]
-    new_stoptimes[trip_rt, on = "trip_id", route_type := i.route_type]
-  }
-  
   if (is.null(new_stoptimes$departure_time)) {
     cli::cli_inform("Shape {.val {shapeid}} has no departure_time. Ignoring it.")  # nocov
     return(NULL)  # nocov
@@ -247,12 +241,11 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
     cli::cli_inform("{negative_values} {.field speed} value{?s} {?is/are} zero or negative for shape {.val {shapeid}}.")
   }
   
-  new_stoptimes[, speed := units::set_units(speed, "km/h") ]
-  new_stoptimes[, dist := units::set_units(dist, "m") ]
-  new_stoptimes[, cumdist := units::set_units(cumdist, "m") ]
-  new_stoptimes[, cumtime := units::set_units(cumtime, "s") ]
-  
+  # route_type and units are set by gtfs2gps() on the whole output, and here only
+  # for the shape's file
   if(!is.null(filepath)){ # Write object
+    set_route_type(new_stoptimes, routes, trips_shape)
+    set_gps_units(new_stoptimes)
     if(compress)
       saveRDS(object = new_stoptimes,
               file = paste0(filepath, "/", shapeid, ".rds"), compress = TRUE)
@@ -263,6 +256,28 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
   }
   
   return(new_stoptimes)
+}
+
+#' route_type of each trip, by shape: a trip listed under two shapes takes the route of
+#' each; for a trip listed twice in a shape, the last row wins (update join)
+#' @noRd
+set_route_type <- function(gps, routes, trips){
+  if (!is.null(routes)) {
+    trip_rt <- unique(routes[, .(route_id, route_type)], by = "route_id")[
+      trips[!is.na(route_id), .(shape_id, trip_id, route_id)], on = "route_id"]
+    gps[trip_rt, on = c("shape_id", "trip_id"), route_type := i.route_type]
+  }
+  return(invisible(gps))
+}
+
+#' units of the GPS columns, set by reference
+#' @noRd
+set_gps_units <- function(gps){
+  gps[, speed := units::set_units(speed, "km/h") ]
+  gps[, dist := units::set_units(dist, "m") ]
+  gps[, cumdist := units::set_units(cumdist, "m") ]
+  gps[, cumtime := units::set_units(cumtime, "s") ]
+  return(invisible(gps))
 }
 
 #' @title Convert GTFS to GPS-like data given a spatial resolution
@@ -442,7 +457,25 @@ gtfs2gps <- function(gtfs_data,
   stop_shape <- unique(stop_shape)[!is.na(shape_id)]
   stops_by_shape <- split(stop_shape[gtfs_data$stops, on = "stop_id", nomatch = NULL]
                           , by = "shape_id")
-  shape_by_shape <- split(shapes_sf, shapes_sf$shape_id)
+  # all shapes in high resolution in one call, much faster than one call per shape;
+  # if it fails, shape_to_gps() segmentizes each shape, so that an error fails only
+  # that shape. Shapes without trips (or already saved, with continue) are segmentized
+  # too, so a geometry that only warns now warns here. lwgeom attaches sf (now also
+  # with parallel = TRUE), whose startup message furrr used to hide when the shapes
+  # were segmentized in its futures
+  points <- tryCatch({
+    pts <- suppressPackageStartupMessages(
+      sf::st_segmentize(x = shapes_sf
+                        , dfMaxLength = units::set_units(spatial_resolution / 1000, "km")))
+    pts <- sfheaders::sf_cast(pts, "POINT")
+    list(shape_id = pts$shape_id, coords = sf::st_coordinates(pts))
+  }, error = function(e) NULL)
+  shape_by_shape <- point_rows <- NULL
+  if(is.null(points)){
+    shape_by_shape <- split(shapes_sf, shapes_sf$shape_id)
+  } else {
+    point_rows <- split(seq_len(nrow(points$coords)), points$shape_id)
+  }
 
   # a shape missing from a split gets a typed empty table, so that the guards in
   # shape_to_gps() report it exactly as before
@@ -452,15 +485,24 @@ gtfs2gps <- function(gtfs_data,
     if(is.na(i)) return(template[0])
     return(groups[[i]])
   }
+  # each slice carries its points or, when segmentizing all shapes failed, its shape
   slices <- lapply(all_shapeids, function(id){
-    list(shape_id = id
-         , trips = pick(trips_by_shape, id, gtfs_data$trips)
-         , stop_times = pick(st_by_shape, id, gtfs_data$stop_times)
-         , stops = pick(stops_by_shape, id, gtfs_data$stops)
-         , shape = shape_by_shape[[match(id, names(shape_by_shape))]])
+    slice <- list(shape_id = id
+                  , trips = pick(trips_by_shape, id, gtfs_data$trips)
+                  , stop_times = pick(st_by_shape, id, gtfs_data$stop_times)
+                  , stops = pick(stops_by_shape, id, gtfs_data$stops))
+    if(is.null(points)){
+      slice$shape <- shape_by_shape[[match(id, names(shape_by_shape))]]
+    } else {
+      i <- match(id, names(point_rows))
+      r <- if(is.na(i)) integer(0) else point_rows[[i]]
+      slice$points <- list(shape_id = points$shape_id[r[1]]
+                           , coords = points$coords[r, , drop = FALSE])
+    }
+    return(slice)
   })
-  rm(trips, shape_of_row, st_by_shape, trips_by_shape, stop_shape, stops_by_shape
-     , shape_by_shape)
+  rm(trips, shape_of_row, st_by_shape, trips_by_shape, stop_shape, stops_by_shape, points
+     , point_rows, shape_by_shape)
   # our own copy, and nothing below reads it: the slices hold what the workers need
   gtfs_data$stop_times <- NULL
 
@@ -542,6 +584,9 @@ gtfs2gps <- function(gtfs_data,
   if(is.null(filepath)){
     # no shape converted: there is nothing to check
     if(is.null(output) || dim(output)[1] == 0) return(NULL)
+
+    set_route_type(output, gtfs_data$routes, gtfs_data$trips)
+    set_gps_units(output)
 
     if(sum(is.na(output$speed)) > 1)
       cli::cli_inform("Some {.field speed} values are NA in the returned data.")
