@@ -89,9 +89,11 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
       mymethod <- cpp_snap_points_nearest1
     }
 
+    # whole metres, truncated, as the C++ function takes an int (a units value in
+    # another unit is converted first)
     snapped <- mymethod(temp_stops_coords,
                         temp_shape_coords,
-                        units::set_units(spatial_resolution, "m"))
+                        as.integer(units::drop_units(units::set_units(spatial_resolution, "m"))))
 
     # Skip pattern IF there are no snapped stops
     if (is.null(snapped) | length(snapped) == 0 ) {
@@ -152,11 +154,40 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
                      , factor(match(st$trip_id, tripids, incomparables = NA)
                               , levels = seq_along(tripids)))
 
-    # match() keeps trip_number as the trip's index among all trips of the shape
-    new_stoptimes <- lapply(seq_along(tripids), function(k)
-      update_dt(match(tripids[k], all_tripids), st[st_rows[[k]]], new_stoptimes, all_tripids))
+    # update_dt() works on plain vectors and the pattern's rows are built once below:
+    # a data.table subset per trip dominated the run time
+    tpl <- list(stop_sequence = new_stoptimes$stop_sequence
+                , departure_time = new_stoptimes$departure_time
+                , arrival_time = new_stoptimes$arrival_time
+                , has_stop = !is.na(new_stoptimes$stop_id)
+                , dist = new_stoptimes$dist
+                , cumdist = new_stoptimes$cumdist)
+    trips <- lapply(seq_along(tripids), function(k){
+      rows <- st_rows[[k]]
+      update_dt(tripids[k], st$stop_sequence[rows], st$departure_time[rows]
+                , st$arrival_time[rows], tpl)
+    })
 
-    return(data.table::rbindlist(new_stoptimes))
+    converted <- !vapply(trips, is.null, logical(1))
+    if(!any(converted)) return(NULL)
+    trips <- trips[converted]
+    n_rows <- vapply(trips, function(x) length(x$src), integer(1))
+    column <- function(name) unlist(lapply(trips, function(x) x[[name]]))
+
+    # departure_time and arrival_time keep the template's values: they are dropped
+    # from the output in shape_to_gps()
+    new_stoptimes <- new_stoptimes[column("src")]
+    # match() keeps trip_number as the trip's index among all trips of the shape;
+    # timestamps wrap at midnight (elapsed time is in cumtime)
+    data.table::set(new_stoptimes
+                    , j = c("dist", "id", "trip_id", "speed", "timestamp", "cumtime", "trip_number")
+                    , value = list(column("dist"), sequence(n_rows), rep(tripids[converted], n_rows)
+                                   , column("speed")
+                                   , structure(column("timestamp") %% 86400L, class = "ITime")
+                                   , column("cumtime")
+                                   , rep(match(tripids[converted], all_tripids), n_rows)))
+
+    return(new_stoptimes)
   }
 
   new_stoptimes <- data.table::rbindlist(lapply(pattern_trips, process_pattern))
@@ -180,9 +211,8 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
     return(NULL)  # nocov
   }
   
-  # new_stoptimes$lag <- NULL
-  new_stoptimes$arrival_time <- NULL
-  new_stoptimes$departure_time <- NULL
+  # by reference: `$<- NULL` copied the whole table twice
+  data.table::set(new_stoptimes, j = c("arrival_time", "departure_time"), value = NULL)
   
   data.table::setcolorder(new_stoptimes, c("shape_id","trip_id", "route_type"
                                            , "id", "timestamp", "shape_pt_lon", "shape_pt_lat"
@@ -249,7 +279,7 @@ shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepat
 #' spatial_resolution. If a given shape has two consecutive points with a
 #' distance lower than the spatial resolution, the algorithm will not remove
 #' such points. 
-#' @param parallel Decides whether the function should run in parallel. Defaults is FALSE.
+#' @param parallel Decides whether the function should run in parallel. Defaults to TRUE.
 #' When TRUE, it will use all cores available minus one using future::plan() with
 #' strategy "multisession" internally.
 #' Note that it is possible to create your own plan before calling gtfs2gps().
@@ -442,7 +472,7 @@ gtfs2gps <- function(gtfs_data,
   p <- progressr::progressor(steps = length(all_shapeids))
 
   cli::cli_inform("Processing the data")
-  requiredPackages = c('data.table', 'sf', 'Rcpp', 'sfheaders', 'units')
+  requiredPackages = c('data.table', 'sf', 'sfheaders', 'units')
   # convert_shape() is a package-level function and every other argument is small,
   # so each worker is sent only its chunk of `slices`
   output <- furrr::future_map(.x = slices, .f = convert_shape

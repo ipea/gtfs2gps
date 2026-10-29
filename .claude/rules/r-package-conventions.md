@@ -34,7 +34,7 @@ CRAN standard. When they conflict, Part A wins; flag the conflict in the plan.
   `progressr::`, `terra::`, `checkmate::`.
 - **Existing `@importFrom`** (in `R/utils.R`): data.table `:=`, `%between%`,
   `fifelse`, `%chin%`; `stats::na.omit`; `utils` `head`, `tail`,
-  `object.size`; `Rcpp::compileAttributes`; `lwgeom::st_geod_length`; plus
+  `object.size`; `lwgeom::st_geod_length`; plus
   `@useDynLib gtfs2gps, .registration = TRUE`. Don't add new `@importFrom`
   without a plan; **[NEW]** write `stats::`/`utils::` explicitly in new code
   (existing code has bare `na.omit()`, `object.size()`, `weighted.mean()`).
@@ -82,7 +82,7 @@ gtfs2gps handles two kinds of objects:
   elapsed time is carried by `cumtime`. Keep that consistent when touching
   time code.
 
-## A3. data.table, Rcpp and parallelism
+## A3. data.table, C++ and parallelism
 
 - **Never modify the caller's objects.** Existing models:
   `gtfs2gps()` and `filter_valid_stop_times()` start with
@@ -94,11 +94,15 @@ gtfs2gps handles two kinds of objects:
 - Use `%chin%` for character membership, keyed / `on =` joins, and `by =`
   grouping. No new row-wise loops. `lapply` over shapes or trips followed by
   `data.table::rbindlist()` is the established pattern for per-group work.
-- **Rcpp:** C++ lives in `src/*.cpp` with `// [[Rcpp::export]]`
-  (`cpp_snap_points_nearest1/2`, `rcpp_distance_haversine`). After changing an
-  export signature, regenerate `R/RcppExports.R` and `src/RcppExports.cpp`
-  with `Rcpp::compileAttributes()` (`devtools::document()` also does it); never
-  hand-edit them. `src/*.o` / `*.dll` are build artefacts (gitignored).
+- **C++ (cpp11, since 2026-10-28; formerly Rcpp):** C++ lives in `src/*.cpp`
+  with `[[cpp11::register]]` (`cpp_snap_points_nearest1/2`,
+  `rcpp_distance_haversine`). After changing a registered signature, regenerate
+  `R/cpp11.R` and `src/cpp11.cpp` with `cpp11::cpp_register()`
+  (`devtools::document()` also does it); never hand-edit them. cpp11 checks
+  argument types strictly (an `int` argument rejects `15.5`), so coerce in R at
+  the call site. `src/*.o` / `*.dll` are build artefacts (gitignored); delete
+  them before `R CMD INSTALL` from the source tree, which otherwise reuses
+  objects built with other flags.
 - **Parallelism:** `gtfs2gps(parallel = TRUE)` sets
   `future::plan("multisession", workers = ncores)` and restores the previous
   plan with `on.exit()`; work is spread over shapes with
@@ -189,7 +193,7 @@ user-facing conditions. `cli` goes in `Imports`.
   | Generated file | Regenerate with |
   |---|---|
   | `NAMESPACE`, `man/*.Rd` | `devtools::document()` |
-  | `R/RcppExports.R`, `src/RcppExports.cpp` | `Rcpp::compileAttributes()` (`document()` also runs it) |
+  | `R/cpp11.R`, `src/cpp11.cpp` | `cpp11::cpp_register()` (`document()` also runs it) |
 
   `README.md` is hand-written (no `README.Rmd`).
 
@@ -310,7 +314,7 @@ release. Credit external contributors.
 [ ] cli::cli_abort/cli_warn/cli_inform (classed errors); touched functions fully migrated; messages respect quiet
 [ ] style matches the file (leading-comma data.table calls, explicit return())
 [ ] roxygen: @title/@description/@param/@return/@examples on poa subset
-[ ] devtools::document() run; RcppExports regenerated, not hand-edited
+[ ] devtools::document() run; cpp11 registration regenerated, not hand-edited
 [ ] NEWS.md bullet for user-facing changes
 [ ] perf claims backed by bench::mark with equal results
 ```

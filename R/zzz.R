@@ -15,7 +15,6 @@ utils::globalVariables(c(".", ":="))
 #' @importFrom data.table := %between% fifelse %chin%
 #' @importFrom stats na.omit
 #' @importFrom utils head tail object.size
-#' @importFrom Rcpp compileAttributes
 #' @importFrom lwgeom st_geod_length
 #' @importFrom rlang abort
 #' @useDynLib gtfs2gps, .registration = TRUE

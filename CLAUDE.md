@@ -4,7 +4,7 @@
 format into GPS-like records: one `data.table` row per vehicle position, with
 timestamps, distances and speeds interpolated along each trip's shape at a
 given spatial resolution. It also converts GTFS and GPS data to `sf`. Built on
-`data.table`, `sf`/`sfheaders`, Rcpp, and `future`/`furrr` for parallelism;
+`data.table`, `sf`/`sfheaders`, C++ via cpp11, and `future`/`furrr` for parallelism;
 GTFS reading/writing and filtering are delegated to {gtfstools}. Published on
 CRAN; developed by Ipea (ipeaGIT). Maintainer (cre): Pedro R. Andrade; authors
 include Rafael H. M. Pereira and Joao Bazzo. License MIT. Docs:
@@ -61,8 +61,8 @@ gtfs2gps/
 │   ├── test_gtfs_freq.R          # "frequency" vs "simple" feed
 │   ├── utils.R                   # @importFrom, globalVariables, time helpers
 │   ├── zzz.R                     # .onLoad / .onAttach
-│   └── RcppExports.R             # generated; never hand-edit
-├── src/                          # Rcpp: snap_points.cpp, distance_calcs.cpp (+ generated RcppExports.cpp)
+│   └── cpp11.R                   # generated; never hand-edit
+├── src/                          # cpp11: snap_points.cpp, distance_calcs.cpp (+ generated cpp11.cpp)
 ├── tests/testthat/               # test_<function>.R (underscore); suite also runs on CRAN
 ├── inst/extdata/                 # fixtures: poa.zip, saopaulo.zip (frequencies), fortaleza.zip (+ srtm.tif), berlin.zip, warsaw.zip
 ├── vignettes/intro_to_gtfs2gps.Rmd
@@ -88,7 +88,7 @@ Local-only workflow files (gitignored and Rbuildignored): `MEMORY.md`,
 
 ```r
 devtools::load_all()
-devtools::document()                         # regenerate man/, NAMESPACE, RcppExports
+devtools::document()                         # regenerate man/, NAMESPACE, cpp11 registration
 devtools::test()                             # full suite (slow: parallel gtfs2gps)
 devtools::test(filter = "adjust_speed")      # matches tests/testthat/test_adjust_speed.R
 devtools::check(args = "--as-cran")          # ~5 min; run in background
@@ -108,7 +108,7 @@ covr::package_coverage()
 
 | Checkpoint | Must hold |
 |---|---|
-| Commit | `document()` produces no content drift (`git diff`, incl. RcppExports); tests for touched functions pass; parallel/sequential parity if the worker path changed; `NEWS.md` entry for user-facing changes |
+| Commit | `document()` produces no content drift (`git diff`, incl. cpp11.R/cpp11.cpp); tests for touched functions pass; parallel/sequential parity if the worker path changed; `NEWS.md` entry for user-facing changes |
 | PR | Full `test()` passes; `check(--as-cran)` gives 0 errors / 0 warnings, NOTEs triaged; review loop converged; `r-package-reviewer` 0 CRITICAL/MAJOR |
 | Release | `/g2g-package-check`; win-builder + rhub; reverse-dependency check; compatibility with current {gtfstools}; `cran-comments.md` updated |
 
@@ -151,4 +151,4 @@ user-level rules conflict with `.claude/rules/`, the project rules win.
 
 No commits, pushes, PRs, merges, version bumps or `.github/workflows/`
 changes without an explicit request. Never hand-edit generated files
-(`NAMESPACE`, `man/*.Rd`, `R/RcppExports.R`, `src/RcppExports.cpp`).
+(`NAMESPACE`, `man/*.Rd`, `R/cpp11.R`, `src/cpp11.cpp`).

@@ -28,7 +28,6 @@ Imports:
       furrr,
       future,
       gtfstools (>= 2.0.0),
-      Rcpp,
       units,
       sf,
       terra,
@@ -41,5 +40,5 @@ Imports:
       rlang (>= 1.1.0)
 RoxygenNote: 7.3.3
 VignetteBuilder: knitr
-LinkingTo: Rcpp
+LinkingTo: cpp11 (>= 0.4.0)
 Remotes: ipea/gtfstools

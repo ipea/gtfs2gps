@@ -22,7 +22,7 @@ All must hold for the files touched:
 
 | Check | Command | Pass |
 |---|---|---|
-| Docs + Rcpp regenerated | `Rscript -e "devtools::document()"` then `git diff --stat man/ NAMESPACE R/RcppExports.R src/RcppExports.cpp` | No unexpected content drift (use `git diff`, not `git status`: with `core.autocrlf=true`, regeneration can rewrite line endings only); intended changes staged with the source |
+| Docs + cpp11 registration regenerated | `Rscript -e "devtools::document()"` then `git diff --stat man/ NAMESPACE R/cpp11.R src/cpp11.cpp` | No unexpected content drift (use `git diff`, not `git status`: with `core.autocrlf=true`, regeneration can rewrite line endings only); intended changes staged with the source |
 | Targeted tests | `Rscript -e "devtools::test(filter = '<fn>')"` for every touched function (files are `test_<fn>.R`) | 0 failures, 0 new warnings |
 | Parallel parity | if `gtfs2gps()` or anything it calls changed: run the affected test/MWE with `parallel = FALSE` and with `parallel = TRUE, ncores = 2` | Identical results |
 | Style | read the diff against the surrounding code | Matches the file (conventions A5); there is no `.lintr` here, so lintr is advisory only |

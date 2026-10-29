@@ -33,8 +33,8 @@ the plan and the relevant files:
 | Lens | Agent | Looks for |
 |---|---|---|
 | Correctness and GTFS edge cases | `general-purpose` | Logic errors; frequency- vs stop_times-based feeds; times ≥ 24:00:00 and the midnight wrap; stops that fail to snap; shapes with no trips / trips with no shape; `NA` arrival/departure times; units of `speed`/`dist`/`cumdist`/`cumtime`; same result with `parallel = TRUE` and `FALSE` |
-| Performance and parallelism | `general-purpose` | Avoidable copies, row loops, repeated joins, `sf` work that `sfheaders`/Rcpp could do, objects shipped to `future` workers, side effects (`<<-`, messages) lost in workers; asks for `bench::mark` if a speed claim is made |
-| Package and CRAN | `r-package-reviewer` (local; if absent, `general-purpose` with `r-package-conventions.md`) | Conventions, roxygen, NAMESPACE, Rcpp exports, tests (including "doesn't change input data"), CRAN policy (cores, writing outside `tempdir()`), back-compat |
+| Performance and parallelism | `general-purpose` | Avoidable copies, row loops, repeated joins, `sf` work that `sfheaders`/C++ could do, objects shipped to `future` workers, side effects (`<<-`, messages) lost in workers; asks for `bench::mark` if a speed claim is made |
+| Package and CRAN | `r-package-reviewer` (local; if absent, `general-purpose` with `r-package-conventions.md`) | Conventions, roxygen, NAMESPACE, cpp11 registration, tests (including "doesn't change input data"), CRAN policy (cores, writing outside `tempdir()`), back-compat |
 
 Scale down for small changes: a docs-only change needs only the package lens.
 Scale up for risky ones: add a second correctness reviewer with a different

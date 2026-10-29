@@ -28,7 +28,7 @@ spatial_resolution. If a given shape has two consecutive points with a
 distance lower than the spatial resolution, the algorithm will not remove
 such points.}
 
-\item{parallel}{Decides whether the function should run in parallel. Defaults is FALSE.
+\item{parallel}{Decides whether the function should run in parallel. Defaults to TRUE.
 When TRUE, it will use all cores available minus one using future::plan() with
 strategy "multisession" internally.
 Note that it is possible to create your own plan before calling gtfs2gps().

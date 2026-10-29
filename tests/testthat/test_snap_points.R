@@ -36,3 +36,9 @@ test_that("snap_points", {
   expect_equal(length(result), 0)
   expect_true(all(result == sort(result)))
 })
+
+test_that("rcpp_distance_haversine handles empty input", {
+  # the C++ used to write past the end of an empty vector
+  expect_identical(rcpp_distance_haversine(numeric(0), numeric(0), numeric(0), numeric(0), 1e10)
+                   , numeric(0))
+})
