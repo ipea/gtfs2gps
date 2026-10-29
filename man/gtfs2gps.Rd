@@ -7,7 +7,7 @@
 gtfs2gps(
   gtfs_data,
   spatial_resolution = 100,
-  parallel = TRUE,
+  parallel = FALSE,
   ncores = NULL,
   strategy = NULL,
   filepath = NULL,
@@ -28,11 +28,13 @@ spatial_resolution. If a given shape has two consecutive points with a
 distance lower than the spatial resolution, the algorithm will not remove
 such points.}
 
-\item{parallel}{Decides whether the function should run in parallel. Defaults to TRUE.
+\item{parallel}{Decides whether the function should run in parallel. Defaults to FALSE.
 When TRUE, it will use all cores available minus one using future::plan() with
-strategy "multisession" internally.
-Note that it is possible to create your own plan before calling gtfs2gps().
-In this case, do not use this argument.}
+strategy "multisession" internally. Starting the R sessions and sending the
+results back usually takes longer than the conversion itself, so this is
+rarely faster than running sequentially.
+Note that it is possible to create your own plan before calling gtfs2gps(),
+which is then used even with parallel = FALSE.}
 
 \item{ncores}{Number of cores to be used in parallel execution. When 
 `parallel = FALSE`, this argument is ignored. When `parallel = TRUE`,

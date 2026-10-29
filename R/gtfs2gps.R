@@ -303,11 +303,13 @@ set_gps_units <- function(gps){
 #' spatial_resolution. If a given shape has two consecutive points with a
 #' distance lower than the spatial resolution, the algorithm will not remove
 #' such points. 
-#' @param parallel Decides whether the function should run in parallel. Defaults to TRUE.
+#' @param parallel Decides whether the function should run in parallel. Defaults to FALSE.
 #' When TRUE, it will use all cores available minus one using future::plan() with
-#' strategy "multisession" internally.
-#' Note that it is possible to create your own plan before calling gtfs2gps().
-#' In this case, do not use this argument.
+#' strategy "multisession" internally. Starting the R sessions and sending the
+#' results back usually takes longer than the conversion itself, so this is
+#' rarely faster than running sequentially.
+#' Note that it is possible to create your own plan before calling gtfs2gps(),
+#' which is then used even with parallel = FALSE.
 #' @param ncores Number of cores to be used in parallel execution. When 
 #'        `parallel = FALSE`, this argument is ignored. When `parallel = TRUE`,
 #'        then by default the function uses all available cores minus one.
@@ -386,7 +388,7 @@ set_gps_units <- function(gps){
 #' 
 gtfs2gps <- function(gtfs_data,
                      spatial_resolution = 100,
-                     parallel = TRUE,
+                     parallel = FALSE,
                      ncores = NULL,
                      strategy = NULL,
                      filepath = NULL,

@@ -98,8 +98,9 @@ covr::package_coverage()
 - Compiled code needs a toolchain (Rtools on Windows). `core.autocrlf=true`
   here, so regenerated files can show line-ending-only diffs: check drift with
   `git diff`, not `git status`.
-- `gtfs2gps()` defaults to `parallel = TRUE` with `availableCores() - 1`
-  workers; for quick local checks pass `parallel = FALSE`.
+- `gtfs2gps()` defaults to `parallel = FALSE` (since 2026-10-29: multisession
+  workers were slower than sequential); `parallel = TRUE` uses
+  `availableCores() - 1` workers.
 
 ---
 
