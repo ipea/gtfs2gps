@@ -6,9 +6,9 @@ timestamps, distances and speeds interpolated along each trip's shape at a
 given spatial resolution. It also converts GTFS and GPS data to `sf`. Built on
 `data.table`, `sf`/`sfheaders`, and C++ via cpp11 (OpenMP threads for parallelism);
 GTFS reading/writing and filtering are delegated to {gtfstools}. Published on
-CRAN; developed by Ipea (ipeaGIT). Maintainer (cre): Pedro R. Andrade; authors
+CRAN; developed by Ipea (GitHub org `ipea`). Maintainer (cre): Pedro R. Andrade; authors
 include Rafael H. M. Pereira and Joao Bazzo. License MIT. Docs:
-<https://ipeagit.github.io/gtfs2gps/>. Default branch: `master`.
+<https://ipea.github.io/gtfs2gps/>. Default branch: `master`.
 
 ---
 

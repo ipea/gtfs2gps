@@ -11,7 +11,7 @@
 #' if one agency_id belongs to routes but not to agency will be removed. This might
 #' cause one cascade removal of objects in other relations that originally
 #' did not have any inconsistency.
-#' @param gtfs_data A list of data.tables read using gtfs2gps::reag_gtfs().
+#' @param gtfs_data A list of data.tables read using gtfs2gps::read_gtfs().
 #' @param only_essential Remove only the essential files? The essential files are all but 
 #' agency, calendar, and routes. Default is TRUE, which means that agency-routes,
 #' routes-trips, and trips-calendar relations
@@ -154,7 +154,7 @@ filter_valid_stop_times <- function(gtfs_data){
 #' 
 #' @description Filter a GTFS data by keeping only one trip per shape_id.
 #' It also removes the unnecessary routes and stop_times accordingly.
-#' @param gtfs_data A list of data.tables read using gtfs2gps::reag_gtfs().
+#' @param gtfs_data A list of data.tables read using gtfs2gps::read_gtfs().
 #' @return A filtered GTFS data. 
 #' @export
 #' @examples

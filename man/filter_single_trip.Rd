@@ -7,7 +7,7 @@
 filter_single_trip(gtfs_data)
 }
 \arguments{
-\item{gtfs_data}{A list of data.tables read using gtfs2gps::reag_gtfs().}
+\item{gtfs_data}{A list of data.tables read using gtfs2gps::read_gtfs().}
 }
 \value{
 A filtered GTFS data.

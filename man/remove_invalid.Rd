@@ -7,7 +7,7 @@
 remove_invalid(gtfs_data, only_essential = TRUE, prompt_invalid = FALSE)
 }
 \arguments{
-\item{gtfs_data}{A list of data.tables read using gtfs2gps::reag_gtfs().}
+\item{gtfs_data}{A list of data.tables read using gtfs2gps::read_gtfs().}
 
 \item{only_essential}{Remove only the essential files? The essential files are all but 
 agency, calendar, and routes. Default is TRUE, which means that agency-routes,

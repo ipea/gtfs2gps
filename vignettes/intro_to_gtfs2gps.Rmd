@@ -41,7 +41,7 @@ Note that not all GTFS files are loaded into R. This function only loads the nec
 this last four being optional.
 If a given GTFS zipped file does not contain all of these required files then `read_gtfs()` will stop with an error.
 
-In the code below we filter only the shape ids `c("T2-1", "A141-1") to allow faster execution the next scripts.
+In the code below we filter only the shape ids `c("T2-1", "A141-1")` to allow faster execution of the next scripts.
 
 ```{r}
 object.size(poa) |> format(units = "Kb")
@@ -69,7 +69,7 @@ gtfs2gps::write_gtfs(poa_small, temp_gtfs)
 
 # Converting to GPS-like format
 
-To convert GTFS to GPS-like format, use `gtfs2gps()`. This is the core function of the package. It takes a GTFS zipped file as an input and returns a `data.table` where each row represents a 'GPS-like' data point for every trip in the GTFS file. In summary, this function interpolates the space-time position of each vehicle in each trip considering the network distance and average speed between stops. The function samples the timestamp of each vehicle every $15m$ by default, but the user can set a different value in the `spatial_resolution` argument. See the example below.
+To convert GTFS to GPS-like format, use `gtfs2gps()`. This is the core function of the package. It takes a GTFS zipped file as an input and returns a `data.table` where each row represents a 'GPS-like' data point for every trip in the GTFS file. In summary, this function interpolates the space-time position of each vehicle in each trip considering the network distance and average speed between stops. The function samples the timestamp of each vehicle every $100m$ by default, but the user can set a different value in the `spatial_resolution` argument. See the example below.
 
 ```{r, message = FALSE}
 poa_gps <- gtfs2gps(temp_gtfs, spatial_resolution = 100)
@@ -92,16 +92,16 @@ plot(sf::st_geometry(poa_gps60_sflinestring), col = "blue", add = TRUE)
 box()
 ```
 
-The function `gtfs2gps()` automatically recognizes whether the GTFS data brings detailed `stop_times.txt` information or whether it is a `frequency.txt` GTFS file. A sample data of a GTFS with detailed  `stop_times.txt` cab be found below:
+The function `gtfs2gps()` automatically recognizes whether the GTFS data brings detailed `stop_times.txt` information or whether it is a `frequencies.txt` GTFS file. A sample data of a GTFS with detailed  `stop_times.txt` can be found below:
 
 ```{r, message = FALSE}
 poa <- system.file("extdata/poa.zip", package ="gtfs2gps")
 
 poa_gps <- gtfs2gps(poa, spatial_resolution = 50)
 
-poa_gps_sflinestrig <- gps_as_sfpoints(poa_gps)
+poa_gps_sfpoints <- gps_as_sfpoints(poa_gps)
 
-plot(sf::st_geometry(poa_gps_sflinestrig[1:200,]))
+plot(sf::st_geometry(poa_gps_sfpoints[1:200,]))
 
 box()
 ```

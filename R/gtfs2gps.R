@@ -384,7 +384,7 @@ set_gps_units <- function(gps){
 #' compresses the output files by saving them using rds format. Default value is FALSE.
 #' Note that compress guarantees that the data saved will be read in the same way as it
 #' was created in R. If not compress, the txt extension requires the data to be converted
-#' from ITime to string, and therefore they need to manually converted back to ITime to 
+#' from ITime to string, and therefore they need to be manually converted back to ITime to 
 #' be properly handled by gtfs2gps.
 #' @param continue Argument that can be used only with filepath. When TRUE, it
 #'        skips processing the shape identifiers that were already saved into 
@@ -411,7 +411,7 @@ set_gps_units <- function(gps){
 #' 
 #' The `speed`, `cumdist`, and `cumtime` are based on the difference of distance 
 #' and time between the current and previous row of the same trip. It means that 
-#' the first data point at the first stop of each trip represens a stationary 
+#' the first data point at the first stop of each trip represents a stationary 
 #' vehicle. The `adjust_speed()` function can be used to post-process the output 
 #' to replace eventual `NA` values in the `speed` column.
 #' 
@@ -419,7 +419,7 @@ set_gps_units <- function(gps){
 #' `timestamp` value in the first data point represents the time when the 
 #' vehicle arrived at that stop (corresponding the `arrival_time` column in the
 #' `stop_times.txt` file), while the `timestamp` in the second data point 
-#' represents the time when the vehicle departured from that stop (corresponding
+#' represents the time when the vehicle departed from that stop (corresponding
 #' the `departure_time` column in the `stop_times.txt` file). The second point 
 #' considers that the vehicle is stationary at the stop, immediately before 
 #' departing.
