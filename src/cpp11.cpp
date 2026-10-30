@@ -19,11 +19,19 @@ extern "C" SEXP _gtfs2gps_cpp_openmp_available() {
     return cpp11::as_sexp(cpp_openmp_available());
   END_CPP11
 }
+// sequence_pattern.cpp
+integers cpp_sequence_pattern_id(const integers group_size, const list columns);
+extern "C" SEXP _gtfs2gps_cpp_sequence_pattern_id(SEXP group_size, SEXP columns) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_sequence_pattern_id(cpp11::as_cpp<cpp11::decay_t<const integers>>(group_size), cpp11::as_cpp<cpp11::decay_t<const list>>(columns)));
+  END_CPP11
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
-    {"_gtfs2gps_cpp_expand_pattern",   (DL_FUNC) &_gtfs2gps_cpp_expand_pattern,   14},
-    {"_gtfs2gps_cpp_openmp_available", (DL_FUNC) &_gtfs2gps_cpp_openmp_available,  0},
+    {"_gtfs2gps_cpp_expand_pattern",      (DL_FUNC) &_gtfs2gps_cpp_expand_pattern,      14},
+    {"_gtfs2gps_cpp_openmp_available",    (DL_FUNC) &_gtfs2gps_cpp_openmp_available,     0},
+    {"_gtfs2gps_cpp_sequence_pattern_id", (DL_FUNC) &_gtfs2gps_cpp_sequence_pattern_id,  2},
     {NULL, NULL, 0}
 };
 }

@@ -58,6 +58,23 @@ test_that("filter_single_trip ignores trips without a shape", {
   expect_false(anyNA(single$trips$shape_id))
 })
 
+test_that("filter_single_trip keeps one trip per shape and the rows it uses", {
+  warsaw <- read_gtfs(system.file("extdata/warsaw.zip", package = "gtfs2gps"), quiet = TRUE)
+  before <- data.table::copy(warsaw)
+
+  single <- filter_single_trip(warsaw)
+
+  # input data is not modified
+  expect_identical(warsaw, before)
+
+  expect_false(anyDuplicated(single$trips$shape_id) > 0)
+  expect_setequal(single$trips$shape_id, unique(warsaw$trips$shape_id[!is.na(warsaw$trips$shape_id)]))
+  expect_true(all(single$stop_times$trip_id %chin% single$trips$trip_id))
+  # shapes and services not used by the kept trips are dropped
+  expect_setequal(unique(single$shapes$shape_id), single$trips$shape_id)
+  expect_setequal(single$calendar$service_id, unique(single$trips$service_id))
+})
+
 test_that("remove_invalid keeps services from either calendar table and timetabled trips", {
   poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE)
   n_trips <- nrow(poa$trips)

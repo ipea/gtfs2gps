@@ -34,4 +34,4 @@ if(getRversion() >= "2.15.1") utils::globalVariables(
     'i.to_timestamp', 'interval_status', 'numbers', 'to_timestamp',
     'time', 'timestamp', 'i.arrival_time', 'i.route_type',
     'shape_rank', 'pattern_key', 'pattern', 'trip_rank', 'pattern_id', 'i.pattern_id',
-    'point', 'k', 'status', 'ref', 'kidx'))
+    'point', 'k', 'status', 'ref', 'kidx', 'N'))

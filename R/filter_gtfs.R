@@ -169,36 +169,24 @@ filter_valid_stop_times <- function(gtfs_data){
 
 #' @title Filter GTFS trips in order to have one trip per shape_id
 #' 
-#' @description Filter a GTFS data by keeping only one trip per shape_id.
-#' It also removes the unnecessary routes and stop_times accordingly.
+#' @description Filter a GTFS data by keeping only the first trip of each
+#' shape_id, using \code{gtfstools::filter_by_trip_id()}. Trips without a
+#' shape_id are dropped. The other tables (stop_times, frequencies, shapes,
+#' routes, stops, calendar, etc.) keep only the rows used by the remaining
+#' trips. The input data is not modified.
 #' @param gtfs_data A list of data.tables read using gtfs2gps::read_gtfs().
-#' @return A filtered GTFS data. 
+#' @return A filtered GTFS data.
 #' @export
 #' @examples
 #' poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#' 
+#'
 #' subset <- filter_single_trip(poa)
 filter_single_trip <- function(gtfs_data){
   # one trip per shape; trips without a shape can't be converted
-  gtfs_data$trips <- gtfs_data$trips[!is.na(gtfs_data$trips$shape_id) & !duplicated(gtfs_data$trips$shape_id), ]
+  trips <- gtfs_data$trips
+  trip_ids <- trips$trip_id[!is.na(trips$shape_id) & !duplicated(trips$shape_id) & !is.na(trips$trip_id)]
 
-
-  # unique trips
-  trip_ids <- unique(gtfs_data$trips$trip_id)
-
-  # filter stop_times
-  gtfs_data$stop_times <- subset(gtfs_data$stop_times, trip_id %chin% trip_ids)
-  
-  # filter frequencies
-  if(!is.null(gtfs_data$frequencies)){
-    gtfs_data$frequencies <- subset(gtfs_data$frequencies, trip_id %chin% trip_ids)
-  }
-  
-  # filter routes
-  if(!is.null(gtfs_data$routes)){
-    route_ids <- unique(gtfs_data$trips$route_id)
-    gtfs_data$routes <- subset(gtfs_data$routes, route_id %in% route_ids)
-  }
+  gtfs_data <- gtfstools::filter_by_trip_id(gtfs_data, trip_ids)
 
   return(gtfs_data)
 }

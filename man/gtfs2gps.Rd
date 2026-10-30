@@ -51,7 +51,7 @@ compress for another option.}
 compresses the output files by saving them using rds format. Default value is FALSE.
 Note that compress guarantees that the data saved will be read in the same way as it
 was created in R. If not compress, the txt extension requires the data to be converted
-from ITime to string, and therefore they need to be manually converted back to ITime to 
+from ITime to string, and therefore they need to be manually converted back to ITime to
 be properly handled by gtfs2gps.}
 
 \item{snap_method}{This argument is deprecated and ignored. Stops are now
@@ -59,16 +59,16 @@ located along the shapes with `gtfstools::interpolate_shape_dist_traveled()`
 (see details).}
 
 \item{continue}{Argument that can be used only with filepath. When TRUE, it
-skips processing the shape identifiers that were already saved into 
+skips processing the shape identifiers that were already saved into
 files. It is useful to continue processing a GTFS file that was stopped
 for some reason. Default value is FALSE.}
 
 \item{quiet}{Hide messages while processing the data? Defaults to FALSE.}
 }
 \value{
-A `data.table`, where each row represents a GPS point. The following 
-columns are returned (units of measurement in parenthesis): dist and cumdist 
-(meters), cumtime (seconds), shape_pt_lon and shape_pt_lat (degrees), speed 
+A `data.table`, where each row represents a GPS point. The following
+columns are returned (units of measurement in parenthesis): dist and cumdist
+(meters), cumtime (seconds), shape_pt_lon and shape_pt_lat (degrees), speed
 (km/h), timestamp (hh:mm:ss).
 }
 \description{
@@ -93,24 +93,24 @@ the shape in high resolution, moved forward when needed so that each stop has
 a point of its own. Distances are great-circle distances on the sphere used
 by the s2 and sf packages, with a radius of 6,371,010 m.
 
-The `speed`, `cumdist`, and `cumtime` are based on the difference of distance 
-and time between the current and previous row of the same trip. It means that 
-the first data point at the first stop of each trip represents a stationary 
-vehicle. The `adjust_speed()` function can be used to post-process the output 
+The `speed`, `cumdist`, and `cumtime` are based on the difference of distance
+and time between the current and previous row of the same trip. It means that
+the first data point at the first stop of each trip represents a stationary
+vehicle. The `adjust_speed()` function can be used to post-process the output
 to replace eventual `NA` values in the `speed` column.
 
-Each stop is presented as two data points for each trip in the output. The 
-`timestamp` value in the first data point represents the time when the 
+Each stop is presented as two data points for each trip in the output. The
+`timestamp` value in the first data point represents the time when the
 vehicle arrived at that stop (corresponding the `arrival_time` column in the
-`stop_times.txt` file), while the `timestamp` in the second data point 
+`stop_times.txt` file), while the `timestamp` in the second data point
 represents the time when the vehicle departed from that stop (corresponding
-the `departure_time` column in the `stop_times.txt` file). The second point 
-considers that the vehicle is stationary at the stop, immediately before 
+the `departure_time` column in the `stop_times.txt` file). The second point
+considers that the vehicle is stationary at the stop, immediately before
 departing.
 
-Some GTFS feeds do not report embark/disembark times (so `arrival_time` and 
+Some GTFS feeds do not report embark/disembark times (so `arrival_time` and
 `departure_time` are identical at the same stop). In this case, the user can
-call the `adjust_arrival_departure()` function to set the minimum time each 
+call the `adjust_arrival_departure()` function to set the minimum time each
 vehicle will spend at stops to embark/disembark passengers.
 
 To avoid division by zero, the minimum speed of vehicles in the output is
@@ -122,7 +122,7 @@ library(gtfs2gps)
 gtfs <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   filter_single_trip()
-  
+
 poa_gps <- gtfs2gps(gtfs, quiet = TRUE)
 
 }

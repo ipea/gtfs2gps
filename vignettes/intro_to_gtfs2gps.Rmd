@@ -17,7 +17,14 @@ knitr::opts_chunk$set(
 ```
 # Introduction 
 
-Package `gtfs2gps` allows users to convert public transport GTFS data into a single `data.table` format with GPS-like records, which can then be used in various applications such as running transport simulations or scenario analyses. Before using the package, just install it from GitHub.
+Package `gtfs2gps` allows users to convert public transport GTFS data 
+into a single `data.table` format with GPS-like records, tracking the 
+space-time position of individual vehicles at high spatial and temporal 
+resolutions. This GPS-like data format is quite convinient as it can be
+easily used in various applications for running transport simulations, 
+scenario analyses, data visualizations etc. 
+
+To start using the package, you can install it from CRAN:
 
 ```{r, eval = FALSE}
 install.packages("gtfs2gps")
@@ -25,55 +32,94 @@ install.packages("gtfs2gps")
 
 # Loading data
 
-After loading the package, GTFS data can be read into R by using `read_gtfs()`.
-This function gets a zipped GTFS file and returns a list of `data.table` objects. The returning list contains the data of each GTFS file indexed according to their file names without extension.
+After loading the package, you can read a GTFS feed using `read_gtfs()`.
+This function gets a zipped GTFS file and returns a list of `data.table` 
+objects. To demonstrate the package, we will use a small sample of the 
+GTFS from Porto Alegre, Brazil
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 library("gtfs2gps")
-poa <- read_gtfs(system.file("extdata/poa.zip", package ="gtfs2gps"))
+
+# path to gtfs file
+gtfs_file <- system.file("extdata/poa.zip", package ="gtfs2gps")
+
+# read gtfs to memory 
+poa <- gtfs2gps::read_gtfs(gtfs_file)
+
 names(poa)
-head(poa$trips)
 ```
 
-Note that not all GTFS files are loaded into R. This function only loads the necessary data to spatially and temporally handle trips and stops, which are:
-"shapes.txt", "stop_times.txt", "stops.txt", "trips.txt",
-"agency.txt", "calendar.txt", "routes.txt", and "frequencies.txt", with
-this last four being optional.
-If a given GTFS zipped file does not contain all of these required files then `read_gtfs()` will stop with an error.
+The returning list contains the tables from the GTFS file indexed 
+according to their file names. Note that this function only loads 
+those tables that are necessary for the operations in {gtfs2gps},
+which are:
+- `shapes.txt`
+- `stop_times.txt`
+- `stops.txt`
+- `trips.txt`
+- `agency.txt` (optional)
+- `calendar.txt` (optional)
+- `routes.txt` (optional)
+- `frequencies.txt` (optional)
 
-In the code below we filter only the shape ids `c("T2-1", "A141-1")` to allow faster execution of the next scripts.
-
-```{r}
-object.size(poa) |> format(units = "Kb")
-poa_small <- gtfstools::filter_by_shape_id(poa, c("T2-1", "A141-1"))
-object.size(poa_small) |> format(units = "Kb")
-```
-
-We can then easily convert the data to simple feature format and plot them.
+If you'd like to visualize how the transport network looks like, you can use a few convinient functions from [{gtfstools}](https://github.com/ipea/gtfstools/), our sister package.
 
 ```{r poa_small_shapes_sf, message = FALSE}
-poa_small_shapes_sf <- gtfstools::get_shapes_geometry(poa_small)
-poa_small_stops_sf <- gtfstools::get_stops_geometry(poa_small)
-plot(sf::st_geometry(poa_small_shapes_sf))
-plot(sf::st_geometry(poa_small_stops_sf), pch = 20, col = "red", add = TRUE)
-box()
+library(ggplot2)
+library(gtfstools)
+
+# get spatial geometries of GTFS
+shapes_sf <- gtfstools::get_shapes_geometry(poa)
+stops_sf <- gtfstools::get_stops_geometry(poa)
+
+ggplot() +
+  geom_sf(data = shapes_sf) +
+  geom_sf(data = stops_sf, color = "red", size = .2)
 ```
 
-After subsetting the data, it is also possible to save it as a new GTFS file using `write_gtfs()`, as shown below.
+Some times, GTFS feeds come with internal inconsistencies, for example with trips going too fast, or not accounting for dwell time, etc. We highly recommend that you use {gtfstools} functions to profile, clean and edit your GTFS data before running {gtfs2gps} on it. In this example below, we run `gtfstools::fix_gtfs()` a simple and convinient function to fix a few of these issues. Here, we use this function to cap max speed to 25 Km/h and set a min dwell time of 30 secs, and the funcion recalculates the stop times of the feed.
 
-```{r, message = FALSE}
-temp_gtfs <- tempfile(pattern = 'poa_small', fileext = '.zip')
+```{r poa_small_shapes_sf, message = FALSE}
+# quick fix
+poa_fixed <- gtfstools::fix_gtfs(
+  gtfs = poa, 
+  max_speed = 25, 
+  min_dwell_time = 30
+  )
 
-gtfs2gps::write_gtfs(poa_small, temp_gtfs)
 ```
+
 
 # Converting to GPS-like format
 
 To convert GTFS to GPS-like format, use `gtfs2gps()`. This is the core function of the package. It takes a GTFS zipped file as an input and returns a `data.table` where each row represents a 'GPS-like' data point for every trip in the GTFS file. In summary, this function interpolates the space-time position of each vehicle in each trip considering the network distance and average speed between stops. The function samples the timestamp of each vehicle every $100m$ by default, but the user can set a different value in the `spatial_resolution` argument. See the example below.
 
+```{r, message = FALSE, warning = FALSE}
+poa_gps <- gtfs2gps(
+  gtfs_data = poa_fixed, 
+  spatial_resolution = 100, 
+  ncores = 1
+  )
+
+```
+
+obs. Remember you can user the argument `ncores` to set how many 
+threads the function can use to parallelize operations. Setting
+`ncores` to `4` or `6` can lead to substantial reductions in 
+computation time in large GTFS feeds.
+
+
+
+# Visualizing gtfs2gps output
+
+The output of the `gtfs2gps()` looks like this. Like a traditional 
+table of a GPS data set, with each row marking the timestamp and 
+location of each vechile of every trip schedulded in the GTFS.
+
 ```{r, message = FALSE}
-poa_gps <- gtfs2gps(temp_gtfs, spatial_resolution = 100)
+
 head(poa_gps)
+
 ```
  The following figure maps the first 100 data points of the sample data we processed. They can be converted to `simple feature` points or linestring.
 

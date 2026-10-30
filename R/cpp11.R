@@ -7,3 +7,7 @@ cpp_expand_pattern <- function(tpl_seq, tpl_dep, tpl_arr, tpl_has_stop, tpl_dist
 cpp_openmp_available <- function() {
   .Call(`_gtfs2gps_cpp_openmp_available`)
 }
+
+cpp_sequence_pattern_id <- function(group_size, columns) {
+  .Call(`_gtfs2gps_cpp_sequence_pattern_id`, group_size, columns)
+}

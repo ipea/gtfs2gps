@@ -264,7 +264,7 @@ test_that("gtfs2gps shows a progress bar over the shapes with filepath", {
     expect_length(list.files(out_dir), 2)
 })
 
-test_that("gtfs2gps returns NULL when no shape converts", {
+test_that("gtfs2gps raises an error when no shape converts", {
     poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
       gtfstools::filter_by_shape_id("T2-1") |>
       filter_single_trip()
@@ -273,11 +273,18 @@ test_that("gtfs2gps returns NULL when no shape converts", {
     poa$stop_times[stop_sequence == max(stop_sequence),
                    `:=`(arrival_time = "", departure_time = "")]
 
-    expect_null(suppressMessages(gtfs2gps(poa, parallel = FALSE, quiet = TRUE)))
+    # testthat edition 2 ignores expect_error(class =)
+    e <- tryCatch(gtfs2gps(poa, parallel = FALSE, quiet = TRUE), error = identity)
+    expect_s3_class(e, "gtfs2gps_nothing_converted_error")
 
     out_dir <- tempfile("g2g_"); dir.create(out_dir); on.exit(unlink(out_dir, recursive = TRUE), add = TRUE)
-    expect_null(gtfs2gps(poa, parallel = FALSE, filepath = out_dir, quiet = TRUE))
+    e <- tryCatch(gtfs2gps(poa, parallel = FALSE, filepath = out_dir, quiet = TRUE), error = identity)
+    expect_s3_class(e, "gtfs2gps_nothing_converted_error")
     expect_length(list.files(out_dir), 0)
+
+    # with continue, a shape already saved counts as converted
+    file.create(file.path(out_dir, "T2-1.txt"))
+    expect_null(gtfs2gps(poa, parallel = FALSE, filepath = out_dir, continue = TRUE, quiet = TRUE))
 })
 
 test_that("gtfs2gps takes the route_type of the shape a trip is converted with", {
@@ -305,28 +312,27 @@ test_that("gtfs2gps takes the route_type of the shape a trip is converted with",
 
     # route_type is looked up with each shape, so an invalid routes table fails the shapes
     poa$routes[, route_id := NULL]
-    expect_warning(res <- gtfs2gps(poa, parallel = FALSE, quiet = TRUE)
-                   , class = "gtfs2gps_shape_error")
-    expect_null(res)
+    expect_warning(e <- tryCatch(gtfs2gps(poa, parallel = FALSE, quiet = TRUE), error = identity)
+                   , "internal bug")
+    expect_s3_class(e, "gtfs2gps_nothing_converted_error")
 })
 
-test_that("gtfs2gps skips a stop pattern whose first trip has an NA trip_id", {
+test_that("gtfs2gps ignores trips with an NA trip_id", {
     poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
       gtfstools::filter_by_shape_id(c("T2-1", "A141-1")) |>
       filter_single_trip()
     ref <- gtfs2gps(poa, parallel = FALSE, quiet = TRUE)
 
-    # a copy of the T2-1 trip with an NA trip_id and one stop less, so that it has a
-    # pattern of its own (in the same pattern it would come first, NA sorting first, and
-    # the real trip would be skipped with it): that pattern has no stops to snap, and the
-    # rest of the shape is still converted
+    # a copy of the T2-1 trip with an NA trip_id and one stop less, so that it would have
+    # a pattern of its own: it is dropped before gtfstools::remove_unused_ids(), which
+    # errors on NA ids, and the rest of the shape is still converted
     trip <- poa$trips[shape_id == "T2-1"]
     tripid <- trip$trip_id
     st <- poa$stop_times[trip_id == tripid][-1]
     poa$trips <- rbind(poa$trips, trip[, trip_id := NA_character_])
     poa$stop_times <- rbind(poa$stop_times, st[, trip_id := NA_character_])
 
-    expect_message(res <- gtfs2gps(poa, parallel = FALSE), "no snapped stops")
+    res <- gtfs2gps(poa, parallel = FALSE, quiet = TRUE)
     expect_true(tripid %in% res$trip_id)
     expect_identical(res, ref)
 })
@@ -374,7 +380,7 @@ test_that("gtfs2gps stops with a cli error when the output has too many points",
     expect_equal(calls, 2)
 })
 
-test_that("gtfs2gps skips shapes without stops or stop coordinates with a message", {
+test_that("gtfs2gps raises an error for a feed without stops or stop coordinates", {
     poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
       gtfstools::filter_by_shape_id("T2-1") |>
       filter_single_trip()
@@ -383,15 +389,19 @@ test_that("gtfs2gps skips shapes without stops or stop coordinates with a messag
 
     no_stop_times <- data.table::copy(poa)
     no_stop_times$stop_times <- no_stop_times$stop_times[0]
-    expect_message(res <- gtfs2gps(no_stop_times, parallel = FALSE, filepath = out_dir),
-                   "has zero stops")
-    expect_null(res)
+    # gtfstools::remove_unused_ids() drops the trip without stop_times and then its shape,
+    # so nothing is left to convert: the error comes before any work is done
+    e <- tryCatch(gtfs2gps(no_stop_times, parallel = FALSE, filepath = out_dir, quiet = TRUE),
+                  error = identity)
+    expect_s3_class(e, "gtfs2gps_nothing_converted_error")
+    expect_match(conditionMessage(e), "nothing to convert")
 
     no_stops <- data.table::copy(poa)
     no_stops$stops <- no_stops$stops[0]
-    expect_message(res <- gtfs2gps(no_stops, parallel = FALSE, filepath = out_dir),
+    expect_message(e <- tryCatch(gtfs2gps(no_stops, parallel = FALSE, filepath = out_dir),
+                                 error = identity),
                    "no snapped stops")
-    expect_null(res)
+    expect_s3_class(e, "gtfs2gps_nothing_converted_error")
 
     expect_length(list.files(out_dir, pattern = "^T2-1"), 0)
 })
@@ -403,14 +413,16 @@ test_that("gtfs2gps reports a shape that errors, also when running in parallel",
     poa$stops[, stop_lon := NULL]  # makes the stop join fail
     out_dir <- tempfile("g2g_"); dir.create(out_dir); on.exit(unlink(out_dir, recursive = TRUE), add = TRUE)
 
-    expect_warning(res <- gtfs2gps(poa, parallel = TRUE, ncores = 2, filepath = out_dir),
-                   class = "gtfs2gps_shape_error")
-    expect_null(res)
+    expect_warning(e <- tryCatch(gtfs2gps(poa, parallel = TRUE, ncores = 2, filepath = out_dir),
+                                 error = identity),
+                   "internal bug")
+    expect_s3_class(e, "gtfs2gps_nothing_converted_error")
     expect_length(list.files(out_dir, pattern = "^T2-1"), 0)
 
     # the report is a warning, so quiet = TRUE does not hide it
-    expect_warning(gtfs2gps(poa, parallel = FALSE, filepath = out_dir, quiet = TRUE),
-                   class = "gtfs2gps_shape_error")
+    expect_warning(tryCatch(gtfs2gps(poa, parallel = FALSE, filepath = out_dir, quiet = TRUE),
+                            gtfs2gps_nothing_converted_error = function(e) NULL),
+                   "internal bug")
 })
 
 test_that("gtfs2gps converts a shape whose id is the empty string", {
@@ -551,7 +563,7 @@ test_that("gtfs2gps(filepath) reports a shape whose file can't be written and wr
     expect_identical(list.files(out_dir), "T2-1.txt")
 })
 
-test_that("gtfs2gps reports an unused shape as unused when its geometry can't be segmentized", {
+test_that("gtfs2gps drops an unused shape before segmentizing it", {
     poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
       gtfstools::filter_by_shape_id(c("T2-1", "A141-1")) |>
       filter_single_trip()
@@ -564,8 +576,8 @@ test_that("gtfs2gps reports an unused shape as unused when its geometry can't be
       segmentize(x, ...)
     }, .package = "sf")
 
-    expect_no_warning(expect_message(res <- gtfs2gps(poa, parallel = FALSE)
-                                     , "is not used by any trip"))
+    # gtfstools::remove_unused_ids() drops it, so its geometry is never segmentized
+    expect_no_warning(res <- gtfs2gps(poa, parallel = FALSE, quiet = TRUE))
     expect_identical(res, ref)
 })
 
@@ -666,4 +678,34 @@ test_that("gtfs2gps skips patterns with a stop without coordinates or a single s
     # each stop of the A141-1 trip once, as without the repeated point
     expect_identical(res[trip_id == a141 & !is.na(stop_sequence), .N, by = stop_sequence],
                      ref[trip_id == a141 & !is.na(stop_sequence), .N, by = stop_sequence])
+})
+
+test_that("gtfs2gps keeps apart stop patterns whose stop_ids would paste to the same key", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+      gtfstools::filter_by_shape_id("T2-1") |>
+      filter_single_trip()
+    trip <- poa$trips[1]
+    st <- poa$stop_times[trip_id == trip$trip_id][order(stop_sequence)]
+    xy <- poa$stops[match(st$stop_id[1:3], stop_id)]
+
+    # pasted as "stop_sequence:stop_id" joined by "|", both trips give "1:x|2:y|2:z"
+    new_stops <- data.table::data.table(stop_id = c("x|2:y", "z", "x", "y|2:z"),
+                                        stop_lat = xy$stop_lat[c(1, 3, 1, 2)],
+                                        stop_lon = xy$stop_lon[c(1, 3, 1, 2)])
+    poa$stops <- rbind(poa$stops, new_stops, fill = TRUE)
+    poa$trips <- rbind(poa$trips, data.table::copy(trip)[, trip_id := "c1"],
+                       data.table::copy(trip)[, trip_id := "c2"])
+    new_st <- data.table::data.table(trip_id = c("c1", "c1", "c2", "c2"),
+                                     stop_id = c("x|2:y", "z", "x", "y|2:z"),
+                                     stop_sequence = c(1L, 2L, 1L, 2L),
+                                     arrival_time = c("08:00:00", "08:10:00", "09:00:00", "09:10:00"),
+                                     departure_time = c("08:00:00", "08:10:00", "09:00:00", "09:10:00"))
+    poa$stop_times <- rbind(poa$stop_times, new_st, fill = TRUE)
+
+    res <- gtfs2gps(poa, parallel = FALSE, quiet = TRUE)
+    out <- unique(res[trip_id %in% c("c1", "c2") & !is.na(stop_id), .(trip_id, stop_id, stop_sequence)])
+    data.table::setorderv(out, c("trip_id", "stop_sequence"))
+    expect_identical(out$trip_id, new_st$trip_id)
+    expect_identical(out$stop_id, new_st$stop_id)
+    expect_identical(out$stop_sequence, new_st$stop_sequence)
 })

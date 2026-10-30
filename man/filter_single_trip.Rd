@@ -13,8 +13,11 @@ filter_single_trip(gtfs_data)
 A filtered GTFS data.
 }
 \description{
-Filter a GTFS data by keeping only one trip per shape_id.
-It also removes the unnecessary routes and stop_times accordingly.
+Filter a GTFS data by keeping only the first trip of each
+shape_id, using \code{gtfstools::filter_by_trip_id()}. Trips without a
+shape_id are dropped. The other tables (stop_times, frequencies, shapes,
+routes, stops, calendar, etc.) keep only the rows used by the remaining
+trips. The input data is not modified.
 }
 \examples{
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
