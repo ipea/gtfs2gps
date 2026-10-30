@@ -76,6 +76,9 @@ test_that("cpp_expand_pattern gives the same result as the R reference", {
   expect_true(any(by_trip$midnight >= 86000L, na.rm = TRUE))
   expect_true(any(by_trip$midnight < 1000L, na.rm = TRUE))
 
+  # two threads (when compiled with OpenMP) give the same result
+  expect_identical(expand(trips, n_threads = 2L), res)
+
   # summing in double (R built without long double) differs at most in the last bits
   res_d <- expand(trips, long_double = FALSE)
   expect_identical(res_d$src, res$src)

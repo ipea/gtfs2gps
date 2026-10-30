@@ -32,7 +32,9 @@ using namespace cpp11;
 // Two passes: the first computes each trip's status and number of rows, the
 // second writes the rows of the converted trips at their offsets. Trips are
 // independent and nothing is accumulated across them, so the loops can run in any
-// order; inputs are read through raw pointers and nothing in the loops calls R.
+// order, in OpenMP threads (when compiled with OpenMP); inputs are read through
+// raw pointers, and the loops call nothing in R but R_IsNA()/ISNAN(), which only
+// test the bits of a double.
 
 namespace {
 
@@ -271,7 +273,10 @@ list cpp_expand_pattern(doubles tpl_seq, integers tpl_dep, integers tpl_arr,
   writable::integers n_rows(n_trips);
   int* status_p = INTEGER(status);
   int* n_rows_p = INTEGER(n_rows);
-  (void) n_threads;
+  // trips differ a lot in size, so they are handed to the threads dynamically, in
+  // chunks so that threads rarely write next to each other
+  const int threads = n_threads < 1 ? 1 : (n_threads > n_trips && n_trips > 0 ? n_trips : n_threads);
+  (void) threads;
 
   // each trip flags its own error (nothing is shared between trips); exceptions
   // never leave the loops
@@ -281,6 +286,9 @@ list cpp_expand_pattern(doubles tpl_seq, integers tpl_dep, integers tpl_arr,
     return false;
   };
 
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic, 16) num_threads(threads)
+#endif
   for (int k = 0; k < n_trips; k++) {
     try {
       std::vector<int> dep, arr;
@@ -309,6 +317,9 @@ list cpp_expand_pattern(doubles tpl_seq, integers tpl_dep, integers tpl_arr,
   const outputs out = {INTEGER(src), REAL(dist), REAL(speed), INTEGER(timestamp),
                        REAL(cumtime)};
 
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic, 16) num_threads(threads)
+#endif
   for (int k = 0; k < n_trips; k++) {
     if (status_p[k] != 0) continue;
     try {
