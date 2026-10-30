@@ -21,7 +21,8 @@ gtfs2gps(
 \item{gtfs_data}{A path to a GTFS file to be converted to GPS, or a GTFS data
 represented as a list of data.tables.}
 
-\item{spatial_resolution}{The spatial resolution in meters. Default is 100m.
+\item{spatial_resolution}{The spatial resolution in meters: a number of at
+least 1, or a \code{units} length. Default is 100m.
 This function only creates points in order to guarantee that the minimum
 distance between two consecutive points will be at most the
 spatial_resolution. If a given shape has two consecutive points with a

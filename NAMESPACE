@@ -21,7 +21,6 @@ importFrom(data.table,
 )
 importFrom(lwgeom,st_geod_length)
 importFrom(rlang,abort)
-importFrom(stats,na.omit)
 importFrom(utils,
   head,
   object.size,

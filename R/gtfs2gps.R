@@ -359,7 +359,8 @@ set_gps_units <- function(gps){
 #'
 #' @param gtfs_data A path to a GTFS file to be converted to GPS, or a GTFS data
 #' represented as a list of data.tables.
-#' @param spatial_resolution The spatial resolution in meters. Default is 100m.
+#' @param spatial_resolution The spatial resolution in meters: a number of at
+#' least 1, or a \code{units} length. Default is 100m.
 #' This function only creates points in order to guarantee that the minimum
 #' distance between two consecutive points will be at most the
 #' spatial_resolution. If a given shape has two consecutive points with a
@@ -479,6 +480,11 @@ gtfs2gps <- function(gtfs_data,
   if(!is.null(filepath)) checkmate::assert_directory_exists(filepath, access = "w")
   checkmate::assert_choice(snap_method, c("nearest1", "nearest2"))
   checkmate::assert_flag(parallel)
+  # spatial_resolution is used in metres from here on (both st_segmentize() calls and the
+  # snap step); a units length is converted first
+  if(inherits(spatial_resolution, "units"))
+    spatial_resolution <- units::drop_units(units::set_units(spatial_resolution, "m"))
+  checkmate::assert_number(spatial_resolution, lower = 1, finite = TRUE)
   
   original_gtfs_data_arg <- paste(deparse(substitute(gtfs_data)), collapse = " ")
   

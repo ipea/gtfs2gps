@@ -32,11 +32,11 @@ CRAN standard. When they conflict, Part A wins; flag the conflict in the plan.
 - **Call dependencies as `package::function()`**: `data.table::`, `sf::`,
   `sfheaders::`, `units::`, `gtfstools::`, `terra::`, `checkmate::`.
 - **Existing `@importFrom`** (in `R/utils.R`): data.table `:=`, `%between%`,
-  `fifelse`, `%chin%`; `stats::na.omit`; `utils` `head`, `tail`,
+  `fifelse`, `%chin%`; `utils` `head`, `tail`,
   `object.size`; `lwgeom::st_geod_length`; plus
   `@useDynLib gtfs2gps, .registration = TRUE`. Don't add new `@importFrom`
   without a plan; **[NEW]** write `stats::`/`utils::` explicitly in new code
-  (existing code has bare `na.omit()`, `object.size()`, `weighted.mean()`).
+  (existing code has bare `object.size()`, `weighted.mean()`).
 - Never use `library()`/`require()` in `R/`. Suggested packages are guarded
   with `requireNamespace("pkg", quietly = TRUE)`.
 - Column names used with non-standard evaluation go into the

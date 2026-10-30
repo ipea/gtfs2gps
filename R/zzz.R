@@ -13,7 +13,6 @@ utils::globalVariables(c(".", ":="))
 # rlang is imported because cli::cli_abort(), cli_warn() and cli_inform() need it
 # at runtime, while cli only suggests it.
 #' @importFrom data.table := %between% fifelse %chin%
-#' @importFrom stats na.omit
 #' @importFrom utils head tail object.size
 #' @importFrom lwgeom st_geod_length
 #' @importFrom rlang abort

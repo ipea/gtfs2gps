@@ -22,6 +22,7 @@
     * Trips with a different stop pattern from the shape's longest trip had their times attached to the wrong stops, and could gain stops they do not serve. Stops are now snapped separately for each distinct stop pattern on a shape.
 
 * Minor changes
+  * `gtfs2gps()` now accepts `spatial_resolution` as a `units` length (it used to segmentize shapes every few centimetres when given one) and raises an error when it is not a single number of at least 1 metre.
   * `adjust_arrival_departure()` no longer writes negative times near 00:00:00 (e.g. `"-1:59:50"`): such arrivals are set to 00:00:00 and the departure moved to keep `min_lag`, so a first stop with arrival and departure both at 00:00:00 (as in frequency-based feeds) now departs `min_lag` after midnight (it was `min_lag / 2`). Odd differences are split in whole seconds without truncation warnings, and `min_lag` is rounded to whole seconds.
   * Compared with v2.1-4, `gtfs2gps()` is at least 3× faster on the poa feed and, on the São Paulo feed, at least 7× faster with about 80% lower peak memory (sequential runs).
   * `gtfs2gps()` is faster: speeds and timestamps between stops are now interpolated on plain vectors instead of per-segment data.table sub-assignments. Output is unchanged.

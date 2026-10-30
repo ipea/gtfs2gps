@@ -558,3 +558,18 @@ test_that("gtfs2gps takes the route of the last row of a trip listed twice in a 
     expect_s3_class(res$speed, "units")
     expect_type(unclass(res$speed), "double")
 })
+
+test_that("gtfs2gps() takes spatial_resolution in metres or as a units length", {
+    poa <- system.file("extdata/poa.zip", package = "gtfs2gps")
+    gtfs <- read_gtfs(poa) |>
+      gtfstools::filter_by_shape_id("T2-1")
+    gtfs$trips <- gtfs$trips[1]
+
+    res_m <- gtfs2gps(gtfs, spatial_resolution = 50, parallel = FALSE, quiet = TRUE)
+    res_km <- gtfs2gps(gtfs, spatial_resolution = units::set_units(0.05, "km"), parallel = FALSE, quiet = TRUE)
+    expect_identical(res_km, res_m)
+
+    expect_error(gtfs2gps(gtfs, spatial_resolution = 0.5, parallel = FALSE, quiet = TRUE), "spatial_resolution")
+    expect_error(gtfs2gps(gtfs, spatial_resolution = units::set_units(1, "ft"), parallel = FALSE, quiet = TRUE), "spatial_resolution")
+    expect_error(gtfs2gps(gtfs, spatial_resolution = units::set_units(50, "s"), parallel = FALSE, quiet = TRUE), "cannot convert")
+})
