@@ -52,8 +52,8 @@ object.size(poa_small) |> format(units = "Kb")
 We can then easily convert the data to simple feature format and plot them.
 
 ```{r poa_small_shapes_sf, message = FALSE}
-poa_small_shapes_sf <- gtfs2gps::gtfs_shapes_as_sf(poa_small)
-poa_small_stops_sf <- gtfs2gps::gtfs_stops_as_sf(poa_small)
+poa_small_shapes_sf <- gtfstools::get_shapes_geometry(poa_small)
+poa_small_stops_sf <- gtfstools::get_stops_geometry(poa_small)
 plot(sf::st_geometry(poa_small_shapes_sf))
 plot(sf::st_geometry(poa_small_stops_sf), pch = 20, col = "red", add = TRUE)
 box()

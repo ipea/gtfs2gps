@@ -2,7 +2,7 @@
 % Please edit documentation in R/gtfs_as_sf.R
 \name{gtfs_shapes_as_sf}
 \alias{gtfs_shapes_as_sf}
-\title{Convert GTFS shapes to simple feature object}
+\title{Convert GTFS shapes to simple feature object (deprecated)}
 \usage{
 gtfs_shapes_as_sf(gtfs, crs = 4326)
 }
@@ -23,6 +23,10 @@ A simple feature (sf) object with columns \code{shape_id},
 WGS84 points of each shape, whatever \code{crs} is.
 }
 \description{
+This function is deprecated and will be removed in a future
+version. Use \code{gtfstools::get_shapes_geometry()} and, for the length of
+each shape, \code{gtfstools::get_shape_length()} instead.
+
 Convert the shapes of a GTFS data loaded using
 \code{\link{read_gtfs}} into a LINESTRING simple feature (sf) object, using
 \code{\link[gtfstools]{get_shapes_geometry}}, and add the length of each
@@ -30,6 +34,7 @@ shape in kilometres, using \code{\link[gtfstools]{get_shape_length}}. The
 input data is not modified.
 }
 \examples{
-poa <- read_gtfs(system.file("extdata/saopaulo.zip", package = "gtfs2gps"))
-poa_sf <- gtfs_shapes_as_sf(poa)
+sp <- read_gtfs(system.file("extdata/saopaulo.zip", package = "gtfs2gps"))
+sp_sf <- suppressWarnings(gtfs_shapes_as_sf(sp))
 }
+\keyword{internal}

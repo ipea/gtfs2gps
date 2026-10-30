@@ -13,7 +13,7 @@
 #' error of each shape with a trip that can't be converted, and the messages of all
 #' shapes, in order, as functions for the caller to run.
 #' @noRd
-feed_to_gps <- function(slice, routes, spatial_resolution, snap_method, n_threads){
+feed_to_gps <- function(slice, routes, spatial_resolution, n_threads){
   shape_ids <- slice$shape_ids
   n_shapes <- length(shape_ids)
   rank_of <- function(x) match(x, shape_ids, incomparables = NA)
@@ -93,49 +93,69 @@ feed_to_gps <- function(slice, routes, spatial_resolution, snap_method, n_thread
   n_points <- tabulate(point_rank, nbins = n_shapes)
   point_from <- cumsum(c(0L, n_points))[seq_len(n_shapes)]
 
-  # distance from the previous point of the same shape (the C++ function gives 0 to
-  # the first point and the distance from point i to i + 1 to point i + 1); points
-  # with an NA distance (NA coordinates) are dropped, and the cumulative distance is
-  # summed per shape with R's cumsum(), in long double
-  dist <- rcpp_distance_haversine(lat
-                                  , lon
-                                  , data.table::shift(lat, type = "lead")
-                                  , data.table::shift(lon, type = "lead")
-                                  , tolerance = 1e10)
-  dist[point_id == 1L] <- 0
-  kept <- !is.na(dist)
-  cumdist <- rep(NA_real_, length(dist))
-  cumdist[kept] <- unlist(lapply(split(dist[kept], point_rank[kept]), base::cumsum)
-                          , use.names = FALSE)
+  ## distances along the shapes and positions of the stops of each pattern on its
+  ## shape, both from gtfstools::interpolate_shape_dist_traveled() on the points in
+  ## high resolution (great-circle distances on the {s2} sphere): each pattern is a
+  ## trip of its shape, with the stops of its first trip
+  ps_stop <- as.character(seq_len(nrow(ps)))
+  located <- locate_stops(
+    list(shapes = data.table::data.table(shape_id = as.character(seq_len(n_shapes))[point_rank]
+                                         , shape_pt_lat = lat
+                                         , shape_pt_lon = lon
+                                         , shape_pt_sequence = point_id)
+         , trips = data.table::data.table(trip_id = as.character(seq_len(n_patterns))
+                                          , shape_id = as.character(patterns$shape_rank))
+         , stop_times = data.table::data.table(trip_id = as.character(ps$pattern_id)
+                                               , stop_id = ps_stop
+                                               , stop_sequence = data.table::rowid(ps$pattern_id))
+         , stops = data.table::data.table(stop_id = ps_stop
+                                          , stop_lat = as.double(ps$stop_lat)
+                                          , stop_lon = as.double(ps$stop_lon)))
+    , n_threads)
+
+  # points without coordinates have no distance and are dropped; dist is the
+  # distance from the previous kept point of the same shape (0 at the first one)
+  cumdist <- located$shapes$shape_dist_traveled
+  kept <- !is.na(cumdist)
+  kept_rank <- point_rank[kept]
+  kept_cumdist <- cumdist[kept]
+  dist <- rep(NA_real_, length(cumdist))
+  dist[kept] <- data.table::fifelse(duplicated(kept_rank), kept_cumdist - data.table::shift(kept_cumdist), 0)
+  n_kept <- tabulate(kept_rank, nbins = n_shapes)
+  kept_from <- cumsum(c(0L, n_kept))[seq_len(n_shapes)]
+  shape_length <- rep(0, n_shapes)
+  shape_length[n_kept > 0] <- kept_cumdist[kept_from[n_kept > 0] + n_kept[n_kept > 0]]
 
   ## snap the stops of each pattern to the points of its shape
-  mymethod <- cpp_snap_points_nearest2
-
-  if(snap_method == "nearest1"){
-    mymethod <- cpp_snap_points_nearest1
-  }
-
-  # whole metres, truncated, as the C++ function takes an int (a units value in
-  # another unit is converted first)
-  resolution_m <- as.integer(units::drop_units(units::set_units(spatial_resolution, "m")))
   # typed NA of the route_type column (NULL when routes has no route_type, and then
   # there is no column)
   route_type_na <- routes$route_type[NA_integer_]
-  coords <- cbind(lon, lat)
-  ps_rows <- split(seq_len(nrow(ps)), factor(ps$pattern_id, levels = seq_len(n_patterns)))
+  pos <- located$stop_times$shape_dist_traveled
+  ps_shape <- patterns$shape_rank[ps$pattern_id]
+  n_ps <- tabulate(ps$pattern_id, nbins = n_patterns)
+  # gtfstools locates only patterns with two stops or more; a single stop (with
+  # coordinates, on a shape with a length) goes to the start of the shape, so that
+  # its pattern is reported below as one with fewer than two stops
+  one <- n_ps[ps$pattern_id] == 1L & shape_length[ps_shape] > 0 &
+    !is.na(ps$stop_lat) & !is.na(ps$stop_lon)
+  pos[one] <- 0
+  # a pattern is snapped when all its stops (at least one) have a position
+  snapped_ok <- n_ps > 0 & tabulate(ps$pattern_id[is.na(pos)], nbins = n_patterns) == 0
   snapped_ref <- numeric(nrow(ps))
-  snapped_ok <- logical(n_patterns)
-  for(g in seq_len(n_patterns)){
-    s <- patterns$shape_rank[g]
-    r <- ps_rows[[g]]
-    # the same doubles as the coordinates of the stops as sf points
-    snapped <- mymethod(cbind(as.double(ps$stop_lon[r]), as.double(ps$stop_lat[r])),
-                        coords[point_from[s] + seq_len(n_points[s]), , drop = FALSE],
-                        resolution_m)
-    # Skip pattern IF there are no snapped stops
-    if (is.null(snapped) | length(snapped) == 0 ) next
-    snapped_ok[g] <- TRUE
-    snapped_ref[r] <- snapped
+  sn <- snapped_ok[ps$pattern_id]
+  if(any(sn)){
+    # each stop at the kept point nearest to its position (the first one of points
+    # at the same distance), then moved forward where needed so that each stop has
+    # a point of its own, as long as the shape has points left
+    kp <- data.table::data.table(shape_rank = kept_rank, cumdist = kept_cumdist
+                                 , kidx = data.table::rowid(kept_rank))
+    q <- data.table::data.table(shape_rank = ps_shape[sn], cumdist = pos[sn]
+                                , pattern_id = ps$pattern_id[sn])
+    nearest <- kp[q, kidx, on = c("shape_rank", "cumdist"), roll = "nearest", mult = "first"]
+    q[, kidx := nearest]
+    q[, kidx := pmin(cummax(kidx - seq_len(.N) + 1L) + seq_len(.N) - 1L
+                     , n_kept[shape_rank]), by = pattern_id]
+    snapped_ref[sn] <- point_id[kept][kept_from[q$shape_rank] + q$kidx]
   }
 
   ## templates: the points of each pattern's shape, with the pattern's stops at
@@ -171,8 +191,9 @@ feed_to_gps <- function(slice, routes, spatial_resolution, snap_method, n_thread
                                          , on = c("shape_rank", "trip_id"), nomatch = NULL]
   data.table::setorderv(kst, "k")
 
-  # all trips at once, in C++ (src/expand_pattern.cpp)
-  res <- cpp_expand_pattern(as.double(tpl$stop_sequence)
+  # all trips at once, in C++ (src/expand_pattern.cpp); its only error a user can
+  # cause is an output above INT_MAX rows
+  res <- tryCatch(cpp_expand_pattern(as.double(tpl$stop_sequence)
                             , as.integer(tpl$departure_time)
                             , as.integer(tpl$arrival_time)
                             , !is.na(tpl$stop_id)
@@ -186,6 +207,13 @@ feed_to_gps <- function(slice, routes, spatial_resolution, snap_method, n_thread
                             , as.integer(kst$arrival_time)
                             , capabilities("long.double")
                             , as.integer(n_threads))
+                  , error = function(e){
+                    if(!startsWith(conditionMessage(e), "Too many GPS points")) stop(e)
+                    max_rows <- .Machine$integer.max
+                    cli::cli_abort(c("Too many GPS points: the output would have more than {.val {max_rows}} rows.",
+                                     "i" = "Use a larger {.arg spatial_resolution} (now {spatial_resolution} m) or convert fewer shapes at a time."),
+                                   class = "gtfs2gps_too_many_points_error", call = NULL)
+                  })
   kt[, status := res$status]
 
   ## a trip with fewer than two timed stops on its shape fails the shape: the first
@@ -327,6 +355,20 @@ inform <- function(text, ...){
   return(function() cli::cli_inform(text, .envir = values))
 }
 
+#' Distances along the shapes and positions of the stops on them
+#'
+#' Runs gtfstools::interpolate_shape_dist_traveled() on a GTFS built by
+#' feed_to_gps() in n_threads threads (gtfstools uses data.table's thread
+#' count). Trips whose shape can't be used get NA positions, without its warning.
+#' @noRd
+locate_stops <- function(gtfs, n_threads){
+  old_threads <- data.table::setDTthreads(n_threads)
+  on.exit(data.table::setDTthreads(old_threads), add = TRUE)
+  return(withCallingHandlers(
+    gtfstools::interpolate_shape_dist_traveled(gtfstools::as_dt_gtfs(gtfs)),
+    gtfstools_trips_without_shape = function(w) invokeRestart("muffleWarning")))
+}
+
 #' units of the GPS columns, set in place: the attribute and class that
 #' units::set_units() gives, without copying the columns
 #' @noRd
@@ -390,25 +432,21 @@ set_gps_units <- function(gps){
 #'        skips processing the shape identifiers that were already saved into 
 #'        files. It is useful to continue processing a GTFS file that was stopped
 #'        for some reason. Default value is FALSE.
-#' @param snap_method The method used to snap stops to the route geometry. There
-#'        are two available methods: `nearest1` and `nearest2`. Defaults to 
-#'        `nearest2`. See details for more info.
+#' @param snap_method This argument is deprecated and ignored. Stops are now
+#' located along the shapes with `gtfstools::interpolate_shape_dist_traveled()`
+#' (see details).
 #' @param quiet Hide messages while processing the data? Defaults to FALSE.
 #' 
 #' @details After creating geometry points for a given shape id, the `gtfs2gps()`
-#' function snaps the stops to the route geometry. Two strategies are implemented
-#' to do this. 
-#' - The `nearest2` method (default) triangulates the distance between each stop 
-#' and the two nearest points in the route geometry to decide which point the 
-#' stop should be snapped to. If there is any stop that is further away to the 
-#' route geometry  than `spatial_resolution`, the algorithm recursively doubles 
-#' the `spatial_resolution` to do the search/snap of all stops.
-#' - The `nearest1` method traverses the geometry points computing their 
-#' distances to the first stop. Whenever it finds a distance to the stop smaller
-#' than `spatial_resolution`, then the stop will be snapped to such point. The 
-#' algorithm then applies the same strategy to the next stop until the vector of
-#' stops end.
-#' 
+#' function snaps the stops to the route geometry. The stops of each trip are
+#' located along the shape with `gtfstools::interpolate_shape_dist_traveled()`,
+#' which projects each stop onto the shape keeping the stops in their
+#' `stop_sequence` order, so that loops and shapes that pass by the same place
+#' more than once are handled. Each stop is then snapped to the nearest point of
+#' the shape in high resolution, moved forward when needed so that each stop has
+#' a point of its own. Distances are great-circle distances on the sphere used
+#' by the s2 and sf packages, with a radius of 6,371,010 m.
+#'
 #' The `speed`, `cumdist`, and `cumtime` are based on the difference of distance 
 #' and time between the current and previous row of the same trip. It means that 
 #' the first data point at the first stop of each trip represents a stationary 
@@ -454,7 +492,7 @@ gtfs2gps <- function(gtfs_data,
                      strategy = NULL,
                      filepath = NULL,
                      compress = FALSE,
-                     snap_method = "nearest2",
+                     snap_method = NULL,
                      continue = FALSE,
                      quiet = FALSE){
   
@@ -464,6 +502,12 @@ gtfs2gps <- function(gtfs_data,
     cli::cli_warn(c("Argument {.arg strategy} is deprecated and will be removed in a future version.",
                     "i" = "Use arguments {.arg parallel} and {.arg ncores} instead."),
                   class = "deprecated_strategy")
+  }
+
+  if(!is.null(snap_method)){
+    cli::cli_warn(c("Argument {.arg snap_method} is deprecated and will be removed in a future version.",
+                    "i" = "Stops are located along the shapes with {.fn gtfstools::interpolate_shape_dist_traveled}."),
+                  class = "deprecated_snap_method")
   }
 
   ###### PART 1. Load and prepare data inputs ------------------------------------
@@ -478,10 +522,9 @@ gtfs2gps <- function(gtfs_data,
   }
 
   if(!is.null(filepath)) checkmate::assert_directory_exists(filepath, access = "w")
-  checkmate::assert_choice(snap_method, c("nearest1", "nearest2"))
   checkmate::assert_flag(parallel)
-  # spatial_resolution is used in metres from here on (both st_segmentize() calls and the
-  # snap step); a units length is converted first
+  # spatial_resolution is used in metres from here on (both st_segmentize() calls); a
+  # units length is converted first
   if(inherits(spatial_resolution, "units"))
     spatial_resolution <- units::drop_units(units::set_units(spatial_resolution, "m"))
   checkmate::assert_number(spatial_resolution, lower = 1, finite = TRUE)
@@ -509,10 +552,10 @@ gtfs2gps <- function(gtfs_data,
   
   # Convert all shapes into sf objects
   cli::cli_progress_step("Converting shapes to sf objects")
-  shapes_sf <- gtfs_shapes_as_sf(gtfs_data)
+  shapes_sf <- shapes_as_sf(gtfs_data)
   
   ###### PART 2. The whole feed, or one slice per shape ---------------------------
-  # shape_id is character (gtfs_shapes_as_sf() requires it), so the split groups are
+  # shape_id is character (shapes_as_sf() requires it), so the split groups are
   # indexed by name
   all_shapeids <- unique(shapes_sf$shape_id)
   # trips with NA route_id are kept: the guards in feed_to_gps() handle them as before
@@ -593,7 +636,7 @@ gtfs2gps <- function(gtfs_data,
     
   cli::cli_progress_step("Processing the data")
   convert <- function(slice) feed_to_gps(slice, gtfs_data$routes, spatial_resolution
-                                         , snap_method, n_threads)
+                                         , n_threads)
   bad_ids <- character(0)
   bad_errors <- list()
   result <- NULL
@@ -608,7 +651,11 @@ gtfs2gps <- function(gtfs_data,
     result <- tryCatch(withCallingHandlers(convert(whole), warning = function(w){
       kept$warnings[[length(kept$warnings) + 1L]] <- w
       invokeRestart("muffleWarning")
-    }), error = function(e) NULL)
+    }), error = function(e){
+      # shape by shape would not help: the output would be just as large
+      if(inherits(e, "gtfs2gps_too_many_points_error")) stop(e)
+      NULL
+    })
     if(!is.null(result)){
       # the original conditions, with their classes (not new base warnings)
       for(w in kept$warnings) warning(w)
@@ -629,6 +676,7 @@ gtfs2gps <- function(gtfs_data,
     for(slice in slices){
       cli::cli_progress_update()
       r <- tryCatch(convert(slice), error = function(e) e)
+      if(inherits(r, "gtfs2gps_too_many_points_error")) stop(r)
       if(inherits(r, "error")){
         bad_ids <- c(bad_ids, slice$shape_ids)
         bad_errors <- c(bad_errors, list(r))

@@ -1,6 +1,10 @@
-#' @title Convert GTFS shapes to simple feature object
+#' @title Convert GTFS shapes to simple feature object (deprecated)
 #'
-#' @description Convert the shapes of a GTFS data loaded using
+#' @description This function is deprecated and will be removed in a future
+#' version. Use \code{gtfstools::get_shapes_geometry()} and, for the length of
+#' each shape, \code{gtfstools::get_shape_length()} instead.
+#'
+#' Convert the shapes of a GTFS data loaded using
 #' \code{\link{read_gtfs}} into a LINESTRING simple feature (sf) object, using
 #' \code{\link[gtfstools]{get_shapes_geometry}}, and add the length of each
 #' shape in kilometres, using \code{\link[gtfstools]{get_shape_length}}. The
@@ -16,11 +20,28 @@
 #' @return A simple feature (sf) object with columns \code{shape_id},
 #' \code{geometry} and \code{length} (km). The length is computed from the
 #' WGS84 points of each shape, whatever \code{crs} is.
+#' @keywords internal
 #' @export
 #' @examples
-#' poa <- read_gtfs(system.file("extdata/saopaulo.zip", package = "gtfs2gps"))
-#' poa_sf <- gtfs_shapes_as_sf(poa)
+#' sp <- read_gtfs(system.file("extdata/saopaulo.zip", package = "gtfs2gps"))
+#' sp_sf <- suppressWarnings(gtfs_shapes_as_sf(sp))
 gtfs_shapes_as_sf <- function(gtfs, crs = 4326){
+  cli::cli_warn(c("{.fn gtfs_shapes_as_sf} is deprecated and will be removed in a future version.",
+                  "i" = "Use {.fn gtfstools::get_shapes_geometry} and {.fn gtfstools::get_shape_length} instead."),
+                class = "deprecated_gtfs_shapes_as_sf")
+
+  # checked here so that an invalid crs error names this function
+  crs <- as_valid_crs(crs)
+
+  return(shapes_as_sf(gtfs, crs))
+}
+
+#' Convert GTFS shapes to an sf object with their length in km
+#'
+#' The body of the deprecated gtfs_shapes_as_sf(), used by gtfs2gps() and
+#' simplify_shapes().
+#' @noRd
+shapes_as_sf <- function(gtfs, crs = 4326){
   crs <- as_valid_crs(crs)
 
   gtfs <- gtfstools::as_dt_gtfs(gtfs)
@@ -39,8 +60,12 @@ gtfs_shapes_as_sf <- function(gtfs, crs = 4326){
   return(shapes_sf)
 }
 
-#' @title Convert GTFS stops to simple feature object
-#' @description Convert the stops of a GTFS data loaded using
+#' @title Convert GTFS stops to simple feature object (deprecated)
+#'
+#' @description This function is deprecated and will be removed in a future
+#' version. Use \code{gtfstools::get_stops_geometry()} instead.
+#'
+#' Convert the stops of a GTFS data loaded using
 #' \code{\link{read_gtfs}} into a POINT simple feature (sf) object, using
 #' \code{\link[gtfstools]{get_stops_geometry}}. The input data is not modified.
 #' @param gtfs A GTFS data. \code{stop_id} must be character and
@@ -53,17 +78,21 @@ gtfs_shapes_as_sf <- function(gtfs, crs = 4326){
 #' error, and an empty or unknown CRS raises an error of class
 #' \code{gtfs2gps_crs_error}.
 #' @return A simple feature (sf) object.
+#' @keywords internal
 #' @export
 #' @examples
 #' poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#' poa_shapes <- gtfs_shapes_as_sf(poa)
-#' poa_stops <- gtfs_stops_as_sf(poa)
+#' poa_stops <- suppressWarnings(gtfs_stops_as_sf(poa))
 gtfs_stops_as_sf <- function(gtfs, crs = 4326){
+  cli::cli_warn(c("{.fn gtfs_stops_as_sf} is deprecated and will be removed in a future version.",
+                  "i" = "Use {.fn gtfstools::get_stops_geometry} instead."),
+                class = "deprecated_gtfs_stops_as_sf")
+
   crs <- as_valid_crs(crs)
 
   gtfs <- gtfstools::as_dt_gtfs(gtfs)
 
-  # as for shapes in gtfs_shapes_as_sf(): a dt_gtfs may still hold a data.frame
+  # as for shapes in shapes_as_sf(): a dt_gtfs may still hold a data.frame
   if(!data.table::is.data.table(gtfs$stops))
     gtfs$stops <- data.table::as.data.table(gtfs$stops)
 

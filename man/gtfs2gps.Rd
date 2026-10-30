@@ -12,7 +12,7 @@ gtfs2gps(
   strategy = NULL,
   filepath = NULL,
   compress = FALSE,
-  snap_method = "nearest2",
+  snap_method = NULL,
   continue = FALSE,
   quiet = FALSE
 )
@@ -54,9 +54,9 @@ was created in R. If not compress, the txt extension requires the data to be con
 from ITime to string, and therefore they need to be manually converted back to ITime to 
 be properly handled by gtfs2gps.}
 
-\item{snap_method}{The method used to snap stops to the route geometry. There
-are two available methods: `nearest1` and `nearest2`. Defaults to 
-`nearest2`. See details for more info.}
+\item{snap_method}{This argument is deprecated and ignored. Stops are now
+located along the shapes with `gtfstools::interpolate_shape_dist_traveled()`
+(see details).}
 
 \item{continue}{Argument that can be used only with filepath. When TRUE, it
 skips processing the shape identifiers that were already saved into 
@@ -84,18 +84,14 @@ interpolates may give spiky or infinite speeds here.
 }
 \details{
 After creating geometry points for a given shape id, the `gtfs2gps()`
-function snaps the stops to the route geometry. Two strategies are implemented
-to do this. 
-- The `nearest2` method (default) triangulates the distance between each stop 
-and the two nearest points in the route geometry to decide which point the 
-stop should be snapped to. If there is any stop that is further away to the 
-route geometry  than `spatial_resolution`, the algorithm recursively doubles 
-the `spatial_resolution` to do the search/snap of all stops.
-- The `nearest1` method traverses the geometry points computing their 
-distances to the first stop. Whenever it finds a distance to the stop smaller
-than `spatial_resolution`, then the stop will be snapped to such point. The 
-algorithm then applies the same strategy to the next stop until the vector of
-stops end.
+function snaps the stops to the route geometry. The stops of each trip are
+located along the shape with `gtfstools::interpolate_shape_dist_traveled()`,
+which projects each stop onto the shape keeping the stops in their
+`stop_sequence` order, so that loops and shapes that pass by the same place
+more than once are handled. Each stop is then snapped to the nearest point of
+the shape in high resolution, moved forward when needed so that each stop has
+a point of its own. Distances are great-circle distances on the sphere used
+by the s2 and sf packages, with a radius of 6,371,010 m.
 
 The `speed`, `cumdist`, and `cumtime` are based on the difference of distance 
 and time between the current and previous row of the same trip. It means that 

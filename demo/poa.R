@@ -8,8 +8,8 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) %>%
 names(poa)
 sp$trips
 
-poa_shp <- gtfs_shapes_as_sf(poa)
-poa_stops <- gtfs_stops_as_sf(poa)
+poa_shp <- gtfstools::get_shapes_geometry(poa)
+poa_stops <- gtfstools::get_stops_geometry(poa)
 
 plot(sf::st_geometry(poa_shp))
 plot(sf::st_geometry(poa_stops), col = "blue", add = TRUE)

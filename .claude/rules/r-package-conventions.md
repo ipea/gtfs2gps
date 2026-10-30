@@ -71,7 +71,8 @@ gtfs2gps handles two kinds of objects:
   `stop()`s in `gtfs2gps()` and `read_gtfs()`). **[NEW]** new or modified
   arguments are validated with `checkmate::assert_*` (already in Imports);
   enumerated options with `checkmate::assert_choice()` for a single value
-  (e.g. `snap_method`), or `assert_names(subset.of =)` for several.
+  (e.g. `snap_method` before it was deprecated), or `assert_names(subset.of =)`
+  for several.
 - Times: `stop_times_to_seconds()` in `R/utils.R` (in place; the caller copies
   first; gtfstools turns malformed strings into `NA` with a
   `gtfstools_malformed_time` warning) and `gtfstools::convert_seconds_to_time()`
@@ -94,10 +95,11 @@ gtfs2gps handles two kinds of objects:
   grouping. No new row-wise loops. `lapply` over shapes or trips followed by
   `data.table::rbindlist()` is the established pattern for per-group work.
 - **C++ (cpp11, since 2026-10-28; formerly Rcpp):** C++ lives in `src/*.cpp`
-  with `[[cpp11::register]]` (`cpp_snap_points_nearest1/2`,
-  `rcpp_distance_haversine`). After changing a registered signature, regenerate
-  `R/cpp11.R` and `src/cpp11.cpp` with `cpp11::cpp_register()`
-  (`devtools::document()` also does it); never hand-edit them. cpp11 checks
+  with `[[cpp11::register]]` (`cpp_expand_pattern`, `cpp_openmp_available`;
+  snapping and haversine distances moved to gtfstools on 2026-10-30). After
+  changing a registered signature, regenerate `R/cpp11.R` and `src/cpp11.cpp`
+  with `cpp11::cpp_register()` (`devtools::document()` does it only when it
+  recompiles); never hand-edit them. cpp11 checks
   argument types strictly (an `int` argument rejects `15.5`), so coerce in R at
   the call site. `src/*.o` / `*.dll` are build artefacts (gitignored); delete
   them before `R CMD INSTALL` from the source tree, which otherwise reuses
@@ -225,8 +227,9 @@ user-facing conditions. `cli` goes in `Imports`.
 
 ## A8. Performance
 
-- `gtfs2gps()` is the hot path: for the whole feed it segmentizes, snaps stops (C++),
-  computes haversine distances (C++) and expands trips/frequencies. Watch for
+- `gtfs2gps()` is the hot path: for the whole feed it segmentizes, locates stops
+  and measures the points (`gtfstools::interpolate_shape_dist_traveled()`, C++
+  in gtfstools) and expands trips/frequencies (C++). Watch for
   avoidable `copy()`s inside per-trip loops, `sf` calls where `sfheaders` or
   C++ would do, repeated `sf::st_coordinates()` on the same object, and work
   repeated per shape or per pattern that could be done once for the feed.

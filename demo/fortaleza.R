@@ -10,7 +10,7 @@ ids
 
 fortaleza <- gtfstools::filter_by_shape_id(fortaleza, ids[1:4])
 
-for_small_sf <- gtfs_shapes_as_sf(fortaleza)
+for_small_sf <- gtfstools::get_shapes_geometry(fortaleza)
 
 srtmfile <- system.file("extdata/fortaleza-srtm.tif", package = "gtfs2gps")
 

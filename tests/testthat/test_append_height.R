@@ -5,8 +5,8 @@ test_that("append_height", {
   
   gtfs <- read_gtfs(fortaleza) |>
     gtfstools::filter_by_shape_id("shape804-I") |>
-    filter_single_trip() |> 
-    remove_invalid()
+    filter_single_trip() |>
+    gtfstools::remove_unused_ids()
   
   fortaleza_gps <- gtfs2gps(gtfs, spatial_resolution = 500) |> append_height(srtmfile)
 

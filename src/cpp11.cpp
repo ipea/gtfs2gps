@@ -5,13 +5,6 @@
 #include "cpp11/declarations.hpp"
 #include <R_ext/Visibility.h>
 
-// distance_calcs.cpp
-doubles rcpp_distance_haversine(doubles latFrom, doubles lonFrom, doubles latTo, doubles lonTo, double tolerance);
-extern "C" SEXP _gtfs2gps_rcpp_distance_haversine(SEXP latFrom, SEXP lonFrom, SEXP latTo, SEXP lonTo, SEXP tolerance) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(rcpp_distance_haversine(cpp11::as_cpp<cpp11::decay_t<doubles>>(latFrom), cpp11::as_cpp<cpp11::decay_t<doubles>>(lonFrom), cpp11::as_cpp<cpp11::decay_t<doubles>>(latTo), cpp11::as_cpp<cpp11::decay_t<doubles>>(lonTo), cpp11::as_cpp<cpp11::decay_t<double>>(tolerance)));
-  END_CPP11
-}
 // expand_pattern.cpp
 list cpp_expand_pattern(doubles tpl_seq, integers tpl_dep, integers tpl_arr, logicals tpl_has_stop, doubles tpl_dist, doubles tpl_cumdist, integers trip_tpl_from, integers trip_tpl_size, integers trip_size, doubles st_seq, integers st_dep, integers st_arr, bool long_double, int n_threads);
 extern "C" SEXP _gtfs2gps_cpp_expand_pattern(SEXP tpl_seq, SEXP tpl_dep, SEXP tpl_arr, SEXP tpl_has_stop, SEXP tpl_dist, SEXP tpl_cumdist, SEXP trip_tpl_from, SEXP trip_tpl_size, SEXP trip_size, SEXP st_seq, SEXP st_dep, SEXP st_arr, SEXP long_double, SEXP n_threads) {
@@ -26,28 +19,11 @@ extern "C" SEXP _gtfs2gps_cpp_openmp_available() {
     return cpp11::as_sexp(cpp_openmp_available());
   END_CPP11
 }
-// snap_points.cpp
-doubles cpp_snap_points_nearest2(doubles_matrix<> data, doubles_matrix<> ref, int spatial_resolution);
-extern "C" SEXP _gtfs2gps_cpp_snap_points_nearest2(SEXP data, SEXP ref, SEXP spatial_resolution) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_snap_points_nearest2(cpp11::as_cpp<cpp11::decay_t<doubles_matrix<>>>(data), cpp11::as_cpp<cpp11::decay_t<doubles_matrix<>>>(ref), cpp11::as_cpp<cpp11::decay_t<int>>(spatial_resolution)));
-  END_CPP11
-}
-// snap_points.cpp
-doubles cpp_snap_points_nearest1(doubles_matrix<> data, doubles_matrix<> ref, int spatial_resolution);
-extern "C" SEXP _gtfs2gps_cpp_snap_points_nearest1(SEXP data, SEXP ref, SEXP spatial_resolution) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_snap_points_nearest1(cpp11::as_cpp<cpp11::decay_t<doubles_matrix<>>>(data), cpp11::as_cpp<cpp11::decay_t<doubles_matrix<>>>(ref), cpp11::as_cpp<cpp11::decay_t<int>>(spatial_resolution)));
-  END_CPP11
-}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
-    {"_gtfs2gps_cpp_expand_pattern",       (DL_FUNC) &_gtfs2gps_cpp_expand_pattern,       14},
-    {"_gtfs2gps_cpp_openmp_available",     (DL_FUNC) &_gtfs2gps_cpp_openmp_available,      0},
-    {"_gtfs2gps_cpp_snap_points_nearest1", (DL_FUNC) &_gtfs2gps_cpp_snap_points_nearest1,  3},
-    {"_gtfs2gps_cpp_snap_points_nearest2", (DL_FUNC) &_gtfs2gps_cpp_snap_points_nearest2,  3},
-    {"_gtfs2gps_rcpp_distance_haversine",  (DL_FUNC) &_gtfs2gps_rcpp_distance_haversine,   5},
+    {"_gtfs2gps_cpp_expand_pattern",   (DL_FUNC) &_gtfs2gps_cpp_expand_pattern,   14},
+    {"_gtfs2gps_cpp_openmp_available", (DL_FUNC) &_gtfs2gps_cpp_openmp_available,  0},
     {NULL, NULL, 0}
 };
 }

@@ -1,7 +1,14 @@
 
-#' @title Remove invalid objects from GTFS data
-#' 
-#' @description Remove all objects from GTFS data that are not used in all relations
+#' @title Remove invalid objects from GTFS data (deprecated)
+#'
+#' @description This function is deprecated and will be removed in a future
+#' version. Use \code{gtfstools::remove_duplicates()} and
+#' \code{gtfstools::remove_unused_ids()} instead. Unlike this function, they
+#' keep trips whose \code{shape_id} or \code{route_id} is not in the feed;
+#' \code{gtfs2gps()} skips trips without a shape and returns an \code{NA}
+#' \code{route_type} for trips without a route.
+#'
+#' Remove all objects from GTFS data that are not used in all relations
 #' that they are required to be. That is,
 #' agency-routes relation (agency_id), routes-trips relation (route_id), 
 #' trips-shapes relation (shape_id), trips-frequencies relation (trip_id),
@@ -22,9 +29,13 @@
 #' @examples
 #' poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
 #' object.size(poa)
-#' subset <- remove_invalid(poa)
+#' subset <- suppressWarnings(remove_invalid(poa))
 #' object.size(subset)
 remove_invalid <- function(gtfs_data, only_essential = TRUE, prompt_invalid = FALSE){
+  cli::cli_warn(c("{.fn remove_invalid} is deprecated and will be removed in a future version.",
+                  "i" = "Use {.fn gtfstools::remove_duplicates} and {.fn gtfstools::remove_unused_ids} instead."),
+                class = "deprecated_remove_invalid")
+
   newsize <- object.size(gtfs_data)
   size <- newsize + 1
   
@@ -118,9 +129,12 @@ remove_invalid <- function(gtfs_data, only_essential = TRUE, prompt_invalid = FA
   return(gtfs_data)
 }
 
-#' @title Filter GTFS data using valid stop times
+#' @title Filter GTFS data using valid stop times (deprecated)
 #'
-#' @description Filter a GTFS data read using gtfs2gps::read_gtfs(). It removes
+#' @description This function is deprecated and will be removed in a future
+#' version. \code{gtfs2gps()} does not need it.
+#'
+#' Filter a GTFS data read using gtfs2gps::read_gtfs(). It removes
 #' stop_times whose arrival_time or departure_time is missing or is not a
 #' well-formed "H:MM:SS" time string (hours may exceed 24). It also filters stops and routes accordingly.
 #' The input data is not modified.
@@ -130,8 +144,11 @@ remove_invalid <- function(gtfs_data, only_essential = TRUE, prompt_invalid = FA
 #' @examples
 #' poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
 #'
-#' subset <- filter_valid_stop_times(poa)
+#' subset <- suppressWarnings(filter_valid_stop_times(poa))
 filter_valid_stop_times <- function(gtfs_data){
+  cli::cli_warn("{.fn filter_valid_stop_times} is deprecated and will be removed in a future version.",
+                class = "deprecated_filter_valid_stop_times")
+
   gtfs_data <- data.table::copy(gtfs_data)
 
   # keep only well-formed "H:MM:SS" times, ignoring surrounding whitespace (NA,

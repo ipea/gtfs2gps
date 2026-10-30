@@ -12,7 +12,7 @@
 #' 
 simplify_shapes <- function(gtfs_data, tol = 0){
   
-  gtfs_sf <- gtfs_shapes_as_sf(gtfs_data)
+  gtfs_sf <- shapes_as_sf(gtfs_data)
   gtfs_sf$ID <- 1:nrow(gtfs_sf)
   
   # geometry operations

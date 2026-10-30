@@ -61,7 +61,7 @@ gtfs2gps/
 │   ├── utils.R                   # @importFrom, globalVariables, time helpers
 │   ├── zzz.R                     # .onLoad / .onAttach
 │   └── cpp11.R                   # generated; never hand-edit
-├── src/                          # cpp11: snap_points.cpp, distance_calcs.cpp, expand_pattern.cpp (trips → GPS points; R reference in tests/testthat/helper-update-dt.R) (+ generated cpp11.cpp)
+├── src/                          # cpp11: expand_pattern.cpp (trips → GPS points; R reference in tests/testthat/helper-update-dt.R) (+ generated cpp11.cpp)
 ├── tests/testthat/               # test_<function>.R (underscore); suite also runs on CRAN
 ├── inst/extdata/                 # fixtures: poa.zip, saopaulo.zip (frequencies), fortaleza.zip (+ srtm.tif), berlin.zip, warsaw.zip
 ├── vignettes/intro_to_gtfs2gps.Rmd
@@ -76,7 +76,8 @@ gtfs2gps/
 Exports: `gtfs2gps` · `read_gtfs`/`write_gtfs` · `filter_single_trip`,
 `filter_valid_stop_times`, `remove_invalid` · `adjust_speed`,
 `adjust_arrival_departure`, `append_height` · `gps_as_sfpoints`,
-`gps_as_sflinestring`, `gtfs_shapes_as_sf`, `gtfs_stops_as_sf`.
+`gps_as_sflinestring` · deprecated (`@keywords internal`, warn on call):
+`gtfs_shapes_as_sf`, `gtfs_stops_as_sf` (internal body: `shapes_as_sf()`).
 
 Local-only workflow files (gitignored and Rbuildignored): `MEMORY.md`,
 `quality_reports/`, `templates/`, and everything in `.claude/` except `rules/`.

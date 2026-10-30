@@ -16,15 +16,15 @@ test_that("gtfs2gps", {
     poa_gps <- poa_gps_0[units::drop_units(speed) > 0 & units::drop_units(cumtime) >= 0 & !is.na(speed),]
     
     my_dim <- dim(poa_gps)[1]
-    expect_equal(my_dim, 126660)
+    expect_equal(my_dim, 126737)
     
     my_length <- length(poa_gps$dist[which(!units::drop_units(poa_gps$dist) < 50)])
     expect_equal(my_length, 0)
     
-    expect_equal(sum(units::drop_units(poa_gps$dist)), 4085722, 0.1)
+    expect_equal(sum(units::drop_units(poa_gps$dist)), 4069599.583, tolerance = 1e-6)
     
     expect_true(poa_gps$trip_number[1] == 1)
-    expect_true(poa_gps$trip_number[126660] == 88)
+    expect_true(poa_gps$trip_number[126737] == 88)
     
     expect_true(all(names(poa_gps) %in% 
                       c("trip_id", "route_type", "id", "shape_pt_lon", "shape_pt_lat", "trip_number",
@@ -58,15 +58,15 @@ test_that("gtfs2gps", {
     expect_true(all(na.omit(units::drop_units(poa_gps$speed) > 0)))
     
     my_dim <- dim(poa_gps)[1]
-    expect_equal(my_dim, 126272)
+    expect_equal(my_dim, 126349)
     
     my_length <- length(poa_gps$dist[which(!(units::drop_units(poa_gps$dist) < 50))])
     expect_equal(my_length, 0)
     
-    expect_equal(sum(units::drop_units(poa_gps$dist)), 516072, 1)
+    expect_equal(sum(units::drop_units(poa_gps$dist)), 4069599.583, tolerance = 1e-6)
 
     expect_true(poa_gps$trip_number[1] == 1)
-    expect_true(poa_gps$trip_number[126272] == 88)
+    expect_true(poa_gps$trip_number[126349] == 88)
     
     expect_true(all(names(poa_gps) %in% 
       c("trip_id", "route_type", "id", "shape_pt_lon", "shape_pt_lat", "trip_number",
@@ -352,6 +352,28 @@ test_that("gtfs2gps gives the same result when the shapes are segmentized one by
     expect_equal(calls, 3)  # the failing call, then one per shape
 })
 
+test_that("gtfs2gps stops with a cli error when the output has too many points", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+      gtfstools::filter_by_shape_id(c("T2-1", "A141-1")) |>
+      filter_single_trip()
+    out_dir <- tempfile("g2g_"); dir.create(out_dir); on.exit(unlink(out_dir, recursive = TRUE), add = TRUE)
+
+    # the C++ error, raised once the size is known; not reported as a failed shape
+    calls <- 0
+    local_mocked_bindings(cpp_expand_pattern = function(...){
+      calls <<- calls + 1
+      stop("Too many GPS points (more than 2147483647).")
+    })
+    # testthat edition 2 ignores expect_error(class =)
+    e <- tryCatch(gtfs2gps(poa, parallel = FALSE, quiet = TRUE), error = identity)
+    expect_s3_class(e, "gtfs2gps_too_many_points_error")
+    expect_match(conditionMessage(e), "spatial_resolution")
+    expect_equal(calls, 1)  # no shape-by-shape retry
+    e <- tryCatch(gtfs2gps(poa, parallel = FALSE, quiet = TRUE, filepath = out_dir), error = identity)
+    expect_s3_class(e, "gtfs2gps_too_many_points_error")
+    expect_equal(calls, 2)
+})
+
 test_that("gtfs2gps skips shapes without stops or stop coordinates with a message", {
     poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
       gtfstools::filter_by_shape_id("T2-1") |>
@@ -431,18 +453,19 @@ test_that("gtfs2gps drops only the shape of a trip with fewer than two timed sto
     poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
       gtfstools::filter_by_shape_id(c("T2-1", "A141-1")) |>
       filter_single_trip()
-    shapes <- gtfs_shapes_as_sf(poa)
+    shapes <- shapes_as_sf(poa)
     points <- sf::st_segmentize(shapes[shapes$shape_id == "T2-1", ], units::set_units(0.1, "km")) |>
       sfheaders::sf_cast("POINT") |>
       sf::st_coordinates()
 
-    # the last two stops of T2-1 at its second to last point: nearest2 snaps both
-    # there, and the last one takes it. Timed only at those two stops, with no arrival
-    # time at the last one, the trip has a single timed stop on the shape
+    # the last two stops of T2-1 at its last point: both are snapped there, as the
+    # shape has no point left after it, and the last one takes it. Timed only at those
+    # two stops, with no arrival time at the last one, the trip has a single timed
+    # stop on the shape
     tripid <- poa$trips[shape_id == "T2-1"]$trip_id
     st <- poa$stop_times[trip_id == tripid][order(stop_sequence)]
     poa$stops[stop_id %in% utils::tail(st$stop_id, 2)
-              , `:=`(stop_lon = points[nrow(points) - 1, 1], stop_lat = points[nrow(points) - 1, 2])]
+              , `:=`(stop_lon = points[nrow(points), 1], stop_lat = points[nrow(points), 2])]
     seqs <- utils::tail(st$stop_sequence, 2)
     poa$stop_times[trip_id == tripid, `:=`(arrival_time = "", departure_time = "")]
     poa$stop_times[trip_id == tripid & stop_sequence == seqs[1]
@@ -477,7 +500,7 @@ test_that("gtfs2gps keeps the last point of each shape", {
     poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
       gtfstools::filter_by_shape_id("T2-1") |>
       filter_single_trip()
-    shapes <- gtfs_shapes_as_sf(poa)
+    shapes <- shapes_as_sf(poa)
     points <- sf::st_segmentize(shapes, units::set_units(0.1, "km")) |>
       sfheaders::sf_cast("POINT") |>
       sf::st_coordinates()
@@ -572,4 +595,75 @@ test_that("gtfs2gps() takes spatial_resolution in metres or as a units length", 
     expect_error(gtfs2gps(gtfs, spatial_resolution = 0.5, parallel = FALSE, quiet = TRUE), "spatial_resolution")
     expect_error(gtfs2gps(gtfs, spatial_resolution = units::set_units(1, "ft"), parallel = FALSE, quiet = TRUE), "spatial_resolution")
     expect_error(gtfs2gps(gtfs, spatial_resolution = units::set_units(50, "s"), parallel = FALSE, quiet = TRUE), "cannot convert")
+})
+
+test_that("gtfs2gps converts a trip with a stop far from its shape", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+      gtfstools::filter_by_shape_id("T2-1") |>
+      filter_single_trip()
+    # a stop in the middle of the trip about 2 km from the shape (nearest2 used to
+    # drop the whole stop pattern)
+    st <- poa$stop_times[order(stop_sequence)]
+    far <- st$stop_id[nrow(st) %/% 2]
+    poa$stops[stop_id == far, stop_lat := stop_lat + 0.018]
+
+    res <- gtfs2gps(poa, parallel = FALSE, quiet = TRUE)
+    expect_setequal(unique(res$stop_sequence[!is.na(res$stop_sequence)]), st$stop_sequence)
+})
+
+test_that("gtfs2gps warns that snap_method is deprecated and keeps the thread count", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+      gtfstools::filter_by_shape_id("T2-1") |>
+      filter_single_trip()
+    ref <- gtfs2gps(poa, parallel = FALSE, quiet = TRUE)
+
+    threads <- data.table::getDTthreads()
+    # (testthat edition 2 ignores the class in expect_warning(), so it is checked here)
+    cls <- character(0)
+    res <- withCallingHandlers(gtfs2gps(poa, parallel = FALSE, snap_method = "nearest1", quiet = TRUE),
+                               warning = function(w){
+                                 cls <<- c(cls, class(w))
+                                 invokeRestart("muffleWarning")
+                               })
+    expect_true("deprecated_snap_method" %in% cls)
+    expect_identical(res, ref)
+    expect_identical(data.table::getDTthreads(), threads)
+})
+
+test_that("gtfs2gps skips patterns with a stop without coordinates or a single stop, and handles repeated shape points", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+      gtfstools::filter_by_shape_id(c("T2-1", "A141-1")) |>
+      filter_single_trip()
+    ref <- gtfs2gps(poa, parallel = FALSE, quiet = TRUE)
+    t2 <- poa$trips[shape_id == "T2-1"]$trip_id
+    a141 <- poa$trips[shape_id == "A141-1"]$trip_id
+    st_t2 <- poa$stop_times[trip_id == t2][order(stop_sequence)]
+    st_a141 <- poa$stop_times[trip_id == a141][order(stop_sequence)]
+
+    # a stop in the middle of the T2-1 trip, used by no other trip, without coordinates
+    no_coords <- setdiff(st_t2$stop_id, st_a141$stop_id)
+    no_coords <- no_coords[length(no_coords) %/% 2]
+    poa$stops[stop_id == no_coords, `:=`(stop_lat = NA_real_, stop_lon = NA_real_)]
+    # a trip of A141-1 with a single stop
+    poa$trips <- rbind(poa$trips, data.table::copy(poa$trips[trip_id == a141])[, trip_id := "single"])
+    poa$stop_times <- rbind(poa$stop_times, data.table::copy(st_a141[1])[, trip_id := "single"])
+    # a point of the A141-1 shape repeated
+    shp <- poa$shapes[shape_id == "A141-1"][order(shape_pt_sequence)]
+    shp[, shape_pt_sequence := 2L * seq_len(.N)]
+    rep_pt <- data.table::copy(shp[.N %/% 2])[, shape_pt_sequence := shape_pt_sequence + 1L]
+    poa$shapes <- rbind(poa$shapes[shape_id != "A141-1"], shp, rep_pt)
+
+    msgs <- character(0)
+    res <- withCallingHandlers(gtfs2gps(poa, parallel = FALSE),
+                               message = function(m){
+                                 msgs <<- c(msgs, conditionMessage(m))
+                                 invokeRestart("muffleMessage")
+                               })
+    expect_true(any(grepl("T2-1.*no snapped stops", msgs)))
+    expect_true(any(grepl("A141-1.*less than two stops", msgs)))
+    expect_false(t2 %in% res$trip_id)
+    expect_false("single" %in% res$trip_id)
+    # each stop of the A141-1 trip once, as without the repeated point
+    expect_identical(res[trip_id == a141 & !is.na(stop_sequence), .N, by = stop_sequence],
+                     ref[trip_id == a141 & !is.na(stop_sequence), .N, by = stop_sequence])
 })

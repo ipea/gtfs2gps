@@ -2,7 +2,7 @@
 % Please edit documentation in R/gtfs_as_sf.R
 \name{gtfs_stops_as_sf}
 \alias{gtfs_stops_as_sf}
-\title{Convert GTFS stops to simple feature object}
+\title{Convert GTFS stops to simple feature object (deprecated)}
 \usage{
 gtfs_stops_as_sf(gtfs, crs = 4326)
 }
@@ -22,12 +22,15 @@ error, and an empty or unknown CRS raises an error of class
 A simple feature (sf) object.
 }
 \description{
+This function is deprecated and will be removed in a future
+version. Use \code{gtfstools::get_stops_geometry()} instead.
+
 Convert the stops of a GTFS data loaded using
 \code{\link{read_gtfs}} into a POINT simple feature (sf) object, using
 \code{\link[gtfstools]{get_stops_geometry}}. The input data is not modified.
 }
 \examples{
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-poa_shapes <- gtfs_shapes_as_sf(poa)
-poa_stops <- gtfs_stops_as_sf(poa)
+poa_stops <- suppressWarnings(gtfs_stops_as_sf(poa))
 }
+\keyword{internal}
