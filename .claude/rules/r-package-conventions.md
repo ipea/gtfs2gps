@@ -134,8 +134,11 @@ user-facing conditions. `cli` goes in `Imports`.
   otherwise accept the default.
 - **`quiet` still controls informative output.** `cli_inform()` emits a
   message condition, so `suppressMessages()` / the `quiet` argument keep
-  working. Don't print progress bars (`gtfs2gps()` has none since
-  2026-10-29).
+  working. Progress: use `cli::cli_progress_step()` for phases and
+  `cli::cli_progress_bar()` for loops over shapes, never inside threaded C++ (no
+  R calls there, A3). `quiet` hides cli's default display through
+  `suppressMessages()`. A step's text is interpolated again when it ends, so it
+  must not refer to variables reassigned before then.
 - **Migration done (2026-10-28):** no base condition calls remain in `R/`. The
   one exception is `packageStartupMessage()` in `.onAttach`, which CRAN
   requires for startup messages. Id lists in messages use

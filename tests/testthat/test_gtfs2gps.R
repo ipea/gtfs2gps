@@ -242,9 +242,26 @@ test_that("gtfs2gps wraps timestamps at midnight and matches in parallel", {
     span <- stop_rows[1]:stop_rows[length(stop_rows)]
     expect_false(anyNA(seq_res$speed[span[-1]]))
 
-    # two threads give the same result
-    par_res <- gtfs2gps(poa, parallel = TRUE, ncores = 2, spatial_resolution = 50, quiet = TRUE)
+    # two threads give the same result; quiet hides the messages and progress steps
+    expect_no_message(par_res <- gtfs2gps(poa, parallel = TRUE, ncores = 2, spatial_resolution = 50, quiet = TRUE))
     expect_identical(as.list(seq_res), as.list(par_res))
+})
+
+test_that("gtfs2gps shows a progress bar over the shapes with filepath", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+      gtfstools::filter_by_shape_id(c("T2-1", "A141-1")) |>
+      filter_single_trip()
+
+    # the default handler draws nothing in tests; the logger prints every event
+    op <- options(cli.progress_handlers_only = "logger")
+    out_dir <- tempfile("g2g_"); dir.create(out_dir)
+    on.exit({options(op); unlink(out_dir, recursive = TRUE)}, add = TRUE)
+    out <- capture.output(suppressMessages(gtfs2gps(poa, parallel = FALSE, filepath = out_dir)))
+
+    # steps have no total (logged as /NA), so these lines are the bar's
+    expect_true(any(grepl("0/2 created", out, fixed = TRUE)))
+    expect_true(any(grepl("2/2 terminated", out, fixed = TRUE)))
+    expect_length(list.files(out_dir), 2)
 })
 
 test_that("gtfs2gps returns NULL when no shape converts", {
@@ -286,9 +303,11 @@ test_that("gtfs2gps takes the route_type of the shape a trip is converted with",
                      , list(speed = "km h-1", dist = "m", cumdist = "m", cumtime = "s"))
     expect_s3_class(res$timestamp, "ITime")
 
-    # route_type is looked up for the whole output, so an invalid routes table stops it
+    # route_type is looked up with each shape, so an invalid routes table fails the shapes
     poa$routes[, route_id := NULL]
-    expect_error(gtfs2gps(poa, parallel = FALSE, quiet = TRUE), "route_id")
+    expect_warning(res <- gtfs2gps(poa, parallel = FALSE, quiet = TRUE)
+                   , class = "gtfs2gps_shape_error")
+    expect_null(res)
 })
 
 test_that("gtfs2gps skips a stop pattern whose first trip has an NA trip_id", {
@@ -525,4 +544,17 @@ test_that("gtfs2gps reports an unused shape as unused when its geometry can't be
     expect_no_warning(expect_message(res <- gtfs2gps(poa, parallel = FALSE)
                                      , "is not used by any trip"))
     expect_identical(res, ref)
+})
+
+test_that("gtfs2gps takes the route of the last row of a trip listed twice in a shape", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+      gtfstools::filter_by_shape_id("T2-1") |>
+      filter_single_trip()
+    # the trip is listed again with a route that is not in routes: its route_type is NA
+    poa$trips <- rbind(poa$trips, data.table::copy(poa$trips)[, route_id := "not a route"])
+    res <- gtfs2gps(poa, parallel = FALSE, quiet = TRUE)
+    expect_true(all(is.na(res$route_type)))
+    expect_type(res$route_type, "integer")
+    expect_s3_class(res$speed, "units")
+    expect_type(unclass(res$speed), "double")
 })

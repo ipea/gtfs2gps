@@ -118,8 +118,8 @@ feed_to_gps <- function(slice, routes, spatial_resolution, snap_method, n_thread
   # whole metres, truncated, as the C++ function takes an int (a units value in
   # another unit is converted first)
   resolution_m <- as.integer(units::drop_units(units::set_units(spatial_resolution, "m")))
-  # the route type of each trip is set after the conversion; this typed NA keeps the
-  # column's type and position until then
+  # typed NA of the route_type column (NULL when routes has no route_type, and then
+  # there is no column)
   route_type_na <- routes$route_type[NA_integer_]
   coords <- cbind(lon, lat)
   ps_rows <- split(seq_len(nrow(ps)), factor(ps$pattern_id, levels = seq_len(n_patterns)))
@@ -225,21 +225,42 @@ feed_to_gps <- function(slice, routes, spatial_resolution, snap_method, n_thread
   src <- res$src
   point <- tpl$point[src]
   ktk <- kt[keep]
+
+  # route type of each converted trip, by shape: the last row of the trip in trips (with
+  # a route_id) gives it, NA when its route is not in routes (a trip listed under two
+  # shapes takes each shape's route). Routes without a route_type give no column
+  route_type <- route_type_na
+  if(!is.null(route_type_na)){
+    route_type <- route_type_na[0]
+    if(sum(n_rows) > 0){
+      trip_rt <- unique(routes[, .(route_id, route_type)], by = "route_id")[
+        slice$trips[!is.na(route_id), .(shape_id, trip_id, route_id)], on = "route_id"]
+      keys <- data.table::data.table(shape_id = shape_ids[ktk$shape_rank], trip_id = ktk$trip_id)
+      route_type <- rep(trip_rt[keys, on = c("shape_id", "trip_id"), mult = "last", route_type]
+                        , n_rows)
+    }
+  }
+
   # timestamps wrap at midnight (elapsed time is in cumtime)
-  gps <- data.table::data.table(shape_id = rep(shape_ids[ktk$shape_rank], n_rows)
-                                , id = sequence(n_rows)
-                                , shape_pt_lon = lon[point]
-                                , shape_pt_lat = lat[point]
-                                , route_type = route_type_na
-                                , stop_id = tpl$stop_id[src]
-                                , stop_sequence = tpl$stop_sequence[src]
-                                , dist = res$dist
-                                , cumdist = cumdist[point]
-                                , trip_id = rep(ktk$trip_id, n_rows)
-                                , speed = res$speed
-                                , timestamp = structure(res$timestamp %% 86400L, class = "ITime")
-                                , cumtime = res$cumtime
-                                , trip_number = rep(ktk$trip_number, n_rows))
+  cols <- list(shape_id = rep(shape_ids[ktk$shape_rank], n_rows)
+               , id = sequence(n_rows)
+               , shape_pt_lon = lon[point]
+               , shape_pt_lat = lat[point]
+               , route_type = route_type
+               , stop_id = tpl$stop_id[src]
+               , stop_sequence = tpl$stop_sequence[src]
+               , dist = res$dist
+               , cumdist = cumdist[point]
+               , trip_id = rep(ktk$trip_id, n_rows)
+               , speed = res$speed
+               , timestamp = structure(res$timestamp %% 86400L, class = "ITime")
+               , cumtime = res$cumtime
+               , trip_number = rep(ktk$trip_number, n_rows))
+  # without a route_type the column is left out, so that setcolorder() fails as it did
+  if(is.null(route_type)) cols$route_type <- NULL
+  # setDT() makes the table from these vectors without copying them (data.table()
+  # copied all of them): none of them may refer to the slice or the input data
+  gps <- data.table::setDT(cols)
   if(nrow(gps) > 0){
     data.table::setcolorder(gps, c("shape_id","trip_id", "route_type"
                                    , "id", "timestamp", "shape_pt_lon", "shape_pt_lat"
@@ -306,25 +327,21 @@ inform <- function(text, ...){
   return(function() cli::cli_inform(text, .envir = values))
 }
 
-#' route_type of each trip, by shape: a trip listed under two shapes takes the route of
-#' each; for a trip listed twice in a shape, the last row wins (update join)
-#' @noRd
-set_route_type <- function(gps, routes, trips){
-  if (!is.null(routes)) {
-    trip_rt <- unique(routes[, .(route_id, route_type)], by = "route_id")[
-      trips[!is.na(route_id), .(shape_id, trip_id, route_id)], on = "route_id"]
-    gps[trip_rt, on = c("shape_id", "trip_id"), route_type := i.route_type]
-  }
-  return(invisible(gps))
-}
-
-#' units of the GPS columns, set by reference
+#' units of the GPS columns, set in place: the attribute and class that
+#' units::set_units() gives, without copying the columns
 #' @noRd
 set_gps_units <- function(gps){
-  gps[, speed := units::set_units(speed, "km/h") ]
-  gps[, dist := units::set_units(dist, "m") ]
-  gps[, cumdist := units::set_units(cumdist, "m") ]
-  gps[, cumtime := units::set_units(cumtime, "s") ]
+  km_h <- attr(units::set_units(0, "km/h"), "units")
+  m <- attr(units::set_units(0, "m"), "units")
+  s <- attr(units::set_units(0, "s"), "units")
+  data.table::setattr(gps[["speed"]], "units", km_h)
+  data.table::setattr(gps[["speed"]], "class", "units")
+  data.table::setattr(gps[["dist"]], "units", m)
+  data.table::setattr(gps[["dist"]], "class", "units")
+  data.table::setattr(gps[["cumdist"]], "units", m)
+  data.table::setattr(gps[["cumdist"]], "class", "units")
+  data.table::setattr(gps[["cumtime"]], "units", s)
+  data.table::setattr(gps[["cumtime"]], "class", "units")
   return(invisible(gps))
 }
 
@@ -467,7 +484,9 @@ gtfs2gps <- function(gtfs_data,
   
   # Unzipping and reading GTFS.zip file
   if(is.character(gtfs_data)){
-    cli::cli_inform("Unzipping and reading {.file {basename(gtfs_data)}}")
+    # the step's text is interpolated again when it ends, after gtfs_data is replaced
+    gtfs_file <- basename(gtfs_data)
+    cli::cli_progress_step("Unzipping and reading {.file {gtfs_file}}")
     gtfs_data <- read_gtfs(gtfszip = gtfs_data)
   }
   
@@ -483,7 +502,7 @@ gtfs2gps <- function(gtfs_data,
   gtfs_data <- stop_times_to_seconds(gtfs_data)
   
   # Convert all shapes into sf objects
-  cli::cli_inform("Converting shapes to sf objects")
+  cli::cli_progress_step("Converting shapes to sf objects")
   shapes_sf <- gtfs_shapes_as_sf(gtfs_data)
   
   ###### PART 2. The whole feed, or one slice per shape ---------------------------
@@ -566,7 +585,7 @@ gtfs2gps <- function(gtfs_data,
     cli::cli_inform("Using {n_used} thread{?s}")
   }
     
-  cli::cli_inform("Processing the data")
+  cli::cli_progress_step("Processing the data")
   convert <- function(slice) feed_to_gps(slice, gtfs_data$routes, spatial_resolution
                                          , snap_method, n_threads)
   bad_ids <- character(0)
@@ -597,7 +616,12 @@ gtfs2gps <- function(gtfs_data,
   # one shape at a time: with filepath, or to find the shapes that fail
   if(is.null(result)){
     outputs <- list()
-    for(slice in shape_slices()){
+    slices <- shape_slices()
+    # this bar closes the "Processing the data" step (one cli progress per frame);
+    # the update comes first because the loop uses next
+    cli::cli_progress_bar("Converting shapes", total = length(slices))
+    for(slice in slices){
+      cli::cli_progress_update()
       r <- tryCatch(convert(slice), error = function(e) e)
       if(inherits(r, "error")){
         bad_ids <- c(bad_ids, slice$shape_ids)
@@ -612,7 +636,6 @@ gtfs2gps <- function(gtfs_data,
       if(!is.null(filepath)){ # Write object; an error fails only this shape
         shapeid <- slice$shape_ids
         written <- tryCatch({
-          set_route_type(r$gps, gtfs_data$routes, slice$trips)
           set_gps_units(r$gps)
           if(compress)
             saveRDS(object = r$gps,
@@ -680,7 +703,6 @@ gtfs2gps <- function(gtfs_data,
     # no shape converted: there is nothing to check
     if(is.null(output) || dim(output)[1] == 0) return(NULL)
 
-    set_route_type(output, gtfs_data$routes, gtfs_data$trips)
     set_gps_units(output)
 
     if(sum(is.na(output$speed)) > 1)
