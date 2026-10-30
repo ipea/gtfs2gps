@@ -40,7 +40,8 @@
   * Internal code that duplicated {gtfstools} was removed: the frequency expansion inside `gtfs2gps()` (unreachable since v2.1-1, when `gtfstools::frequencies_to_stop_times()` took over) and the R-level time parser, now `gtfstools::convert_time_to_seconds()`. No output change for well-formed `H:MM:SS` times. In `gtfs2gps()` and `adjust_arrival_departure()`, malformed time strings (e.g. `"05:21"`, which used to parse to an arbitrary value) are now treated as missing.
   * `adjust_arrival_departure()` no longer modifies the input GTFS, works when `arrival_time` or `departure_time` is absent from `stop_times`, and returns a `dt_gtfs` object even for plain-list input.
   * `filter_valid_stop_times()` now drops any time that is not of the form `H:MM:SS` (e.g. `"05:21"`, which used to be kept) and no longer re-formats the strings it keeps.
-  * {gtfstools} >= 1.3.0 is now required.
+  * `gtfs_stops_as_sf()` now wraps `gtfstools::get_stops_geometry()`: `stop_id` must be character and `stop_lon`/`stop_lat` numeric, as produced by `read_gtfs()` (other types now raise an error), `crs` must be an EPSG code, a string or a `crs` object, and an unknown CRS raises an error of class `gtfs2gps_crs_error`, as in `gtfs_shapes_as_sf()`. Empty `stops` now give an empty `sf` object instead of an error. The `length` column of `gtfs_shapes_as_sf()` now comes from `gtfstools::get_shape_length()`, computed from the WGS84 points, so it no longer depends on `crs` or on `sf::sf_use_s2()`.
+  * `write_gtfs()` gains a `compression_level` argument (1 to 9, default 6), passed to `gtfstools::write_gtfs()`.
 
 # gtfs2gps v2.1-2
 

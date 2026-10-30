@@ -13,14 +13,18 @@ export(gtfs_stops_as_sf)
 export(read_gtfs)
 export(remove_invalid)
 export(write_gtfs)
-importFrom(data.table,"%between%")
-importFrom(data.table,"%chin%")
-importFrom(data.table,":=")
-importFrom(data.table,fifelse)
+importFrom(data.table,
+  "%between%",
+  "%chin%",
+  ":=",
+  fifelse
+)
 importFrom(lwgeom,st_geod_length)
 importFrom(rlang,abort)
 importFrom(stats,na.omit)
-importFrom(utils,head)
-importFrom(utils,object.size)
-importFrom(utils,tail)
+importFrom(utils,
+  head,
+  object.size,
+  tail
+)
 useDynLib(gtfs2gps, .registration = TRUE)

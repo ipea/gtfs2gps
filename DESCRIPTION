@@ -16,6 +16,17 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Depends:
     R (>= 4.1.0)
+Imports:
+      checkmate,
+      cli,
+      data.table,
+      gtfstools (>= 2.0.0),
+      lwgeom,
+      rlang (>= 1.1.0),
+      sf,
+      sfheaders,
+      terra,
+      units
 Suggests:
     rmarkdown,
     markdown,
@@ -23,18 +34,6 @@ Suggests:
     testthat (>= 3.1.7),
     dplyr,
     bit64
-Imports:
-      data.table,
-      gtfstools (>= 2.0.0),
-      units,
-      sf,
-      terra,
-      sfheaders,
-      lwgeom,
-      checkmate,
-      cli,
-      rlang (>= 1.1.0)
-RoxygenNote: 7.3.3
 VignetteBuilder: knitr
 LinkingTo: cpp11 (>= 0.4.0)
-Remotes: ipea/gtfstools
+Config/roxygen2/version: 8.1.0

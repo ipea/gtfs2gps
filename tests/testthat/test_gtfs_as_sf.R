@@ -70,4 +70,39 @@ test_that("gtfs_stops_as_sf", {
   poa_utm <- gtfs_stops_as_sf(poa, crs = 31982)
   expect_equal(sf::st_crs(poa_utm), sf::st_crs(31982))
   expect_equal(sf::st_coordinates(poa_utm), sf::st_coordinates(sf::st_transform(poa_sf, 31982)))
+
+  # crs as a string or a crs object gives the same transform
+  expect_equal(sf::st_coordinates(gtfs_stops_as_sf(poa, crs = "EPSG:31982")), sf::st_coordinates(poa_utm))
+  expect_equal(sf::st_coordinates(gtfs_stops_as_sf(poa, crs = sf::st_crs(31982))), sf::st_coordinates(poa_utm))
+  expect_error(gtfs_stops_as_sf(poa, crs = "garbage"), class = "gtfs2gps_crs_error")
+  expect_equal(sf::st_coordinates(gtfs_stops_as_sf(poa, crs = sf::st_crs(4326))), sf::st_coordinates(poa_sf))
+
+  # empty stops give an empty sf object
+  poa_empty <- data.table::copy(poa)
+  poa_empty$stops <- poa_empty$stops[0]
+  expect_equal(nrow(gtfs_stops_as_sf(poa_empty)), 0)
+})
+
+test_that("gtfs_stops_as_sf accepts plain lists and data.frames and does not change the input", {
+  poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps"))
+
+  expect_equal(nrow(gtfs_stops_as_sf(unclass(poa))), 212)
+
+  # a dt_gtfs whose stops is a data.frame
+  poa_df <- poa
+  poa_df$stops <- as.data.frame(poa_df$stops)
+  before <- data.table::copy(poa_df)
+  expect_equal(nrow(gtfs_stops_as_sf(poa_df)), 212)
+  expect_equal(poa_df, before)
+
+  # stop_id must be character, as read_gtfs() produces
+  poa_int <- data.table::copy(poa)
+  poa_int$stops[, stop_id := seq_len(.N)]
+  expect_error(gtfs_stops_as_sf(poa_int), "stop_id")
+})
+
+test_that("gtfs_shapes_as_sf length does not depend on crs", {
+  poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps"))
+
+  expect_equal(gtfs_shapes_as_sf(poa, crs = 31982)$length, gtfs_shapes_as_sf(poa)$length)
 })
