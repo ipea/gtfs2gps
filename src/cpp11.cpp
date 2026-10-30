@@ -13,10 +13,17 @@ extern "C" SEXP _gtfs2gps_rcpp_distance_haversine(SEXP latFrom, SEXP lonFrom, SE
   END_CPP11
 }
 // expand_pattern.cpp
-list cpp_expand_pattern(doubles tpl_seq, integers tpl_dep, integers tpl_arr, logicals tpl_has_stop, doubles tpl_dist, doubles tpl_cumdist, integers trip_size, doubles st_seq, integers st_dep, integers st_arr, bool long_double);
-extern "C" SEXP _gtfs2gps_cpp_expand_pattern(SEXP tpl_seq, SEXP tpl_dep, SEXP tpl_arr, SEXP tpl_has_stop, SEXP tpl_dist, SEXP tpl_cumdist, SEXP trip_size, SEXP st_seq, SEXP st_dep, SEXP st_arr, SEXP long_double) {
+list cpp_expand_pattern(doubles tpl_seq, integers tpl_dep, integers tpl_arr, logicals tpl_has_stop, doubles tpl_dist, doubles tpl_cumdist, integers trip_tpl_from, integers trip_tpl_size, integers trip_size, doubles st_seq, integers st_dep, integers st_arr, bool long_double, int n_threads);
+extern "C" SEXP _gtfs2gps_cpp_expand_pattern(SEXP tpl_seq, SEXP tpl_dep, SEXP tpl_arr, SEXP tpl_has_stop, SEXP tpl_dist, SEXP tpl_cumdist, SEXP trip_tpl_from, SEXP trip_tpl_size, SEXP trip_size, SEXP st_seq, SEXP st_dep, SEXP st_arr, SEXP long_double, SEXP n_threads) {
   BEGIN_CPP11
-    return cpp11::as_sexp(cpp_expand_pattern(cpp11::as_cpp<cpp11::decay_t<doubles>>(tpl_seq), cpp11::as_cpp<cpp11::decay_t<integers>>(tpl_dep), cpp11::as_cpp<cpp11::decay_t<integers>>(tpl_arr), cpp11::as_cpp<cpp11::decay_t<logicals>>(tpl_has_stop), cpp11::as_cpp<cpp11::decay_t<doubles>>(tpl_dist), cpp11::as_cpp<cpp11::decay_t<doubles>>(tpl_cumdist), cpp11::as_cpp<cpp11::decay_t<integers>>(trip_size), cpp11::as_cpp<cpp11::decay_t<doubles>>(st_seq), cpp11::as_cpp<cpp11::decay_t<integers>>(st_dep), cpp11::as_cpp<cpp11::decay_t<integers>>(st_arr), cpp11::as_cpp<cpp11::decay_t<bool>>(long_double)));
+    return cpp11::as_sexp(cpp_expand_pattern(cpp11::as_cpp<cpp11::decay_t<doubles>>(tpl_seq), cpp11::as_cpp<cpp11::decay_t<integers>>(tpl_dep), cpp11::as_cpp<cpp11::decay_t<integers>>(tpl_arr), cpp11::as_cpp<cpp11::decay_t<logicals>>(tpl_has_stop), cpp11::as_cpp<cpp11::decay_t<doubles>>(tpl_dist), cpp11::as_cpp<cpp11::decay_t<doubles>>(tpl_cumdist), cpp11::as_cpp<cpp11::decay_t<integers>>(trip_tpl_from), cpp11::as_cpp<cpp11::decay_t<integers>>(trip_tpl_size), cpp11::as_cpp<cpp11::decay_t<integers>>(trip_size), cpp11::as_cpp<cpp11::decay_t<doubles>>(st_seq), cpp11::as_cpp<cpp11::decay_t<integers>>(st_dep), cpp11::as_cpp<cpp11::decay_t<integers>>(st_arr), cpp11::as_cpp<cpp11::decay_t<bool>>(long_double), cpp11::as_cpp<cpp11::decay_t<int>>(n_threads)));
+  END_CPP11
+}
+// expand_pattern.cpp
+bool cpp_openmp_available();
+extern "C" SEXP _gtfs2gps_cpp_openmp_available() {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_openmp_available());
   END_CPP11
 }
 // snap_points.cpp
@@ -36,7 +43,8 @@ extern "C" SEXP _gtfs2gps_cpp_snap_points_nearest1(SEXP data, SEXP ref, SEXP spa
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
-    {"_gtfs2gps_cpp_expand_pattern",       (DL_FUNC) &_gtfs2gps_cpp_expand_pattern,       11},
+    {"_gtfs2gps_cpp_expand_pattern",       (DL_FUNC) &_gtfs2gps_cpp_expand_pattern,       14},
+    {"_gtfs2gps_cpp_openmp_available",     (DL_FUNC) &_gtfs2gps_cpp_openmp_available,      0},
     {"_gtfs2gps_cpp_snap_points_nearest1", (DL_FUNC) &_gtfs2gps_cpp_snap_points_nearest1,  3},
     {"_gtfs2gps_cpp_snap_points_nearest2", (DL_FUNC) &_gtfs2gps_cpp_snap_points_nearest2,  3},
     {"_gtfs2gps_rcpp_distance_haversine",  (DL_FUNC) &_gtfs2gps_rcpp_distance_haversine,   5},

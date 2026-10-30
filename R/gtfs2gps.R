@@ -1,261 +1,309 @@
-#' Convert one shape and all its trips to GPS points
+#' Convert the shapes of a slice of the feed, and all their trips, to GPS points
 #'
-#' Called inside the furrr workers of \code{gtfs2gps()}. It is a package-level
-#' function so that nothing from the \code{gtfs2gps()} frame is serialised with
-#' it: \code{slice} holds only this shape's trips, stop_times, stops and geometry
-#' (see the slicing block in \code{gtfs2gps()}). Errors are returned as condition
-#' objects, which \code{gtfs2gps()} reports; \code{<<-} cannot cross a worker
-#' boundary.
+#' A slice holds the shapes to convert (\code{shape_ids}, in output order), their
+#' trips, the stop_times rows they own (\code{owner}: the first shape listing the
+#' row's trip in \code{trips}, decided once for the whole feed), the stops, and the
+#' shapes in high resolution (\code{points}), or their geometry (\code{shapes}) when
+#' segmentizing all shapes at once failed. \code{gtfs2gps()} passes one slice with
+#' the whole feed, or one slice per shape (with \code{filepath}, or to find the
+#' shapes that error). Each step does, for all shapes at once, what used to be done
+#' shape by shape, with the same result.
+#'
+#' Returns the GPS points (\code{route_type} and units are set by the caller), the
+#' error of each shape with a trip that can't be converted, and the messages of all
+#' shapes, in order, as functions for the caller to run.
 #' @noRd
-convert_shape <- function(slice, routes, spatial_resolution, snap_method, filepath,
-                          compress, continue, p){
-  p()
-  result <- tryCatch(shape_to_gps(slice, routes, spatial_resolution, snap_method, filepath,
-                                  compress, continue),
-                     error = function(e) e)
-  return(result)
-}
+feed_to_gps <- function(slice, routes, spatial_resolution, snap_method, n_threads){
+  shape_ids <- slice$shape_ids
+  n_shapes <- length(shape_ids)
+  rank_of <- function(x) match(x, shape_ids, incomparables = NA)
 
-#' The former corefun() of gtfs2gps(): one shape, all its trips, one data.table
-#' (or NULL when the shape is skipped, with a message saying why)
-#' @noRd
-shape_to_gps <- function(slice, routes, spatial_resolution, snap_method, filepath,
-                         compress, continue){
-  shapeid <- slice$shape_id
-  if(continue){
-    extension <- ifelse(compress, ".rds", ".txt")
-    file <- paste0(filepath, "/", shapeid, extension)
-    if(file.exists(file)) return(NULL)
+  ## trips of each shape, in trips order, with their trip_number (the trip's index
+  ## among the shape's trips); trips without a route_id are skipped
+  trips <- data.table::data.table(shape_rank = rank_of(slice$trips$shape_id)
+                                  , trip_id = slice$trips$trip_id
+                                  , route_id = slice$trips$route_id)[!is.na(shape_rank)]
+  has_trips <- seq_len(n_shapes) %in% trips$shape_rank
+  trips <- trips[!is.na(route_id)]
+  has_route <- seq_len(n_shapes) %in% trips$shape_rank
+  trip_numbers <- unique(trips[, .(shape_rank, trip_id)])
+  trip_numbers[, trip_number := data.table::rowid(shape_rank)]
+
+  ## stop_times rows of those trips, owned by the shape, in their original order (a
+  ## join, so an NA trip_id matches the NA trip, as %chin% did)
+  st <- data.table::data.table(shape_rank = rank_of(slice$owner)
+                               , trip_id = slice$stop_times$trip_id
+                               , stop_sequence = slice$stop_times$stop_sequence
+                               , stop_id = slice$stop_times$stop_id
+                               , departure_time = slice$stop_times$departure_time
+                               , arrival_time = slice$stop_times$arrival_time)
+  st <- trip_numbers[st, on = c("shape_rank", "trip_id"), nomatch = NULL]
+  has_stops <- seq_len(n_shapes) %in% st$shape_rank
+
+  ## stop patterns: stops are snapped once per pattern and cpp_expand_pattern() joins
+  ## each trip's times by stop_sequence, which is only valid within a pattern.
+  ## Patterns of a shape in order of first appearance among its trips sorted by
+  ## trip_id; the first trip of a pattern gives its stops and template times
+  pat <- st[, .(shape_rank, trip_id, trip_number, stop_sequence, stop_id)]
+  data.table::setorderv(pat, c("shape_rank", "trip_id", "stop_sequence"))
+  pat <- pat[, .(pattern_key = paste(stop_sequence, stop_id, sep = ":", collapse = "|"))
+             , by = c("shape_rank", "trip_id", "trip_number")]
+  pat[, pattern := match(pattern_key, unique(pattern_key)), by = shape_rank]
+  pat[, trip_rank := seq_len(.N), by = c("shape_rank", "pattern")]
+  patterns <- unique(pat[, .(shape_rank, pattern)])
+  patterns[, pattern_id := .I]
+  pat[patterns, on = c("shape_rank", "pattern"), pattern_id := i.pattern_id]
+  n_patterns <- nrow(patterns)
+  n_trips <- tabulate(pat$pattern_id, nbins = n_patterns)
+
+  ## stops of each pattern: the first trip's rows (an NA trip_id has none), with the
+  ## coordinates of the last row of each stop_id in stops, sorted by stop_sequence
+  first <- pat[trip_rank == 1L & !is.na(trip_id), .(shape_rank, trip_id, pattern_id)]
+  ps <- first[st, on = c("shape_rank", "trip_id"), nomatch = NULL]
+  ps[slice$stops
+     , on = "stop_id"
+     , c('stop_lat', 'stop_lon') := list(i.stop_lat, i.stop_lon)] # add lat long info
+  data.table::setorderv(ps, c("pattern_id", "stop_sequence"))
+
+  ## the shapes in high resolution: gtfs2gps() segmentizes all shapes in one call,
+  ## and only when that fails is each shape segmentized here
+  points <- slice$points
+  if(is.null(points)){
+    # only the shapes that pass the guards above, as each shape was segmentized after
+    # them (an unused shape with a bad geometry is still just reported as unused)
+    converting <- shape_ids[has_trips & has_route & has_stops]
+    points <- list(shape_id = character(0), coords = matrix(numeric(0), 0, 2))
+    if(length(converting) > 0){
+      shapes <- slice$shapes
+      if(!is.null(shapes)) shapes <- shapes[shapes$shape_id %in% converting, ]
+      new_shape <- suppressPackageStartupMessages(
+        sf::st_segmentize(x = shapes
+                          ,dfMaxLength =  units::set_units(spatial_resolution / 1000, "km")))
+      new_shape <- sfheaders::sf_cast(new_shape, "POINT")
+      points <- list(shape_id = new_shape$shape_id, coords = sf::st_coordinates(new_shape))
+    }
   }
-  
-  
-  ## Select corresponding route, route type, stops and shape of that trip
-  
-  if (NROW(slice$trips) == 0) {
-    cli::cli_inform("Shape {.val {shapeid}} is not used by any trip. Ignoring it.") # nocov
-    return(NULL) # nocov
-  }
+  point_rank <- rank_of(points$shape_id)
+  point_rows <- which(!is.na(point_rank))
+  point_rows <- point_rows[order(point_rank[point_rows])]
+  point_rank <- point_rank[point_rows]
+  lon <- points$coords[point_rows, 1]
+  lat <- points$coords[point_rows, 2]
+  point_id <- data.table::rowid(point_rank)
+  n_points <- tabulate(point_rank, nbins = n_shapes)
+  point_from <- cumsum(c(0L, n_points))[seq_len(n_shapes)]
 
-  # all trips that use this shape, whatever their route_id (routes may share a shape);
-  # trips without a route_id are skipped
-  trips_shape <- slice$trips[!is.na(route_id)]
-  all_tripids <- unique(trips_shape$trip_id)
+  # distance from the previous point of the same shape (the C++ function gives 0 to
+  # the first point and the distance from point i to i + 1 to point i + 1); points
+  # with an NA distance (NA coordinates) are dropped, and the cumulative distance is
+  # summed per shape with R's cumsum(), in long double
+  dist <- rcpp_distance_haversine(lat
+                                  , lon
+                                  , data.table::shift(lat, type = "lead")
+                                  , data.table::shift(lon, type = "lead")
+                                  , tolerance = 1e10)
+  dist[point_id == 1L] <- 0
+  kept <- !is.na(dist)
+  cumdist <- rep(NA_real_, length(dist))
+  cumdist[kept] <- unlist(lapply(split(dist[kept], point_rank[kept]), base::cumsum)
+                          , use.names = FALSE)
 
-  if (length(all_tripids) == 0) {
-    cli::cli_inform("Shape {.val {shapeid}} has no route_id. Ignoring it.")  # nocov
-    return(NULL) # nocov
-  }
-
-  # group trips by stop pattern: stops are snapped once per pattern and cpp_expand_pattern()
-  # joins each trip's times by stop_sequence, which is only valid within a pattern
-  st_shape <- slice$stop_times[trip_id %chin% all_tripids, .(trip_id, stop_sequence, stop_id)]
-
-  if(nrow(st_shape) == 0){
-    cli::cli_inform("Shape {.val {shapeid}} has zero stops. Ignoring it.") # nocov
-    return(NULL) # nocov
-  }
-
-  data.table::setorderv(st_shape, c("trip_id", "stop_sequence"))
-  patterns <- st_shape[, .(pattern = paste(stop_sequence, stop_id, sep = ":", collapse = "|"))
-                       , by = trip_id]
-  pattern_trips <- split(patterns$trip_id, factor(patterns$pattern, levels = unique(patterns$pattern)))
-
-  # the shape in high resolution: gtfs2gps() segmentizes all shapes in one call, and
-  # only when that fails is each shape segmentized here
-  if(is.null(slice$points)){
-    new_shape <- sf::st_segmentize(x = slice$shape
-                                   ,dfMaxLength =  units::set_units(spatial_resolution / 1000, "km"))
-    new_shape <- sfheaders::sf_cast(new_shape, "POINT")
-    slice$points <- list(shape_id = new_shape$shape_id[1], coords = sf::st_coordinates(new_shape))
-  }
-  temp_shape_coords <- slice$points$coords
-
+  ## snap the stops of each pattern to the points of its shape
   mymethod <- cpp_snap_points_nearest2
 
   if(snap_method == "nearest1"){
     mymethod <- cpp_snap_points_nearest1
   }
 
-  process_pattern <- function(tripids){
-    # stop sequence of this pattern
-    stops_seq <- slice$stop_times[trip_id == tripids[1]
-                                      , .(stop_id, stop_sequence,  arrival_time, departure_time)]
-    stops_seq[slice$stops
-              , on = "stop_id"
-              , c('stop_lat', 'stop_lon') := list(i.stop_lat, i.stop_lon)] # add lat long info
-
-    data.table::setorderv(stops_seq, "stop_sequence")
-
-    # snap stops the nodes of the shape route (the same doubles as the coordinates of
-    # the stops as sf points)
-    temp_stops_coords <- cbind(as.double(stops_seq$stop_lon), as.double(stops_seq$stop_lat))
-
-    # whole metres, truncated, as the C++ function takes an int (a units value in
-    # another unit is converted first)
-    snapped <- mymethod(temp_stops_coords,
-                        temp_shape_coords,
-                        as.integer(units::drop_units(units::set_units(spatial_resolution, "m"))))
-
+  # whole metres, truncated, as the C++ function takes an int (a units value in
+  # another unit is converted first)
+  resolution_m <- as.integer(units::drop_units(units::set_units(spatial_resolution, "m")))
+  # the route type of each trip is set after the conversion; this typed NA keeps the
+  # column's type and position until then
+  route_type_na <- routes$route_type[NA_integer_]
+  coords <- cbind(lon, lat)
+  ps_rows <- split(seq_len(nrow(ps)), factor(ps$pattern_id, levels = seq_len(n_patterns)))
+  snapped_ref <- numeric(nrow(ps))
+  snapped_ok <- logical(n_patterns)
+  for(g in seq_len(n_patterns)){
+    s <- patterns$shape_rank[g]
+    r <- ps_rows[[g]]
+    # the same doubles as the coordinates of the stops as sf points
+    snapped <- mymethod(cbind(as.double(ps$stop_lon[r]), as.double(ps$stop_lat[r])),
+                        coords[point_from[s] + seq_len(n_points[s]), , drop = FALSE],
+                        resolution_m)
     # Skip pattern IF there are no snapped stops
-    if (is.null(snapped) | length(snapped) == 0 ) {
-      cli::cli_inform("Shape {.val {shapeid}}: {length(tripids)} trip{?s} with a stop pattern that has no snapped stops. Ignoring {?it/them}.")  # nocov
-      return(NULL) # nocov
+    if (is.null(snapped) | length(snapped) == 0 ) next
+    snapped_ok[g] <- TRUE
+    snapped_ref[r] <- snapped
+  }
+
+  ## templates: the points of each pattern's shape, with the pattern's stops at
+  ## their snapped point (two stops on one point: the last one in stop_sequence order)
+  ok <- which(snapped_ok)
+  tpl <- data.table::data.table(pattern_id = rep(ok, n_points[patterns$shape_rank[ok]])
+                                , point = sequence(n_points[patterns$shape_rank[ok]]
+                                                   , from = point_from[patterns$shape_rank[ok]] + 1L))
+  tpl[, id := point_id[point]]
+  ps[, ref := snapped_ref]
+  tpl[ps[snapped_ok[pattern_id]]
+      , on = c("pattern_id", "id" = "ref")
+      , ":="(stop_id = i.stop_id
+             ,stop_sequence = i.stop_sequence
+             ,departure_time = i.departure_time
+             ,arrival_time = i.arrival_time)]
+  tpl <- tpl[kept[point]]
+  few_points <- snapped_ok & tabulate(tpl$pattern_id, nbins = n_patterns) < 2
+  few_stops <- snapped_ok & !few_points &
+    tabulate(tpl$pattern_id[!is.na(tpl$stop_sequence)], nbins = n_patterns) < 2
+  good <- snapped_ok & !few_points & !few_stops
+  tpl <- tpl[good[pattern_id]]
+  tpl_size <- tabulate(tpl$pattern_id, nbins = n_patterns)
+  tpl_from <- cumsum(c(0L, tpl_size))[seq_len(n_patterns)]
+
+  ## the trips of the converted patterns, in output order (shape, trip_number), each
+  ## with its stop_times rows in their original order (the last row with a
+  ## duplicated stop_sequence wins the join in C++); an NA trip_id has no rows
+  kt <- pat[good[pattern_id], .(shape_rank, trip_id, trip_number, pattern_id, trip_rank)]
+  data.table::setorderv(kt, c("shape_rank", "trip_number"))
+  kt[, k := .I]
+  kst <- kt[, .(shape_rank, trip_id, k)][st[!is.na(trip_id)]
+                                         , on = c("shape_rank", "trip_id"), nomatch = NULL]
+  data.table::setorderv(kst, "k")
+
+  # all trips at once, in C++ (src/expand_pattern.cpp)
+  res <- cpp_expand_pattern(as.double(tpl$stop_sequence)
+                            , as.integer(tpl$departure_time)
+                            , as.integer(tpl$arrival_time)
+                            , !is.na(tpl$stop_id)
+                            , dist[tpl$point]
+                            , cumdist[tpl$point]
+                            , as.integer(tpl_from[kt$pattern_id])
+                            , as.integer(tpl_size[kt$pattern_id])
+                            , tabulate(kst$k, nbins = nrow(kt))
+                            , as.double(kst$stop_sequence)
+                            , as.integer(kst$departure_time)
+                            , as.integer(kst$arrival_time)
+                            , capabilities("long.double")
+                            , as.integer(n_threads))
+  kt[, status := res$status]
+
+  ## a trip with fewer than two timed stops on its shape fails the shape: the first
+  ## such trip in pattern order, as when the shape was converted pattern by pattern
+  failing <- kt[status == 2L]
+  data.table::setorderv(failing, c("pattern_id", "trip_rank"))
+  failing <- failing[!duplicated(shape_rank)]
+  failed <- seq_len(n_shapes) %in% failing$shape_rank
+  errors <- lapply(failing$trip_id, function(tripid){
+    tryCatch(cli::cli_abort("Trip {.val {tripid}} has fewer than two timed stops on its shape." # nocov
+                            , class = "gtfs2gps_trip_error") # nocov
+             , error = function(e) e)
+  })
+  names(errors) <- shape_ids[failing$shape_rank]
+
+  # each snapped pattern used to add the typed NA route_type to its own table, up to
+  # the shape's failing pattern, which warns once per pattern when routes has no
+  # route_type
+  if(is.null(route_type_na)){
+    last_pattern <- rep(Inf, n_shapes)
+    last_pattern[failing$shape_rank] <- failing$pattern_id
+    for(g in which(snapped_ok & seq_len(n_patterns) <= last_pattern[patterns$shape_rank])){
+      data.table::data.table(id = 1L)[, route_type := route_type_na]
     }
+  }
+  
+  ## the GPS points of the converted trips of the shapes that did not fail
+  converted <- res$status == 0L
+  keep <- converted & !failed[kt$shape_rank]
+  n_rows <- res$n_rows[keep]
+  # only the rows of a failed shape are dropped, which is rare
+  if(!all(keep[converted])){
+    rows <- which(rep(keep[converted], res$n_rows[converted]))
+    res[c("src", "dist", "speed", "timestamp", "cumtime")] <-
+      lapply(res[c("src", "dist", "speed", "timestamp", "cumtime")], `[`, rows)
+  }
+  src <- res$src
+  point <- tpl$point[src]
+  ktk <- kt[keep]
+  # timestamps wrap at midnight (elapsed time is in cumtime)
+  gps <- data.table::data.table(shape_id = rep(shape_ids[ktk$shape_rank], n_rows)
+                                , id = sequence(n_rows)
+                                , shape_pt_lon = lon[point]
+                                , shape_pt_lat = lat[point]
+                                , route_type = route_type_na
+                                , stop_id = tpl$stop_id[src]
+                                , stop_sequence = tpl$stop_sequence[src]
+                                , dist = res$dist
+                                , cumdist = cumdist[point]
+                                , trip_id = rep(ktk$trip_id, n_rows)
+                                , speed = res$speed
+                                , timestamp = structure(res$timestamp %% 86400L, class = "ITime")
+                                , cumtime = res$cumtime
+                                , trip_number = rep(ktk$trip_number, n_rows))
+  if(nrow(gps) > 0){
+    data.table::setcolorder(gps, c("shape_id","trip_id", "route_type"
+                                   , "id", "timestamp", "shape_pt_lon", "shape_pt_lat"
+                                   , "stop_id", "stop_sequence"
+                                   , "speed", "dist", "cumdist"
+                                   , "cumtime"))
+  }
 
-    # update stops_seq with snap stops to route shape
-    stops_seq$ref <- snapped
+  ## the messages of each shape, in the order they used to be shown
+  out_rank <- rep(ktk$shape_rank, n_rows)
+  n_out <- tabulate(out_rank, nbins = n_shapes)
+  n_inf <- tabulate(out_rank[is.infinite(gps$speed)], nbins = n_shapes)
+  n_neg <- tabulate(out_rank[which(gps$speed <= 0)], nbins = n_shapes)
+  patterns_of <- split(seq_len(n_patterns), factor(patterns$shape_rank, levels = seq_len(n_shapes)))
+  data.table::setorderv(kt, c("pattern_id", "trip_rank"))
+  trips_of <- split(seq_len(nrow(kt)), factor(kt$pattern_id, levels = seq_len(n_patterns)))
 
-    ### Start building new stop_times.txt file
-
-    # get shape points in high resolution
-    new_stoptimes <- data.table::data.table(shape_id = slice$points$shape_id,
-                                            id = seq_len(nrow(temp_shape_coords)),
-                                            shape_pt_lon = temp_shape_coords[,1],
-                                            shape_pt_lat = temp_shape_coords[,2])
-
-    # route type is filled per trip after all patterns are processed
-    new_stoptimes[, route_type := routes$route_type[NA_integer_]]
-
-    ## Add stops to new_stoptimes
-    new_stoptimes[stops_seq, on = c("id" = "ref"),
-                  ":="(stop_id = i.stop_id
-                       ,stop_sequence = i.stop_sequence
-                       ,departure_time = i.departure_time
-                       ,arrival_time = i.arrival_time)]
-
-    # calculate Distance between successive points
-    new_stoptimes[, dist := rcpp_distance_haversine(shape_pt_lat
-                                                    , shape_pt_lon
-                                                    , data.table::shift(shape_pt_lat, type = "lead")
-                                                    , data.table::shift(shape_pt_lon, type = "lead")
-                                                    , tolerance = 1e10)]
-    new_stoptimes <- na.omit(new_stoptimes, cols = "dist")
-
-    if (dim(new_stoptimes)[1] < 2) {
-      cli::cli_inform("Shape {.val {shapeid}}: {length(tripids)} trip{?s} with less than two points after conversion. Ignoring {?it/them}.")  # nocov
-      return(NULL) # nocov
+  messages <- lapply(seq_len(n_shapes), function(s){
+    shapeid <- shape_ids[s]
+    if(!has_trips[s])
+      return(list(inform("Shape {.val {shapeid}} is not used by any trip. Ignoring it.", shapeid = shapeid)))
+    if(!has_route[s])
+      return(list(inform("Shape {.val {shapeid}} has no route_id. Ignoring it.", shapeid = shapeid)))
+    if(!has_stops[s])
+      return(list(inform("Shape {.val {shapeid}} has zero stops. Ignoring it.", shapeid = shapeid)))
+    out <- list()
+    for(g in patterns_of[[s]]){
+      n <- n_trips[g]
+      if(!snapped_ok[g]){
+        out <- c(out, inform("Shape {.val {shapeid}}: {n} trip{?s} with a stop pattern that has no snapped stops. Ignoring {?it/them}.", shapeid = shapeid, n = n))
+      } else if(few_points[g]){
+        out <- c(out, inform("Shape {.val {shapeid}}: {n} trip{?s} with less than two points after conversion. Ignoring {?it/them}.", shapeid = shapeid, n = n))
+      } else if(few_stops[g]){
+        out <- c(out, inform("Shape {.val {shapeid}}: {n} trip{?s} with less than two stops after conversion. Ignoring {?it/them}.", shapeid = shapeid, n = n))
+      } else {
+        # the trips skipped before the failing trip, if any, then nothing more
+        k <- trips_of[[g]]
+        fails <- which(kt$status[k] == 2L)
+        if(length(fails) > 0) k <- k[seq_len(fails[1] - 1L)]
+        for(tripid in kt$trip_id[k[kt$status[k] == 1L]]){
+          out <- c(out, inform("Trip {.val {tripid}} has less than two stop_ids. Ignoring it.", tripid = tripid))
+        }
+        if(length(fails) > 0) return(out)
+      }
     }
-
-    if (length(which(!is.na(new_stoptimes$stop_sequence))) < 2) {
-      cli::cli_inform("Shape {.val {shapeid}}: {length(tripids)} trip{?s} with less than two stops after conversion. Ignoring {?it/them}.")  # nocov
-      return(NULL) # nocov
-    }
-
-    ###### PART 2.2 recalculate new stop_times for each trip of this pattern ------------------------------
-    # cumulative distance is the same for every trip of the pattern
-    new_stoptimes[, cumdist := cumsum(dist)]
-
-    # stop_times of each trip, split once per pattern instead of looked up per trip.
-    # Grouped by position: an NA trip_id gets no rows, as `trip_id == NA` did, and a
-    # trip named "NA" is not confused with it. split() keeps the row order within a
-    # trip, on which cpp_expand_pattern() relies when a stop_sequence is duplicated.
-    st <- slice$stop_times[trip_id %chin% tripids
-                           , .(trip_id, stop_sequence, departure_time, arrival_time)]
-    st_rows <- split(seq_len(nrow(st))
-                     , factor(match(st$trip_id, tripids, incomparables = NA)
-                              , levels = seq_along(tripids)))
-    rows <- unlist(st_rows, use.names = FALSE)
-
-    # all trips of the pattern at once, in C++ (src/expand_pattern.cpp)
-    res <- cpp_expand_pattern(as.double(new_stoptimes$stop_sequence)
-                              , as.integer(new_stoptimes$departure_time)
-                              , as.integer(new_stoptimes$arrival_time)
-                              , !is.na(new_stoptimes$stop_id)
-                              , new_stoptimes$dist
-                              , new_stoptimes$cumdist
-                              , lengths(st_rows, use.names = FALSE)
-                              , as.double(st$stop_sequence[rows])
-                              , as.integer(st$departure_time[rows])
-                              , as.integer(st$arrival_time[rows])
-                              , capabilities("long.double"))
-
-    # as in the former R code, the trips skipped before a failing trip are reported
-    # first; the failure is caught by convert_shape() and reported for the shape
-    for(k in which(res$status == 1L)){
-      cli::cli_inform( # nocov start
-        "Trip {.val {tripids[k]}} has less than two stop_ids. Ignoring it.") # nocov end
-    }
-    if(any(res$status == 2L)){
-      cli::cli_abort("Trip {.val {tripids[res$status == 2L]}} has fewer than two timed stops on its shape." # nocov
-                     , class = "gtfs2gps_trip_error") # nocov
-    }
-
-    converted <- res$status == 0L
-    if(!any(converted)) return(NULL)
-    n_rows <- res$n_rows[converted]
-
-    # departure_time and arrival_time keep the template's values: they are dropped
-    # from the output in shape_to_gps()
-    new_stoptimes <- new_stoptimes[res$src]
-    # match() keeps trip_number as the trip's index among all trips of the shape;
-    # timestamps wrap at midnight (elapsed time is in cumtime)
-    data.table::set(new_stoptimes
-                    , j = c("dist", "id", "trip_id", "speed", "timestamp", "cumtime", "trip_number")
-                    , value = list(res$dist, sequence(n_rows), rep(tripids[converted], n_rows)
-                                   , res$speed
-                                   , structure(res$timestamp %% 86400L, class = "ITime")
-                                   , res$cumtime
-                                   , rep(match(tripids[converted], all_tripids), n_rows)))
-
-    return(new_stoptimes)
-  }
-
-  new_stoptimes <- data.table::rbindlist(lapply(pattern_trips, process_pattern))
-
-  if (nrow(new_stoptimes) == 0) {
-    cli::cli_inform("Shape {.val {shapeid}}: no trip could be converted. Ignoring it.") # nocov
-    return(NULL) # nocov
-  }
-
-  data.table::setorderv(new_stoptimes, c("trip_number", "id"))
-
-  if (is.null(new_stoptimes$departure_time)) {
-    cli::cli_inform("Shape {.val {shapeid}} has no departure_time. Ignoring it.")  # nocov
-    return(NULL)  # nocov
-  }
+    if(n_out[s] == 0)
+      return(c(out, inform("Shape {.val {shapeid}}: no trip could be converted. Ignoring it.", shapeid = shapeid)))
+    if(n_inf[s] > 0)
+      out <- c(out, inform("{infinite_values} {.field speed} value{?s} {?is/are} Inf for shape {.val {shapeid}}.", infinite_values = n_inf[s], shapeid = shapeid))
+    if(n_neg[s] > 0)
+      out <- c(out, inform("{negative_values} {.field speed} value{?s} {?is/are} zero or negative for shape {.val {shapeid}}.", negative_values = n_neg[s], shapeid = shapeid))
+    return(out)
+  })
   
-  # by reference: `$<- NULL` copied the whole table twice
-  data.table::set(new_stoptimes, j = c("arrival_time", "departure_time"), value = NULL)
+  if(nrow(gps) == 0) gps <- NULL
+  return(list(gps = gps, errors = errors, messages = unlist(messages, recursive = FALSE)))
+}
   
-  data.table::setcolorder(new_stoptimes, c("shape_id","trip_id", "route_type"
-                                           , "id", "timestamp", "shape_pt_lon", "shape_pt_lat"
-                                           , "stop_id", "stop_sequence"
-                                           , "speed", "dist", "cumdist" 
-                                           , "cumtime"))
-  
-  #na_values <- length(which(is.na(new_stoptimes$speed)))
-  #
-  #if(na_values > 1){
-  #  message(paste0(na_values, " 'speed' values are NA for shape_id '", shapeid, "'."))
-  #}
-  
-  infinite_values <- length(which(is.infinite(new_stoptimes$speed)))
-  
-  if(infinite_values > 0){
-    cli::cli_inform("{infinite_values} {.field speed} value{?s} {?is/are} Inf for shape {.val {shapeid}}.")
-  }
-  
-  negative_values <- length(which(new_stoptimes$speed <= 0))
-  
-  if(negative_values > 0){
-    cli::cli_inform("{negative_values} {.field speed} value{?s} {?is/are} zero or negative for shape {.val {shapeid}}.")
-  }
-  
-  # route_type and units are set by gtfs2gps() on the whole output, and here only
-  # for the shape's file
-  if(!is.null(filepath)){ # Write object
-    set_route_type(new_stoptimes, routes, trips_shape)
-    set_gps_units(new_stoptimes)
-    if(compress)
-      saveRDS(object = new_stoptimes,
-              file = paste0(filepath, "/", shapeid, ".rds"), compress = TRUE)
-    else
-      data.table::fwrite(x = new_stoptimes,
-                         file = paste0(filepath, "/", shapeid, ".txt"))
-    return(NULL)
-  }
-  
-  return(new_stoptimes)
+#' A message to show later: a function that calls cli::cli_inform() with the
+#' values given here
+#' @noRd
+inform <- function(text, ...){
+  values <- list2env(list(...))
+  return(function() cli::cli_inform(text, .envir = values))
 }
 
 #' route_type of each trip, by shape: a trip listed under two shapes takes the route of
@@ -285,10 +333,7 @@ set_gps_units <- function(gps){
 #' @description Convert GTFS data to GPS format by sampling points using a given
 #' spatial resolution. This function creates additional points in order to
 #' guarantee that two points in a same trip will have at most a given
-#' distance, indicated as a spatial resolution. It is possible to use future package
-#' to parallelize the execution (or use argument plan). This function also
-#' uses progressr internally to show progress bars. See the example below on how
-#' to show a progress bar while executing this function.
+#' distance, indicated as a spatial resolution.
 #'
 #' Stops without times are placed along the shape at constant speed between the
 #' timed stops. \code{\link[gtfstools]{fix_gtfs}} can clean a feed before
@@ -304,17 +349,15 @@ set_gps_units <- function(gps){
 #' distance lower than the spatial resolution, the algorithm will not remove
 #' such points. 
 #' @param parallel Decides whether the function should run in parallel. Defaults to FALSE.
-#' When TRUE, it will use all cores available minus one using future::plan() with
-#' strategy "multisession" internally. Starting the R sessions and sending the
-#' results back usually takes longer than the conversion itself, so this is
-#' rarely faster than running sequentially.
-#' Note that it is possible to create your own plan before calling gtfs2gps(),
-#' which is then used even with parallel = FALSE.
-#' @param ncores Number of cores to be used in parallel execution. When 
+#' When TRUE, the points of the trips are computed in several threads of the
+#' current R session (when the package was compiled with OpenMP). The result is
+#' the same either way.
+#' @param ncores Number of threads to be used in parallel execution. When
 #'        `parallel = FALSE`, this argument is ignored. When `parallel = TRUE`,
-#'        then by default the function uses all available cores minus one.
-#' @param strategy This argument is deprecated. Please use argument plan instead or
-#' use future::plan() directly.
+#'        then by default the function uses as many threads as
+#'        `data.table::getDTthreads()`.
+#' @param strategy This argument is deprecated and ignored. Please use arguments
+#' parallel and ncores instead.
 #' @param filepath Output file path. As default, the output is returned when gtfs2gps finishes.
 #' When this argument is set, each route is saved into a txt file within filepath,
 #' with the name equals to its id. In this case, no output is returned. See argument
@@ -384,7 +427,7 @@ set_gps_units <- function(gps){
 #'   gtfstools::filter_by_shape_id("T2-1") |>
 #'   filter_single_trip()
 #'   
-#' poa_gps <- progressr::with_progress(gtfs2gps(gtfs, quiet=TRUE))
+#' poa_gps <- gtfs2gps(gtfs, quiet = TRUE)
 #' 
 gtfs2gps <- function(gtfs_data,
                      spatial_resolution = 100,
@@ -401,7 +444,7 @@ gtfs2gps <- function(gtfs_data,
   
   if(!is.null(strategy)){
     cli::cli_warn(c("Argument {.arg strategy} is deprecated and will be removed in a future version.",
-                    "i" = "Set the parallel backend with {.fn future::plan} instead."),
+                    "i" = "Use arguments {.arg parallel} and {.arg ncores} instead."),
                   class = "deprecated_strategy")
   }
 
@@ -418,6 +461,7 @@ gtfs2gps <- function(gtfs_data,
 
   if(!is.null(filepath)) checkmate::assert_directory_exists(filepath, access = "w")
   checkmate::assert_choice(snap_method, c("nearest1", "nearest2"))
+  checkmate::assert_flag(parallel)
   
   original_gtfs_data_arg <- paste(deparse(substitute(gtfs_data)), collapse = " ")
   
@@ -442,29 +486,21 @@ gtfs2gps <- function(gtfs_data,
   cli::cli_inform("Converting shapes to sf objects")
   shapes_sf <- gtfs_shapes_as_sf(gtfs_data)
   
-  ###### PART 2. Slice the feed per shape ----------------------------------------
-  # Each worker receives only the trips, stop_times, stops and geometry of the
-  # shapes it converts (passed as the mapped argument), instead of a closure that
-  # would carry the whole feed to every worker. shape_id is character
-  # (gtfs_shapes_as_sf() requires it), so the split groups are indexed by name.
+  ###### PART 2. The whole feed, or one slice per shape ---------------------------
+  # shape_id is character (gtfs_shapes_as_sf() requires it), so the split groups are
+  # indexed by name
   all_shapeids <- unique(shapes_sf$shape_id)
-  # trips with NA route_id are kept: the guards in shape_to_gps() handle them as before
+  # trips with NA route_id are kept: the guards in feed_to_gps() handle them as before
   trips <- gtfs_data$trips[shape_id %chin% all_shapeids]
-  shape_of_row <- trips$shape_id[match(gtfs_data$stop_times$trip_id, trips$trip_id)]
-  # split() drops the rows of other trips (NA) and keeps the row order within each shape
-  st_by_shape <- split(gtfs_data$stop_times, f = shape_of_row)
-  trips_by_shape <- split(trips, by = "shape_id")
-  stop_shape <- data.table::data.table(shape_id = shape_of_row
-                                       , stop_id = gtfs_data$stop_times$stop_id)
-  stop_shape <- unique(stop_shape)[!is.na(shape_id)]
-  stops_by_shape <- split(stop_shape[gtfs_data$stops, on = "stop_id", nomatch = NULL]
-                          , by = "shape_id")
+  # each stop_times row belongs to the first shape listing its trip
+  owner <- trips$shape_id[match(gtfs_data$stop_times$trip_id, trips$trip_id)]
+
   # all shapes in high resolution in one call, much faster than one call per shape;
-  # if it fails, shape_to_gps() segmentizes each shape, so that an error fails only
-  # that shape. Shapes without trips (or already saved, with continue) are segmentized
-  # too, so a geometry that only warns now warns here. lwgeom attaches sf (now also
-  # with parallel = TRUE), whose startup message furrr used to hide when the shapes
-  # were segmentized in its futures
+  # if it fails, each shape is converted on its own and segmentized in feed_to_gps(),
+  # so that an error fails only that shape. Shapes without trips (or already saved,
+  # with continue) are segmentized too, so a geometry that only warns now warns
+  # here. lwgeom attaches sf, whose startup message furrr used to hide when the
+  # shapes were segmentized in its futures
   points <- tryCatch({
     pts <- suppressPackageStartupMessages(
       sf::st_segmentize(x = shapes_sf
@@ -472,78 +508,135 @@ gtfs2gps <- function(gtfs_data,
     pts <- sfheaders::sf_cast(pts, "POINT")
     list(shape_id = pts$shape_id, coords = sf::st_coordinates(pts))
   }, error = function(e) NULL)
-  shape_by_shape <- point_rows <- NULL
-  if(is.null(points)){
-    shape_by_shape <- split(shapes_sf, shapes_sf$shape_id)
-  } else {
-    point_rows <- split(seq_len(nrow(points$coords)), points$shape_id)
+
+  # shapes already saved are skipped
+  shape_ids <- all_shapeids
+  if(continue){
+    extension <- ifelse(compress, ".rds", ".txt")
+    shape_ids <- shape_ids[!file.exists(paste0(filepath, "/", shape_ids, extension))]
   }
 
-  # a shape missing from a split gets a typed empty table, so that the guards in
-  # shape_to_gps() report it exactly as before
-  # groups are looked up by position: `[[id]]` never matches the name ""
-  pick <- function(groups, id, template){
-    i <- match(id, names(groups))
-    if(is.na(i)) return(template[0])
-    return(groups[[i]])
-  }
-  # each slice carries its points or, when segmentizing all shapes failed, its shape
-  slices <- lapply(all_shapeids, function(id){
-    slice <- list(shape_id = id
-                  , trips = pick(trips_by_shape, id, gtfs_data$trips)
-                  , stop_times = pick(st_by_shape, id, gtfs_data$stop_times)
-                  , stops = pick(stops_by_shape, id, gtfs_data$stops))
-    if(is.null(points)){
-      slice$shape <- shape_by_shape[[match(id, names(shape_by_shape))]]
-    } else {
-      i <- match(id, names(point_rows))
-      r <- if(is.na(i)) integer(0) else point_rows[[i]]
-      slice$points <- list(shape_id = points$shape_id[r[1]]
-                           , coords = points$coords[r, , drop = FALSE])
+  # one slice per shape: a shape missing from a split gets a typed empty table, so
+  # that the guards in feed_to_gps() report it exactly as before; groups are looked
+  # up by position, as `[[id]]` never matches the name ""
+  shape_slices <- function(){
+    pick <- function(groups, id, template){
+      i <- match(id, names(groups))
+      if(is.na(i)) return(template[0])
+      return(groups[[i]])
     }
-    return(slice)
-  })
-  rm(trips, shape_of_row, st_by_shape, trips_by_shape, stop_shape, stops_by_shape, points
-     , point_rows, shape_by_shape)
-  # our own copy, and nothing below reads it: the slices hold what the workers need
-  gtfs_data$stop_times <- NULL
+    # split() drops the rows of other trips (NA) and keeps the row order within each shape
+    st_by_shape <- split(gtfs_data$stop_times, f = owner)
+    trips_by_shape <- split(trips, by = "shape_id")
+    if(is.null(points)){
+      shape_by_shape <- split(shapes_sf, shapes_sf$shape_id)
+    } else {
+      point_rows <- split(seq_len(nrow(points$coords)), points$shape_id)
+    }
+    return(lapply(shape_ids, function(id){
+      slice <- list(shape_ids = id
+                    , trips = pick(trips_by_shape, id, gtfs_data$trips)
+                    , stop_times = pick(st_by_shape, id, gtfs_data$stop_times)
+                    , stops = gtfs_data$stops)
+      slice$owner <- rep(id, nrow(slice$stop_times))
+      if(is.null(points)){
+        slice$shapes <- shape_by_shape[[match(id, names(shape_by_shape))]]
+      } else {
+        i <- match(id, names(point_rows))
+        r <- if(is.na(i)) integer(0) else point_rows[[i]]
+        slice$points <- list(shape_id = points$shape_id[r]
+                             , coords = points$coords[r, , drop = FALSE])
+      }
+      return(slice)
+    }))
+  }
 
-  ###### PART 3. Apply Core function in parallel to all shape ids------------------------------------
+  ###### PART 3. Convert the shapes ----------------------------------------------
 
+  n_threads <- 1L
   if(parallel)
   {
-    # number of cores
+    checkmate::assert_count(ncores, positive = TRUE, null.ok = TRUE)
     if (is.null(ncores))
-      ncores <- parallelly::availableCores(omit = 1)
+      ncores <- data.table::getDTthreads()
+    n_threads <- as.integer(min(ncores, .Machine$integer.max))
 
-    cli::cli_inform("Using {ncores} CPU core{?s}")
+    # threads are only used when the package was compiled with OpenMP
+    n_used <- if(cpp_openmp_available()) n_threads else 1L
+    cli::cli_inform("Using {n_used} thread{?s}")
+  }
     
-    oplan <- future::plan("multisession", workers = ncores)
-    on.exit(future::plan(oplan), add = TRUE)
+  cli::cli_inform("Processing the data")
+  convert <- function(slice) feed_to_gps(slice, gtfs_data$routes, spatial_resolution
+                                         , snap_method, n_threads)
+  bad_ids <- character(0)
+  bad_errors <- list()
+  result <- NULL
+
+  # all shapes at once. Its warnings are kept until it succeeds: if it fails, each
+  # shape is converted on its own, which warns again
+  if(is.null(filepath) && !is.null(points)){
+    whole <- list(shape_ids = shape_ids, trips = trips, stop_times = gtfs_data$stop_times
+                  , owner = owner, stops = gtfs_data$stops, points = points)
+    kept <- new.env()
+    kept$warnings <- list()
+    result <- tryCatch(withCallingHandlers(convert(whole), warning = function(w){
+      kept$warnings[[length(kept$warnings) + 1L]] <- w
+      invokeRestart("muffleWarning")
+    }), error = function(e) NULL)
+    if(!is.null(result)){
+      # the original conditions, with their classes (not new base warnings)
+      for(w in kept$warnings) warning(w)
+      for(m in result$messages) m()
+      bad_ids <- names(result$errors)
+      bad_errors <- unname(result$errors)
+      output <- result$gps
+    }
   }
   
-  p <- progressr::progressor(steps = length(all_shapeids))
+  # one shape at a time: with filepath, or to find the shapes that fail
+  if(is.null(result)){
+    outputs <- list()
+    for(slice in shape_slices()){
+      r <- tryCatch(convert(slice), error = function(e) e)
+      if(inherits(r, "error")){
+        bad_ids <- c(bad_ids, slice$shape_ids)
+        bad_errors <- c(bad_errors, list(r))
+        next
+      }
+      for(m in r$messages) m()
+      bad_ids <- c(bad_ids, names(r$errors))
+      bad_errors <- c(bad_errors, unname(r$errors))
+      if(is.null(r$gps)) next
 
-  cli::cli_inform("Processing the data")
-  requiredPackages = c('data.table', 'sf', 'sfheaders', 'units')
-  # convert_shape() is a package-level function and every other argument is small,
-  # so each worker is sent only its chunk of `slices`
-  output <- furrr::future_map(.x = slices, .f = convert_shape
-                              , routes = gtfs_data$routes
-                              , spatial_resolution = spatial_resolution
-                              , snap_method = snap_method
-                              , filepath = filepath
-                              , compress = compress
-                              , continue = continue
-                              , p = p
-                              , .options = furrr::furrr_options(
-                                packages = requiredPackages))
+      if(!is.null(filepath)){ # Write object; an error fails only this shape
+        shapeid <- slice$shape_ids
+        written <- tryCatch({
+          set_route_type(r$gps, gtfs_data$routes, slice$trips)
+          set_gps_units(r$gps)
+          if(compress)
+            saveRDS(object = r$gps,
+                    file = paste0(filepath, "/", shapeid, ".rds"), compress = TRUE)
+          else
+            data.table::fwrite(x = r$gps,
+                               file = paste0(filepath, "/", shapeid, ".txt"))
+          NULL
+        }, error = function(e) e)
+        if(!is.null(written)){
+          bad_ids <- c(bad_ids, shapeid)
+          bad_errors <- c(bad_errors, list(written))
+        }
+      } else {
+        outputs[[length(outputs) + 1L]] <- r$gps
+      }
+    }
+    output <- data.table::rbindlist(outputs)
+  }
 
-  # errors inside a worker come back as condition objects
-  failed <- vapply(output, inherits, logical(1), what = "error")
-  badShapes <- all_shapeids[failed]
-  msgs <- output[failed]
-  output <- data.table::rbindlist(output[!failed])
+  # the shapes in the order of all_shapeids
+  o <- order(match(bad_ids, all_shapeids))
+  badShapes <- bad_ids[o]
+  msgs <- bad_errors[o]
   
   if(length(badShapes) > 0){
     # "gtfs_data" is what the quiet = TRUE recursion sees instead of the user's name

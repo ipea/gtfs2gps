@@ -4,8 +4,12 @@ rcpp_distance_haversine <- function(latFrom, lonFrom, latTo, lonTo, tolerance) {
   .Call(`_gtfs2gps_rcpp_distance_haversine`, latFrom, lonFrom, latTo, lonTo, tolerance)
 }
 
-cpp_expand_pattern <- function(tpl_seq, tpl_dep, tpl_arr, tpl_has_stop, tpl_dist, tpl_cumdist, trip_size, st_seq, st_dep, st_arr, long_double) {
-  .Call(`_gtfs2gps_cpp_expand_pattern`, tpl_seq, tpl_dep, tpl_arr, tpl_has_stop, tpl_dist, tpl_cumdist, trip_size, st_seq, st_dep, st_arr, long_double)
+cpp_expand_pattern <- function(tpl_seq, tpl_dep, tpl_arr, tpl_has_stop, tpl_dist, tpl_cumdist, trip_tpl_from, trip_tpl_size, trip_size, st_seq, st_dep, st_arr, long_double, n_threads) {
+  .Call(`_gtfs2gps_cpp_expand_pattern`, tpl_seq, tpl_dep, tpl_arr, tpl_has_stop, tpl_dist, tpl_cumdist, trip_tpl_from, trip_tpl_size, trip_size, st_seq, st_dep, st_arr, long_double, n_threads)
+}
+
+cpp_openmp_available <- function() {
+  .Call(`_gtfs2gps_cpp_openmp_available`)
 }
 
 cpp_snap_points_nearest2 <- function(data, ref, spatial_resolution) {

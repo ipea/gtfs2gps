@@ -25,17 +25,13 @@ Suggests:
     bit64
 Imports:
       data.table,
-      furrr,
-      future,
       gtfstools (>= 2.0.0),
       units,
       sf,
       terra,
       sfheaders,
-      progressr,
       lwgeom,
       checkmate,
-      parallelly,
       cli,
       rlang (>= 1.1.0)
 RoxygenNote: 7.3.3

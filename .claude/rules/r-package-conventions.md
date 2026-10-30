@@ -30,8 +30,7 @@ CRAN standard. When they conflict, Part A wins; flag the conflict in the plan.
 ## A1. Namespacing
 
 - **Call dependencies as `package::function()`**: `data.table::`, `sf::`,
-  `sfheaders::`, `units::`, `gtfstools::`, `future::`, `furrr::`,
-  `progressr::`, `terra::`, `checkmate::`.
+  `sfheaders::`, `units::`, `gtfstools::`, `terra::`, `checkmate::`.
 - **Existing `@importFrom`** (in `R/utils.R`): data.table `:=`, `%between%`,
   `fifelse`, `%chin%`; `stats::na.omit`; `utils` `head`, `tail`,
   `object.size`; `lwgeom::st_geod_length`; plus
@@ -103,21 +102,18 @@ gtfs2gps handles two kinds of objects:
   the call site. `src/*.o` / `*.dll` are build artefacts (gitignored); delete
   them before `R CMD INSTALL` from the source tree, which otherwise reuses
   objects built with other flags.
-- **Parallelism:** `gtfs2gps(parallel = TRUE)` sets
-  `future::plan("multisession", workers = ncores)` and restores the previous
-  plan with `on.exit()`; work is spread over shapes with
-  `furrr::future_map(..., .options = furrr::furrr_options(packages = ...))`
-  and progress is reported with `progressr::progressor()`.
-  - Worker code runs in **separate R processes**: `<<-`, `message()` side
-    effects and closures over large objects behave differently than in
-    sequential mode. Return information as values instead. (The existing
-    `badShapes <<-` collector in `gtfs2gps()` is exactly this hazard;
-    backlog.)
-  - Any change to the worker path must give **identical results** with
+- **Parallelism (since 2026-10-29; formerly furrr/future worker sessions):**
+  `gtfs2gps()` converts all shapes in one pass (`feed_to_gps()`), and
+  `parallel = TRUE` runs the C++ expansion (`cpp_expand_pattern()`) in
+  `ncores` threads of the same R session, default `data.table::getDTthreads()`
+  (which respects `OMP_THREAD_LIMIT`, `setDTthreads()` and CRAN's limits).
+  - Code inside a threaded loop must not call R: take `REAL()`/`INTEGER()`
+    pointers and allocate outputs before the loop, catch exceptions inside it
+    and raise them after. Trips are independent and nothing is reduced across
+    them, so results don't depend on the number of threads.
+  - Any change to that path must give **identical results** with
     `parallel = FALSE` and `parallel = TRUE` (Gate 1).
-  - Default `ncores` is `future::availableCores() - 1`, which respects CRAN's
-    2-core limit. Never hard-code more than 2 workers in tests, examples or
-    vignettes.
+  - Never use more than 2 threads in tests, examples or vignettes.
 
 ## A4. Messages, warnings and errors (cli)
 
@@ -138,11 +134,8 @@ user-facing conditions. `cli` goes in `Imports`.
   otherwise accept the default.
 - **`quiet` still controls informative output.** `cli_inform()` emits a
   message condition, so `suppressMessages()` / the `quiet` argument keep
-  working. Don't print progress with `cli` progress bars; progress stays with
-  `progressr`.
-- **Parallel workers:** conditions signalled inside `furrr::future_map()`
-  workers are relayed by `future`, but don't rely on that for anything the
-  main session must act on (A3); return information as values.
+  working. Don't print progress bars (`gtfs2gps()` has none since
+  2026-10-29).
 - **Migration done (2026-10-28):** no base condition calls remain in `R/`. The
   one exception is `packageStartupMessage()` in `.onAttach`, which CRAN
   requires for startup messages. Id lists in messages use
@@ -219,22 +212,21 @@ user-facing conditions. `cli` goes in `Imports`.
     asserts on it; new tests must)
   - both a stop_times-based (`poa`) and a frequency-based (`saopaulo`) feed
     when behaviour can differ
-  - if the worker path changed: `parallel = FALSE` vs `parallel = TRUE,
+  - if the threaded path changed: `parallel = FALSE` vs `parallel = TRUE,
     ncores = 2` give identical output
 - Tests run on CRAN (no global skip in `tests/testthat.R`): keep them fast,
   use ≤ 2 cores, and write only to `tempdir()`. (`test_read_gtfs.R` currently
   copies and unzips `poa.zip` into the working directory; backlog.)
-- Restore global state (`future::plan`, options, files) with `on.exit()`;
+- Restore global state (options, threads, files) with `on.exit()`;
   `withr` is not a dependency.
 
 ## A8. Performance
 
-- `gtfs2gps()` is the hot path: per shape it segmentizes, snaps stops (C++),
+- `gtfs2gps()` is the hot path: for the whole feed it segmentizes, snaps stops (C++),
   computes haversine distances (C++) and expands trips/frequencies. Watch for
   avoidable `copy()`s inside per-trip loops, `sf` calls where `sfheaders` or
-  C++ would do, repeated `sf::st_coordinates()` on the same object, and large
-  objects captured by the worker closure (they are serialised to every
-  worker).
+  C++ would do, repeated `sf::st_coordinates()` on the same object, and work
+  repeated per shape or per pattern that could be done once for the feed.
 - **A claimed speed-up needs evidence:** `bench::mark(old = ..., new = ...,
   check = FALSE)` on at least `poa.zip` (plus `saopaulo.zip` when frequencies
   matter), results compared with `all.equal()`, and timings recorded in the
@@ -288,9 +280,9 @@ release. Credit external contributors.
 |---|---|
 | `library()`/`require()` in `R/` | `pkg::fun()` |
 | Writing outside `tempdir()` | Write only to `tempdir()` or user-supplied paths (`filepath`) |
-| `<<-` | Return values (and never across a future boundary) |
+| `<<-` | Return values |
 | `print()`/`cat()`/`message()`/`stop()`/`warning()` in new code | `cli::cli_inform()`/`cli_abort()`/`cli_warn()`, informative output suppressed by `quiet` |
-| `options()`/`par()`/`future::plan()`/threads changed, not restored | `on.exit(..., add = TRUE)` |
+| `options()`/`par()`/threads changed, not restored | `on.exit(..., add = TRUE)` |
 | More than 2 cores in tests/examples/vignettes | `ncores = 2` or `parallel = FALSE` |
 | `T`/`F` | `TRUE`/`FALSE` |
 | Unvalidated enumerated arg | `checkmate::assert_choice()` (A2) |
@@ -309,7 +301,7 @@ release. Credit external contributors.
 [ ] new/changed args validated with checkmate
 [ ] GPS column types preserved (units km/h, m, s; ITime timestamp)
 [ ] works for stop_times-based and frequency-based feeds; tested on both when relevant
-[ ] worker path: identical results parallel = FALSE vs TRUE; no <<- / lost side effects
+[ ] threaded path: identical results parallel = FALSE vs TRUE; no R API inside threads
 [ ] ≤ 2 cores and tempdir() only in tests/examples/vignettes
 [ ] cli::cli_abort/cli_warn/cli_inform (classed errors); touched functions fully migrated; messages respect quiet
 [ ] style matches the file (leading-comma data.table calls, explicit return())

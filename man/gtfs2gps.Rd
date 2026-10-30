@@ -29,19 +29,17 @@ distance lower than the spatial resolution, the algorithm will not remove
 such points.}
 
 \item{parallel}{Decides whether the function should run in parallel. Defaults to FALSE.
-When TRUE, it will use all cores available minus one using future::plan() with
-strategy "multisession" internally. Starting the R sessions and sending the
-results back usually takes longer than the conversion itself, so this is
-rarely faster than running sequentially.
-Note that it is possible to create your own plan before calling gtfs2gps(),
-which is then used even with parallel = FALSE.}
+When TRUE, the points of the trips are computed in several threads of the
+current R session (when the package was compiled with OpenMP). The result is
+the same either way.}
 
-\item{ncores}{Number of cores to be used in parallel execution. When 
+\item{ncores}{Number of threads to be used in parallel execution. When
 `parallel = FALSE`, this argument is ignored. When `parallel = TRUE`,
-then by default the function uses all available cores minus one.}
+then by default the function uses as many threads as
+`data.table::getDTthreads()`.}
 
-\item{strategy}{This argument is deprecated. Please use argument plan instead or
-use future::plan() directly.}
+\item{strategy}{This argument is deprecated and ignored. Please use arguments
+parallel and ncores instead.}
 
 \item{filepath}{Output file path. As default, the output is returned when gtfs2gps finishes.
 When this argument is set, each route is saved into a txt file within filepath,
@@ -76,10 +74,7 @@ columns are returned (units of measurement in parenthesis): dist and cumdist
 Convert GTFS data to GPS format by sampling points using a given
 spatial resolution. This function creates additional points in order to
 guarantee that two points in a same trip will have at most a given
-distance, indicated as a spatial resolution. It is possible to use future package
-to parallelize the execution (or use argument plan). This function also
-uses progressr internally to show progress bars. See the example below on how
-to show a progress bar while executing this function.
+distance, indicated as a spatial resolution.
 
 Stops without times are placed along the shape at constant speed between the
 timed stops. \code{\link[gtfstools]{fix_gtfs}} can clean a feed before
@@ -130,7 +125,7 @@ library(gtfs2gps)
 gtfs <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   filter_single_trip()
-  
-poa_gps <- progressr::with_progress(gtfs2gps(gtfs, quiet=TRUE))
+
+poa_gps <- gtfs2gps(gtfs, quiet = TRUE)
 
 }

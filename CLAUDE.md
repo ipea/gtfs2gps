@@ -4,7 +4,7 @@
 format into GPS-like records: one `data.table` row per vehicle position, with
 timestamps, distances and speeds interpolated along each trip's shape at a
 given spatial resolution. It also converts GTFS and GPS data to `sf`. Built on
-`data.table`, `sf`/`sfheaders`, C++ via cpp11, and `future`/`furrr` for parallelism;
+`data.table`, `sf`/`sfheaders`, and C++ via cpp11 (OpenMP threads for parallelism);
 GTFS reading/writing and filtering are delegated to {gtfstools}. Published on
 CRAN; developed by Ipea (ipeaGIT). Maintainer (cre): Pedro R. Andrade; authors
 include Rafael H. M. Pereira and Joao Bazzo. License MIT. Docs:
@@ -52,7 +52,7 @@ gates are in [`.claude/rules/quality-gates.md`](.claude/rules/quality-gates.md).
 gtfs2gps/
 ├── DESCRIPTION, NAMESPACE        # NAMESPACE is roxygen-generated; never hand-edit
 ├── R/
-│   ├── gtfs2gps.R                # core: per-shape corefun() run via furrr::future_map
+│   ├── gtfs2gps.R                # core: feed_to_gps() converts all shapes in one pass
 │   ├── read_gtfs.R, write_gtfs.R # thin wrappers around gtfstools
 │   ├── filter_gtfs.R             # filter_single_trip, filter_valid_stop_times, remove_invalid
 │   ├── adjust_speed.R, adjust_arrival_departure.R, append_height.R
@@ -98,9 +98,10 @@ covr::package_coverage()
 - Compiled code needs a toolchain (Rtools on Windows). `core.autocrlf=true`
   here, so regenerated files can show line-ending-only diffs: check drift with
   `git diff`, not `git status`.
-- `gtfs2gps()` defaults to `parallel = FALSE` (since 2026-10-29: multisession
-  workers were slower than sequential); `parallel = TRUE` uses
-  `availableCores() - 1` workers.
+- `gtfs2gps()` defaults to `parallel = FALSE`; `parallel = TRUE` runs the C++
+  expansion in `ncores` threads (default `data.table::getDTthreads()`). The
+  furrr/future worker sessions were removed on 2026-10-29: they were slower than
+  sequential.
 
 ---
 

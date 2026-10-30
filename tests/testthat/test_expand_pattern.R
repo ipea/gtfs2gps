@@ -35,19 +35,26 @@ test_that("cpp_expand_pattern gives the same result as the R reference", {
     , negative = trip(1:9, dep0 - 4000L)
     # stops without times are interpolated
     , untimed = trip(1:9, replace(dep0, c(2, 3, 7), NA_integer_), replace(dep0 - 10L, c(2, 3, 7), NA_integer_))
+    # a stop with an arrival but no departure time is not timed
+    , arrival_only = trip(1:9, replace(dep0, 4, NA_integer_))
   )
   # the template holds the times of the pattern's first trip
   tpl$departure_time <- replace(rep(NA_integer_, n), stop_rows, trips[[1]]$dep)
   tpl$arrival_time <- replace(rep(NA_integer_, n), stop_rows, trips[[1]]$arr)
 
-  expand <- function(trips, long_double = capabilities("long.double")){
-    cpp_expand_pattern(as.double(tpl$stop_sequence), tpl$departure_time, tpl$arrival_time
-                       , tpl$has_stop, tpl$dist, tpl$cumdist
+  # trips[[k]] reads template number which[k] of the templates in tpls
+  expand <- function(trips, tpls = list(tpl), which = rep(1L, length(trips))
+                     , long_double = capabilities("long.double"), n_threads = 1L){
+    col <- function(name) unlist(lapply(tpls, `[[`, name), use.names = FALSE)
+    sizes <- lengths(lapply(tpls, `[[`, "dist"))
+    cpp_expand_pattern(as.double(col("stop_sequence")), as.integer(col("departure_time"))
+                       , as.integer(col("arrival_time")), col("has_stop"), col("dist"), col("cumdist")
+                       , as.integer(cumsum(c(0L, sizes))[which]), as.integer(sizes[which])
                        , lengths(lapply(trips, `[[`, "seq"), use.names = FALSE)
                        , as.double(unlist(lapply(trips, `[[`, "seq"), use.names = FALSE))
                        , as.integer(unlist(lapply(trips, `[[`, "dep"), use.names = FALSE))
                        , as.integer(unlist(lapply(trips, `[[`, "arr"), use.names = FALSE))
-                       , long_double)
+                       , long_double, n_threads)
   }
   res <- expand(trips)
   ref <- suppressMessages(lapply(names(trips), function(k)
@@ -56,6 +63,8 @@ test_that("cpp_expand_pattern gives the same result as the R reference", {
 
   expect_identical(res$status, ifelse(done, 0L, 1L))
   expect_identical(res$n_rows, ifelse(done, vapply(ref, function(x) length(x$src), integer(1)), 0L))
+  # the rows counted in the first pass are the rows written in the second
+  expect_identical(sum(res$n_rows), length(res$src))
   for(col in c("src", "dist", "speed", "timestamp", "cumtime")){
     expect_identical(res[[col]], unlist(lapply(ref[done], `[[`, col), use.names = FALSE), info = col)
   }
@@ -72,11 +81,18 @@ test_that("cpp_expand_pattern gives the same result as the R reference", {
   expect_identical(res_d$src, res$src)
   expect_equal(res_d$cumtime, res$cumtime, tolerance = 1e-12)
 
+  # trips read their own template: the same trips on a second template that is a copy
+  # of the first give the same rows, with src offset by the first template
+  two <- expand(trips[c("normal", "untimed")], tpls = list(tpl, tpl), which = c(2L, 1L))
+  one <- expand(trips[c("normal", "untimed")])
+  expect_identical(two$src, one$src + rep(c(n, 0L), one$n_rows))
+  expect_identical(two$cumtime, one$cumtime)
+
   # a trip with no timed stop on the shape (and a template without times) fails, as
-  # the R code did, and the trips after it are not processed
+  # the R code did; the other trips are still computed, and the caller decides
   tpl$departure_time[] <- NA_integer_
   tpl$arrival_time[] <- NA_integer_
   failing <- list(none_on_shape = trip(c(98L, 99L), c(3600L, 3700L)), normal = trips$normal)
   expect_error(update_dt("none_on_shape", c(98L, 99L), c(3600L, 3700L), c(3590L, 3690L), tpl))
-  expect_identical(expand(failing)$status, c(2L, -1L))
+  expect_identical(expand(failing)$status, c(2L, 0L))
 })
