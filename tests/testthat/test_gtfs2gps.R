@@ -709,3 +709,26 @@ test_that("gtfs2gps keeps apart stop patterns whose stop_ids would paste to the 
     expect_identical(out$stop_id, new_st$stop_id)
     expect_identical(out$stop_sequence, new_st$stop_sequence)
 })
+
+test_that("gtfs2gps reports infinite speeds per shape and in the returned data", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+      gtfstools::filter_by_shape_id("T2-1") |>
+      filter_single_trip()
+    seqs <- sort(poa$stop_times$stop_sequence)
+    # the first two stops timed at the same moment: the vehicle covers the distance
+    # between them in no time
+    poa$stop_times[, `:=`(arrival_time = "", departure_time = "")]
+    poa$stop_times[stop_sequence %in% seqs[1:2], `:=`(arrival_time = "08:00:00", departure_time = "08:00:00")]
+    poa$stop_times[stop_sequence == max(seqs), `:=`(arrival_time = "09:00:00", departure_time = "09:00:00")]
+
+    msgs <- character(0)
+    res <- withCallingHandlers(gtfs2gps(poa, parallel = FALSE),
+                               message = function(m){
+                                 msgs <<- c(msgs, conditionMessage(m))
+                                 invokeRestart("muffleMessage")
+                               })
+    n_inf <- sum(is.infinite(units::drop_units(res$speed)))
+    expect_gt(n_inf, 0)
+    expect_true(any(grepl(paste0("^", n_inf, " .*Inf for shape"), msgs)))
+    expect_true(any(grepl("Inf in the returned data", msgs, fixed = TRUE)))
+})

@@ -33,7 +33,8 @@ Suggests:
     knitr,
     testthat (>= 3.1.7),
     dplyr,
-    bit64
+    bit64,
+    ggplot2
 VignetteBuilder: knitr
 LinkingTo: cpp11 (>= 0.4.0)
 Config/roxygen2/version: 8.1.0

@@ -1,4 +1,5 @@
 #include <cpp11.hpp>
+#include <algorithm>
 #include <climits>
 #include <cmath>
 #include <cstddef>
@@ -317,6 +318,18 @@ list cpp_expand_pattern(doubles tpl_seq, integers tpl_dep, integers tpl_arr,
   const outputs out = {INTEGER(src), REAL(dist), REAL(speed), INTEGER(timestamp),
                        REAL(cumtime)};
 
+  // per trip, the speeds that gtfs2gps() reports on: NA (as is.na(), NaN
+  // included), infinite, zero or negative, and negative. Skipped trips keep 0
+  writable::integers n_na(n_trips), n_inf(n_trips), n_nonpos(n_trips), n_neg(n_trips);
+  int* n_na_p = INTEGER(n_na);
+  int* n_inf_p = INTEGER(n_inf);
+  int* n_nonpos_p = INTEGER(n_nonpos);
+  int* n_neg_p = INTEGER(n_neg);
+  std::fill(n_na_p, n_na_p + n_trips, 0);
+  std::fill(n_inf_p, n_inf_p + n_trips, 0);
+  std::fill(n_nonpos_p, n_nonpos_p + n_trips, 0);
+  std::fill(n_neg_p, n_neg_p + n_trips, 0);
+
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic, 16) num_threads(threads)
 #endif
@@ -327,7 +340,25 @@ list cpp_expand_pattern(doubles tpl_seq, integers tpl_dep, integers tpl_arr,
       const int written = expand_trip(in, tpl_from[k], tpl_size[k],
                                       static_cast<int>(st_from[k]), size[k],
                                       long_double, dep, arr, out, out_from[k]);
-      if (written != n_rows_p[k]) bad[k] = 1;
+      if (written != n_rows_p[k]) {
+        bad[k] = 1;
+        continue;
+      }
+      int na = 0, inf = 0, nonpos = 0, neg = 0;
+      for (std::int64_t i = out_from[k]; i < out_from[k] + written; i++) {
+        const double s = out.speed[i];
+        if (ISNAN(s)) {
+          na++;
+          continue;
+        }
+        if (!R_FINITE(s)) inf++;
+        if (s <= 0) nonpos++;
+        if (s < 0) neg++;
+      }
+      n_na_p[k] = na;
+      n_inf_p[k] = inf;
+      n_nonpos_p[k] = nonpos;
+      n_neg_p[k] = neg;
     } catch (...) {
       bad[k] = 1;
     }
@@ -341,7 +372,11 @@ list cpp_expand_pattern(doubles tpl_seq, integers tpl_dep, integers tpl_arr,
     "timestamp"_nm = timestamp,
     "cumtime"_nm = cumtime,
     "n_rows"_nm = n_rows,
-    "status"_nm = status
+    "status"_nm = status,
+    "n_na"_nm = n_na,
+    "n_inf"_nm = n_inf,
+    "n_nonpos"_nm = n_nonpos,
+    "n_neg"_nm = n_neg
   });
 }
 

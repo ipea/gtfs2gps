@@ -100,11 +100,7 @@ feed_to_gps <- function(slice, routes, spatial_resolution, n_threads) {
           dfMaxLength = units::set_units(spatial_resolution / 1000, "km")
         )
       )
-      new_shape <- sfheaders::sf_cast(new_shape, "POINT")
-      points <- list(
-        shape_id = new_shape$shape_id,
-        coords = sf::st_coordinates(new_shape)
-      )
+      points <- shape_points(new_shape)
     }
   }
   point_rank <- rank_of(points$shape_id)
@@ -302,6 +298,9 @@ feed_to_gps <- function(slice, routes, spatial_resolution, n_threads) {
     }
   )
   kt[, status := res$status]
+  # the speeds checked below, counted per trip by cpp_expand_pattern() (before
+  # kt is sorted again for the messages)
+  kt[, c("n_na", "n_inf", "n_nonpos", "n_neg") := res[c("n_na", "n_inf", "n_nonpos", "n_neg")]]
 
   ## a trip with fewer than two timed stops on its shape fails the shape: the first
   ## such trip in pattern order, as when the shape was converted pattern by pattern
@@ -415,10 +414,12 @@ feed_to_gps <- function(slice, routes, spatial_resolution, n_threads) {
   }
 
   ## the messages of each shape, in the order they used to be shown
-  out_rank <- rep(ktk$shape_rank, n_rows)
-  n_out <- tabulate(out_rank, nbins = n_shapes)
-  n_inf <- tabulate(out_rank[is.infinite(gps$speed)], nbins = n_shapes)
-  n_neg <- tabulate(out_rank[which(gps$speed <= 0)], nbins = n_shapes)
+  # kept trips per shape (each has rows), rather than rows per shape
+  n_out <- tabulate(ktk$shape_rank, nbins = n_shapes)
+  n_inf <- n_neg <- integer(n_shapes)
+  by_shape <- ktk[, .(inf = sum(n_inf), nonpos = sum(n_nonpos)), by = shape_rank]
+  n_inf[by_shape$shape_rank] <- by_shape$inf
+  n_neg[by_shape$shape_rank] <- by_shape$nonpos
   patterns_of <- split(
     seq_len(n_patterns),
     factor(patterns$shape_rank, levels = seq_len(n_shapes))
@@ -536,7 +537,9 @@ feed_to_gps <- function(slice, routes, spatial_resolution, n_threads) {
   return(list(
     gps = gps,
     errors = errors,
-    messages = unlist(messages, recursive = FALSE)
+    messages = unlist(messages, recursive = FALSE),
+    # the converted trips, in output order, with the counts gtfs2gps() reports on
+    trips = ktk[, .(shape_id = shape_ids[shape_rank], trip_id, n_na, n_inf, n_neg)]
   ))
 }
 
@@ -546,6 +549,23 @@ feed_to_gps <- function(slice, routes, spatial_resolution, n_threads) {
 inform <- function(text, ...) {
   values <- list2env(list(...))
   return(function() cli::cli_inform(text, .envir = values))
+}
+
+#' The points of segmentized shapes: their shape_id and coordinates
+#'
+#' Read from the lines with sf::st_coordinates(), much faster than casting them
+#' to points first. Its last column is the index of the feature (L1 for
+#' LINESTRING, L2 for MULTILINESTRING), whatever the dimensions.
+#' @noRd
+shape_points <- function(x) {
+  if (nrow(x) == 0) {
+    return(list(shape_id = character(0), coords = matrix(numeric(0), 0, 2)))
+  }
+  xy <- sf::st_coordinates(x)
+  return(list(
+    shape_id = x$shape_id[xy[, ncol(xy)]],
+    coords = xy[, 1:2, drop = FALSE]
+  ))
 }
 
 #' Distances along the shapes and positions of the stops on them
@@ -824,8 +844,7 @@ gtfs2gps <- function(
           dfMaxLength = units::set_units(spatial_resolution / 1000, "km")
         )
       )
-      pts <- sfheaders::sf_cast(pts, "POINT")
-      list(shape_id = pts$shape_id, coords = sf::st_coordinates(pts))
+      shape_points(pts)
     },
     error = function(e) NULL
   )
@@ -941,12 +960,14 @@ gtfs2gps <- function(
       bad_ids <- names(result$errors)
       bad_errors <- unname(result$errors)
       output <- result$gps
+      done_trips <- result$trips
     }
   }
 
   # one shape at a time: with filepath, or to find the shapes that fail
   if (is.null(result)) {
     outputs <- list()
+    outputs_trips <- list()
     slices <- shape_slices()
     # this bar closes the "Processing the data" step (one cli progress per frame);
     # the update comes first because the loop uses next
@@ -1001,9 +1022,11 @@ gtfs2gps <- function(
         }
       } else {
         outputs[[length(outputs) + 1L]] <- r$gps
+        outputs_trips[[length(outputs_trips) + 1L]] <- r$trips
       }
     }
     output <- data.table::rbindlist(outputs)
+    done_trips <- data.table::rbindlist(outputs_trips)
   }
 
   # the shapes in the order of all_shapeids
@@ -1070,7 +1093,8 @@ gtfs2gps <- function(
   }
 
   total_shapes <- data.table::uniqueN(gtfs_data$shapes$shape_id)
-  processed_shapes <- data.table::uniqueN(output$shape_id)
+  # from the converted trips (each has rows in output), not from the output rows
+  processed_shapes <- data.table::uniqueN(done_trips$shape_id)
 
   if (processed_shapes < total_shapes && is.null(filepath)) {
     perc <- round(processed_shapes / total_shapes * 100, 2)
@@ -1080,7 +1104,7 @@ gtfs2gps <- function(
   }
 
   total_trips <- data.table::uniqueN(gtfs_data$trips$trip_id)
-  processed_trips <- data.table::uniqueN(output$trip_id)
+  processed_trips <- data.table::uniqueN(done_trips$trip_id)
 
   if (processed_trips < total_trips && is.null(filepath)) {
     perc <- round(processed_trips / total_trips * 100, 2)
@@ -1092,21 +1116,20 @@ gtfs2gps <- function(
   if (is.null(filepath)) {
     set_gps_units(output)
 
-    if (sum(is.na(output$speed)) > 1) {
+    # the speed checks use the counts per trip from cpp_expand_pattern() instead of
+    # scanning every row of output
+    if (sum(done_trips$n_na) > 1) {
       cli::cli_inform("Some {.field speed} values are NA in the returned data.")
     }
 
-    if (any(is.infinite(output$speed))) {
+    if (any(done_trips$n_inf > 0)) {
       cli::cli_inform(
         "Some {.field speed} values are Inf in the returned data."
       )
     }
 
     # check if there are any trips with negative speed
-    # (on the numbers, in km/h: faster than comparing units)
-    trips_negative_speed <- unique(output$trip_id[which(
-      unclass(output$speed) < 0
-    )])
+    trips_negative_speed <- unique(done_trips$trip_id[done_trips$n_neg > 0])
 
     if (length(trips_negative_speed) > 0) {
       cli::cli_inform(
