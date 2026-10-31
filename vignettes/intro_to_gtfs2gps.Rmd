@@ -98,9 +98,6 @@ poa_gps <- gtfs2gps(
   )
 ```
 
-`gtfs2gps()` detects frequency-based feeds (with a `frequencies.txt` file)
-automatically and expands them into individual trips.
-
 ## Tip 1: Parallelization
 
 You can use the arguments `parallel = TRUE` and `ncores` to set how
