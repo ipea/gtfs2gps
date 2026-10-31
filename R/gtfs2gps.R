@@ -30,8 +30,11 @@
 #' @param strategy This argument is deprecated and ignored. Please use arguments
 #' parallel and ncores instead.
 #' @param filepath Output file path. As default, the output is returned when gtfs2gps finishes.
-#' When this argument is set, each route is saved into a txt file within filepath,
-#' with the name equals to its id. In this case, no output is returned. See argument
+#' When this argument is set, each shape is saved into a txt file within filepath,
+#' named after its \code{shape_id}. Characters that can't be in a file name on some
+#' systems (such as \code{/}, \code{:} or \code{*}) and \code{\%} are written as
+#' \code{\%XX}, their hexadecimal code, so \code{utils::URLdecode()} gives the id back
+#' (e.g. \code{"a/b"} is saved as \code{a\%2Fb.txt}). In this case, no output is returned. See argument
 #' compress for another option.
 #' @param compress Argument that can be used only with filepath. When TRUE, it
 #' compresses the output files by saving them using rds format. Default value is FALSE.
@@ -189,6 +192,22 @@ gtfs2gps <- function(
     gtfs_data <- read_gtfs(gtfszip = gtfs_data)
   }
 
+  # route_type is looked up for every trip; without it, every shape would fail
+  missing_cols <- setdiff(c("route_id", "route_type"), names(gtfs_data$routes))
+  if (length(missing_cols) > 0) {
+    cli::cli_abort(
+      c(
+        "{.arg gtfs_data} has no valid {.file routes.txt}, which GTFS requires.",
+        "x" = if (is.null(gtfs_data$routes)) {
+          "The table is missing."
+        } else {
+          "Missing column{?s}: {.field {missing_cols}}."
+        }
+      ),
+      class = "gtfs2gps_missing_routes_error"
+    )
+  }
+
   # do not change input data by reference
   gtfs_data <- data.table::copy(gtfs_data)
 
@@ -257,7 +276,7 @@ gtfs2gps <- function(
   if (continue) {
     extension <- ifelse(compress, ".rds", ".txt")
     shape_ids <- shape_ids[
-      !file.exists(paste0(filepath, "/", shape_ids, extension))
+      !file.exists(paste0(filepath, "/", shape_file_name(shape_ids), extension))
     ]
   }
 
@@ -404,13 +423,13 @@ gtfs2gps <- function(
             if (compress) {
               saveRDS(
                 object = r$gps,
-                file = paste0(filepath, "/", shapeid, ".rds"),
+                file = paste0(filepath, "/", shape_file_name(shapeid), ".rds"),
                 compress = TRUE
               )
             } else {
               data.table::fwrite(
                 x = r$gps,
-                file = paste0(filepath, "/", shapeid, ".txt")
+                file = paste0(filepath, "/", shape_file_name(shapeid), ".txt")
               )
             }
             NULL

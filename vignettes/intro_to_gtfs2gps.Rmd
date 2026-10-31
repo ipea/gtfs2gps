@@ -54,6 +54,7 @@ The returning list contains the tables from the GTFS file indexed
 according to their file names. `read_gtfs()` checks that the tables
 required by {gtfs2gps} are present and not empty:
 
+- `routes.txt`
 - `shapes.txt`
 - `stop_times.txt`
 - `stops.txt`
@@ -168,13 +169,19 @@ For a given trip, the function `gtfs2gps` calculates the average speed between e
 knitr::include_graphics("../man/figures/equation1.png")
 ```
 
-Each trip starts at its first stop. Each stop appears as two data points in
-the output: the first has the time the vehicle arrives at the stop
-(`arrival_time` in `stop_times.txt`), and the second the time it departs
-(`departure_time`), with the vehicle stationary between them. The `speed`,
-`dist` and `cumtime` columns are computed from the difference between each row
-and the previous row of the same trip, so the first data point of each trip
-represents a stationary vehicle.
+Each stop appears as two data points in the output: the first has the time the
+vehicle arrives at the stop (`arrival_time` in `stop_times.txt`), and the second
+the time it departs (`departure_time`), with the vehicle stationary between
+them. The `speed`, `dist` and `cumtime` columns are computed from the
+difference between each row and the previous row of the same trip, and
+`cumtime` starts at zero when the vehicle departs from the first stop.
+
+A trip covers its whole shape, which often begins before the first stop or
+ends after the last one (in the poa feed, about half of the trips start before
+their first stop). The points of the shape before the first stop and after the
+last stop have no time to be interpolated from, so their `timestamp`, `speed`
+and `cumtime` are `NA`, while `dist` and `cumdist` are still given.
+`adjust_speed()` fills these values, as well as speeds outside a valid range.
 
 # Final remarks
 

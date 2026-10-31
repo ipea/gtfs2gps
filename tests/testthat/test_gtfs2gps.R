@@ -325,11 +325,20 @@ test_that("gtfs2gps takes the route_type of the shape a trip is converted with",
                      , list(speed = "km h-1", dist = "m", cumdist = "m", cumtime = "s"))
     expect_s3_class(res$timestamp, "ITime")
 
-    # route_type is looked up with each shape, so an invalid routes table fails the shapes
-    poa$routes[, route_id := NULL]
-    expect_warning(e <- tryCatch(gtfs2gps(poa, parallel = FALSE, quiet = TRUE), error = identity)
-                   , "internal bug")
-    expect_s3_class(e, "gtfs2gps_nothing_converted_error")
+    # without a valid routes table, gtfs2gps() stops before any work
+    no_route_id <- data.table::copy(poa)
+    no_route_id$routes[, route_id := NULL]
+    e <- tryCatch(gtfs2gps(no_route_id, parallel = FALSE, quiet = TRUE), error = identity)
+    expect_s3_class(e, "gtfs2gps_missing_routes_error")
+    expect_match(conditionMessage(e), "route_id")
+
+    no_routes <- data.table::copy(poa)
+    no_routes$routes <- NULL
+    before <- data.table::copy(no_routes)
+    expect_silent(e <- tryCatch(gtfs2gps(no_routes, parallel = FALSE, quiet = TRUE), error = identity))
+    expect_s3_class(e, "gtfs2gps_missing_routes_error")
+    expect_match(conditionMessage(e), "routes.txt")
+    expect_identical(no_routes, before)
 })
 
 test_that("gtfs2gps ignores trips with an NA trip_id", {
@@ -567,15 +576,45 @@ test_that("gtfs2gps(filepath) reports a shape whose file can't be written and wr
     poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
       gtfstools::filter_by_shape_id(c("T2-1", "A141-1")) |>
       filter_single_trip()
-    # a shape_id naming a file in a folder that does not exist
-    poa$trips[shape_id == "A141-1", shape_id := "x/y"]
-    poa$shapes[shape_id == "A141-1", shape_id := "x/y"]
     out_dir <- tempfile("g2g_"); dir.create(out_dir); on.exit(unlink(out_dir, recursive = TRUE), add = TRUE)
+    # a folder where the file of A141-1 should go
+    dir.create(file.path(out_dir, "A141-1.txt"))
 
     expect_warning(res <- gtfs2gps(poa, parallel = FALSE, filepath = out_dir, quiet = TRUE)
-                   , class = "gtfs2gps_shape_error")
+                   , "internal bug")
     expect_null(res)
-    expect_identical(list.files(out_dir), "T2-1.txt")
+    expect_true(file.exists(file.path(out_dir, "T2-1.txt")))
+    expect_true(dir.exists(file.path(out_dir, "A141-1.txt")))
+})
+
+test_that("gtfs2gps(filepath) writes shapes whose id can't be a file name", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+      gtfstools::filter_by_shape_id(c("T2-1", "A141-1")) |>
+      filter_single_trip()
+    ref <- gtfs2gps(poa, parallel = FALSE, quiet = TRUE)
+    # ids that would point into a folder, or that some systems reject, plus "%",
+    # which is encoded so that names stay distinct
+    ids <- c("T2-1" = "a/b:c", "A141-1" = "50%2F")
+    for(old in names(ids)){
+      poa$trips[shape_id == old, shape_id := ids[[old]]]
+      poa$shapes[shape_id == old, shape_id := ids[[old]]]
+    }
+    out_dir <- tempfile("g2g_"); dir.create(out_dir); on.exit(unlink(out_dir, recursive = TRUE), add = TRUE)
+
+    expect_null(gtfs2gps(poa, parallel = FALSE, filepath = out_dir, compress = TRUE, quiet = TRUE))
+    files <- list.files(out_dir)
+    expect_setequal(files, c("a%2Fb%3Ac.rds", "50%252F.rds"))
+    expect_setequal(unname(vapply(sub("[.]rds$", "", files), utils::URLdecode, "")), unname(ids))
+
+    # the files hold the same points
+    a <- readRDS(file.path(out_dir, "a%2Fb%3Ac.rds"))
+    expect_equal(nrow(a), nrow(ref[shape_id == "T2-1"]))
+    expect_identical(unique(a$shape_id), "a/b:c")
+
+    # continue finds the files under the same names
+    expect_null(gtfs2gps(poa, parallel = FALSE, filepath = out_dir, compress = TRUE,
+                         continue = TRUE, quiet = TRUE))
+    expect_setequal(list.files(out_dir), files)
 })
 
 test_that("gtfs2gps drops an unused shape before segmentizing it", {

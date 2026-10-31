@@ -33,6 +33,27 @@ stop_times_to_seconds <- function(gtfs) {
   return(gtfs)
 }
 
+#' File names of shapes written by gtfs2gps(filepath)
+#'
+#' Characters that can't be in a file name on some systems are written as
+#' \code{\%XX} (their hexadecimal code), and so is \code{\%} itself, so that
+#' different ids give different names and \code{utils::URLdecode()} gives the id
+#' back.
+#'
+#' @param shape_ids Character vector of shape ids.
+#'
+#' @return The file names, without extension.
+#'
+#' @noRd
+shape_file_name <- function(shape_ids) {
+  # "%" first, so that the codes added below are not encoded again
+  for (ch in c("%", "/", "\\", ":", "*", "?", "\"", "<", ">", "|")) {
+    code <- sprintf("%%%02X", utf8ToInt(ch))
+    shape_ids <- gsub(ch, code, shape_ids, fixed = TRUE)
+  }
+  return(shape_ids)
+}
+
 
 #' Convert the shapes of a slice of the feed, and all their trips, to GPS points
 #'

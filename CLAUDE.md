@@ -69,7 +69,6 @@ gtfs2gps/
 ├── NEWS.md                       # user-facing changelog
 ├── pkgdown/_pkgdown.yml
 ├── .github/workflows/            # R-CMD-check matrix, test-coverage, pkgdown
-├── demo/                         # shipped demos (poa, sp, fortaleza); still use %>% and dplyr
 └── prep_data/, tests_joao/, tests_rafa/   # maintainer scratch; Rbuildignored, don't edit unless asked
 ```
 

@@ -43,8 +43,11 @@ then by default the function uses as many threads as
 parallel and ncores instead.}
 
 \item{filepath}{Output file path. As default, the output is returned when gtfs2gps finishes.
-When this argument is set, each route is saved into a txt file within filepath,
-with the name equals to its id. In this case, no output is returned. See argument
+When this argument is set, each shape is saved into a txt file within filepath,
+named after its \code{shape_id}. Characters that can't be in a file name on some
+systems (such as \code{/}, \code{:} or \code{*}) and \code{\%} are written as
+\code{\%XX}, their hexadecimal code, so \code{utils::URLdecode()} gives the id back
+(e.g. \code{"a/b"} is saved as \code{a\%2Fb.txt}). In this case, no output is returned. See argument
 compress for another option.}
 
 \item{compress}{Argument that can be used only with filepath. When TRUE, it
