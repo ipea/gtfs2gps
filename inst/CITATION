@@ -1,0 +1,13 @@
+bibentry(
+  bibtype = "Article",
+  title = "Exploring the time geography of public transport networks with the gtfs2gps package",
+  author = c(person("Rafael H. M.", "Pereira"),
+             person("Pedro R.", "Andrade"),
+             person("Jo\u00e3o Pedro Bazzo", "Vieira")),
+  journal = "Journal of Geographical Systems",
+  year = "2023",
+  volume = "25",
+  number = "3",
+  pages = "453--466",
+  doi = "10.1007/s10109-022-00400-x"
+)

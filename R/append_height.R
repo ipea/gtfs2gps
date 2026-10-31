@@ -17,6 +17,7 @@
 #'   append_height(srtmfile)
 #' }
 append_height <- function(gps, heightfile){
+  checkmate::assert_file_exists(heightfile)
   myraster <- terra::rast(heightfile)
   result <-  terra::extract(myraster, gps[, c("shape_pt_lon", "shape_pt_lat")])
   gps$height <- result[, 2]

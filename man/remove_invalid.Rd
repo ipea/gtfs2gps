@@ -9,7 +9,7 @@ remove_invalid(gtfs_data, only_essential = TRUE, prompt_invalid = FALSE)
 \arguments{
 \item{gtfs_data}{A list of data.tables read using gtfs2gps::read_gtfs().}
 
-\item{only_essential}{Remove only the essential files? The essential files are all but 
+\item{only_essential}{Remove only the essential files? The essential files are all but
 agency, calendar, and routes. Default is TRUE, which means that agency-routes,
 routes-trips, and trips-calendar relations
 will not be processed as restrictions to remove objects.}
@@ -29,7 +29,7 @@ keep trips whose \code{shape_id} or \code{route_id} is not in the feed;
 
 Remove all objects from GTFS data that are not used in all relations
 that they are required to be. That is,
-agency-routes relation (agency_id), routes-trips relation (route_id), 
+agency-routes relation (agency_id), routes-trips relation (route_id),
 trips-shapes relation (shape_id), trips-frequencies relation (trip_id),
 trips-stop_times relation (trip_id), stop_times-stops relation (stop_id),
 and trips-calendar relation (service_id),

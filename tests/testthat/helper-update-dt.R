@@ -87,5 +87,10 @@ update_dt <- function(trip_name, st_seq, st_dep, st_arr, tpl){
 
   ctm[is.na(spd)] <- NA
 
-  return(list(src = src, dist = dist, speed = spd, timestamp = ts, cumtime = ctm))
+  # outputs rounded to 3 decimals; a speed that would round to 0 keeps its value
+  s <- round3(spd)
+  tiny <- which(s == 0 & spd != 0)
+  s[tiny] <- spd[tiny]
+
+  return(list(src = src, dist = round3(dist), speed = s, timestamp = ts, cumtime = round3(ctm)))
 }

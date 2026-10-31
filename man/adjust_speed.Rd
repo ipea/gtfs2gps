@@ -16,7 +16,7 @@ adjust_speed(
 \item{gps_data}{A GPS-like data.table created with \code{\link{gtfs2gps}}.}
 
 \item{min_speed}{Minimum speed to be considered as valid. It can
-be a numeric (in km/h) or a units value able to be converted to km/h. Values 
+be a numeric (in km/h) or a units value able to be converted to km/h. Values
 below minimum speed will be adjusted. Defaults to 2 km/h.}
 
 \item{max_speed}{Maximum speed to be considered as valid. It can
@@ -26,7 +26,7 @@ above maximum speed will be adjusted. Defaults to 80 km/h.}
 \item{new_speed}{Speed to replace missing values as well as values
 outside min_speed and max_speed range. It can
 be a numeric (in km/h) or a units value able to be converted to km/h.
-By default, `new_speed = NULL` and the
+By default, \code{new_speed = NULL} and the
 function considers the average speed of the entire gps data.}
 
 \item{clone}{Use a copy of the gps_data? Defaults to TRUE.}
@@ -38,15 +38,15 @@ are also updated accordingly. An error is raised if no speed is within range
 and \code{new_speed} is not given.
 }
 \description{
-Some GTFS.zip data sets might have quality issues, for example 
+Some GTFS.zip data sets might have quality issues, for example
 by assuming that a trip speed is unreasonably high (e.g. an urban bus running
-over 100 Km/h), or in other cases the `timestamp` information might be
-missing for some route segments. This can lead a gps-like table to have `NA`
-or unrealistic `speed` and `timestamp` values. This function allows the
-user to adjust the speed of trips and updates `timestamp` values 
+over 100 Km/h), or in other cases the \code{timestamp} information might be
+missing for some route segments. This can lead a gps-like table to have \code{NA}
+or unrealistic \code{speed} and \code{timestamp} values. This function allows the
+user to adjust the speed of trips and updates \code{timestamp} values
 accordingly. The user can adjust the problematic speeds by either setting a
 custom constant value, or by considering the average of all valid trips speed
-(Default). The columns `timestamp` and `cumtime` are updated accordingly.
+(Default). The columns \code{timestamp} and \code{cumtime} are updated accordingly.
 
 Each trip keeps the timestamp of its first timed point, and dwell times at
 stops are kept, so stop timestamps don't change when every speed is within

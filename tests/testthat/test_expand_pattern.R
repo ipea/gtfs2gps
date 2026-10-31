@@ -79,10 +79,11 @@ test_that("cpp_expand_pattern gives the same result as the R reference", {
   # two threads (when compiled with OpenMP) give the same result
   expect_identical(expand(trips, n_threads = 2L), res)
 
-  # summing in double (R built without long double) differs at most in the last bits
+  # summing in double (R built without long double) differs at most in the last bits,
+  # which can move a rounded cumtime by 0.001
   res_d <- expand(trips, long_double = FALSE)
   expect_identical(res_d$src, res$src)
-  expect_equal(res_d$cumtime, res$cumtime, tolerance = 1e-12)
+  expect_equal(res_d$cumtime, res$cumtime, tolerance = 1e-6)
 
   # trips read their own template: the same trips on a second template that is a copy
   # of the first give the same rows, with src offset by the first template

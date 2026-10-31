@@ -88,11 +88,18 @@ adjust_speed <- function(gps_data, min_speed = 2, max_speed = 80, new_speed = NU
   gps_data[, cumdist := units::drop_units(cumdist)]
   gps_data[, cumtime := units::drop_units(cumtime)]
   
+  # a row that keeps its speed keeps the time gtfs2gps() gave it (the difference of
+  # cumtime), so that rounded dist and speed don't move the stops; dist / speed when
+  # the two disagree beyond that rounding (e.g. speed or dist changed by the user)
+  gps_data[, time := {
+    t <- dist / data.table::fifelse(is.na(speed), new_speed, speed)
+    d <- cumtime - data.table::shift(cumtime)
+    data.table::fifelse(stopped_bus,
+                        data.table::fcoalesce((as.numeric(timestamp) - data.table::shift(as.numeric(timestamp))) %% 86400, 0),
+                        data.table::fifelse(!is.na(speed) & !is.na(d) & abs(d - t) <= 0.002 + 1e-3 * t, d, t))
+  }, by = .(shape_id, trip_id, trip_number)]
+
   gps_data[is.na(speed) & stopped_bus == FALSE, speed := new_speed]
-  
-  gps_data[, time := data.table::fifelse(stopped_bus,
-                                         data.table::fcoalesce((as.numeric(timestamp) - data.table::shift(as.numeric(timestamp))) %% 86400, 0),
-                                         dist / speed), by = .(shape_id, trip_id, trip_number)]
   gps_data[, cumtime := cumsum(time), by = .(shape_id, trip_id, trip_number)]
   
   # anchor each trip on its own first valid timestamp

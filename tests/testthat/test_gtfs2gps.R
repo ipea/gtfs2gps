@@ -22,7 +22,14 @@ test_that("gtfs2gps", {
     expect_equal(my_length, 0)
     
     expect_equal(sum(units::drop_units(poa_gps$dist)), 4069599.583, tolerance = 1e-6)
-    
+
+    # rounded to 3 decimals, except speeds that would round to 0 (1e-12 at stops)
+    for(col in c("speed", "dist", "cumdist", "cumtime")){
+      v <- units::drop_units(poa_gps_0[[col]])
+      v <- v[!is.na(v) & !(round(v * 1000) == 0 & v != 0)]
+      expect_identical(v, round(v * 1000) / 1000, info = col)
+    }
+
     expect_true(poa_gps$trip_number[1] == 1)
     expect_true(poa_gps$trip_number[126737] == 88)
     
@@ -132,6 +139,14 @@ test_that("gtfs2gps", {
 
     expect_error(gtfs2gps(sp, continue = TRUE), class = "gtfs2gps_filepath_error")
     expect_error(gtfs2gps(sp, compress = TRUE), class = "gtfs2gps_filepath_error")
+
+    # compress, continue and quiet must be a single TRUE or FALSE (checked before
+    # the feed is read)
+    expect_error(gtfs2gps(sp, compress = "yes"), "compress")
+    expect_error(gtfs2gps(sp, compress = 1), "compress")
+    expect_error(gtfs2gps(sp, continue = NA), "continue")
+    expect_error(gtfs2gps(sp, quiet = NA), "quiet")
+    expect_error(gtfs2gps(sp, quiet = c(TRUE, FALSE)), "quiet")
 
     # strategy is deprecated (compress without filepath then stops before any work)
     expect_error(expect_warning(gtfs2gps(sp, strategy = "sequential", compress = TRUE),

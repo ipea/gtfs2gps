@@ -421,7 +421,8 @@ feed_to_gps <- function(slice, routes, spatial_resolution, n_threads) {
     stop_id = tpl$stop_id[src],
     stop_sequence = tpl$stop_sequence[src],
     dist = res$dist,
-    cumdist = cumdist[point],
+    # rounded as the columns from cpp_expand_pattern(), once per shape point
+    cumdist = round3(cumdist)[point],
     trip_id = rep(ktk$trip_id, n_rows),
     speed = res$speed,
     timestamp = structure(res$timestamp %% 86400L, class = "ITime"),
@@ -651,4 +652,13 @@ set_gps_units <- function(gps) {
   data.table::setattr(gps[["cumtime"]], "units", s)
   data.table::setattr(gps[["cumtime"]], "class", "units")
   return(invisible(gps))
+}
+
+#' x rounded to 3 decimals as round3() in src/expand_pattern.cpp does (NA and NaN
+#' as they are)
+#' @noRd
+round3 <- function(x) {
+  r <- round(x * 1000) / 1000
+  r[is.na(x)] <- x[is.na(x)]
+  return(r)
 }

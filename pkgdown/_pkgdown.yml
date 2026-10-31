@@ -20,7 +20,6 @@ reference:
   - adjust_arrival_departure
   - adjust_speed
   - filter_single_trip
-  - simplify_shapes
 - title: "Spatial functions to treat GPS output"
 - contents:
   - gps_as_sfpoints

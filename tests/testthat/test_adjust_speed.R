@@ -46,6 +46,12 @@ test_that("adjust_speed keeps stop timestamps and dwell times", {
         timed_stops <- !is.na(gps$stop_id) & !is.na(gps$timestamp)
         expect_true(any(timed_stops))
         expect_equal(adj$timestamp[timed_stops], gps$timestamp[timed_stops])
+
+        # speeds changed without updating cumtime: the times follow dist / speed
+        fast <- data.table::copy(gps)
+        fast[, speed := speed * 2]
+        adj_fast <- adjust_speed(fast, min_speed = 0, max_speed = 1e6)
+        expect_lt(max(units::drop_units(adj_fast$cumtime)), max(units::drop_units(adj$cumtime)))
     }
 })
 

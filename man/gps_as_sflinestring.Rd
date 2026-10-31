@@ -14,8 +14,8 @@ A simple feature (sf) object with LineString data.
 }
 \description{
 Every interval of GPS data points between stops for each trip_id is
- converted into a linestring segment. The output assumes constant average speed 
- between consecutive stops.
+converted into a linestring segment. The output assumes constant average speed
+between consecutive stops.
 }
 \examples{
 library(gtfs2gps)

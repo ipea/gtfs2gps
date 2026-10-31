@@ -20,7 +20,9 @@ using namespace cpp11;
 // - each segment's cumulative time restarts from the stored cumtime of its first
 //   point and is summed in long double, as R's cumsum() does (in double on builds
 //   of R without long double, as R does there);
-// - round() is nearbyint() and as.integer() truncates, NaN giving NA.
+// - round() is nearbyint() and as.integer() truncates, NaN giving NA;
+// - dist, speed and cumtime are rounded to 3 decimals only when written out, as
+//   round(x * 1000) / 1000, a speed that would round to 0 keeping its value.
 //
 // tpl_* are the columns of the stop pattern templates (one row per shape point),
 // concatenated; each trip reads its template at tpl_from (0-based), tpl_size rows.
@@ -70,6 +72,12 @@ inline int wrap_day(int x) {
 inline int as_integer(double x) {
   if (ISNAN(x) || x >= INT_MAX + 1.0 || x <= INT_MIN) return NA_INTEGER;
   return static_cast<int>(x);
+}
+
+// x rounded to 3 decimals, as round(x * 1000) / 1000 in R; NA and NaN as they are
+inline double round3(double x) {
+  if (ISNAN(x)) return x;
+  return std::nearbyint(x * 1000) / 1000;
 }
 
 // the trip's departure and arrival times on each template row (the template's
@@ -226,10 +234,13 @@ int expand_trip(const inputs& in, int tpl_from, int n, int st_from, int size,
   for (int i = 0; i < n2; i++) {
     const std::int64_t k = out_from + i;
     out.src[k] = src[i];
-    out.dist[k] = dist[i];
-    out.speed[k] = spd[i];
+    out.dist[k] = round3(dist[i]);
+    // a speed that would round to 0 keeps its value: the 1e-12 of stops, and the
+    // sign of a negative speed
+    const double s = round3(spd[i]);
+    out.speed[k] = s == 0 && spd[i] != 0 ? spd[i] : s;
     out.timestamp[k] = ts[i];
-    out.cumtime[k] = ctm[i];
+    out.cumtime[k] = round3(ctm[i]);
   }
   return n2;
 }

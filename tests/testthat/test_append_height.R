@@ -13,7 +13,10 @@ test_that("append_height", {
   mysum <- sum(fortaleza_gps$height)
 
   expect_equal(mysum, 3314, 0.05)
-  
+
+  # heightfile must be an existing file
+  expect_error(append_height(fortaleza_gps, "no_such_file.tif"), "heightfile")
+
   #fort <- fortaleza_gps[which(is.na(fortaleza_gps$height)),]
   
   #fott <- gps_as_sf(fort)

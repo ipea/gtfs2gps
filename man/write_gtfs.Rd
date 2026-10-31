@@ -21,7 +21,7 @@ write_gtfs(
 If \code{FALSE} and \code{zipfile} already exists, an error is
 raised. Defaults to \code{TRUE}.}
 
-\item{quiet}{A logical. Whether to hide log messages and progress bars. 
+\item{quiet}{A logical. Whether to hide log messages and progress bars.
 Defaults to \code{FALSE}.}
 
 \item{compression_level}{A whole number from 1 (fastest) to 9 (smallest

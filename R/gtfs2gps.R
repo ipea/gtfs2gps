@@ -84,7 +84,9 @@
 #' @return A `data.table`, where each row represents a GPS point. The following
 #' columns are returned (units of measurement in parenthesis): dist and cumdist
 #' (meters), cumtime (seconds), shape_pt_lon and shape_pt_lat (degrees), speed
-#' (km/h), timestamp (hh:mm:ss).
+#' (km/h), timestamp (hh:mm:ss). Speed, dist, cumdist and cumtime are rounded to
+#' 3 decimal places (also when written to filepath), except speeds closer to zero
+#' than that, which keep their value (such as the 1e-12 km/h of stops).
 #'
 #' @export
 #' @examples
@@ -108,6 +110,7 @@ gtfs2gps <- function(
   continue = FALSE,
   quiet = FALSE
 ) {
+  checkmate::assert_flag(quiet)
   if (quiet) {
     return(suppressMessages(gtfs2gps(
       gtfs_data,
@@ -143,6 +146,8 @@ gtfs2gps <- function(
   }
 
   ###### PART 1. Load and prepare data inputs ------------------------------------
+  checkmate::assert_flag(compress)
+  checkmate::assert_flag(continue)
   if (compress & is.null(filepath)) {
     cli::cli_abort(
       "Cannot use argument {.arg compress} without passing a {.arg filepath}.",
@@ -187,7 +192,7 @@ gtfs2gps <- function(
   # do not change input data by reference
   gtfs_data <- data.table::copy(gtfs_data)
 
-  # quick fix removing unsed and duplicated ids; remove_unused_ids() errors on an NA
+  # quick fix removing unused and duplicated ids; remove_unused_ids() errors on an NA
   # trip_id, and those trips produce no GPS points anyway
   gtfs_data$trips <- gtfs_data$trips[!is.na(trip_id)]
   gtfs_data$stop_times <- gtfs_data$stop_times[!is.na(trip_id)]
