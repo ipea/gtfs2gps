@@ -98,15 +98,18 @@ poa_gps <- gtfs2gps(
   )
 ```
 
+`gtfs2gps()` detects frequency-based feeds (with a `frequencies.txt` file)
+automatically and expands them into individual trips.
 
-### Tip 1: Parallelization
+## Tip 1: Parallelization
 
 You can use the arguments `parallel = TRUE` and `ncores` to set how
 many threads the function can use to parallelize operations. Setting
-`ncores` to `4` or `6` can lead to substantial reductions in computation
-time in large GTFS feeds.
+`ncores` to run in parallel can lead to reductions in computation
+time in large GTFS feeds. You can check the number of threads
+available in your machine with `data.table::getDTthreads()`.
 
-### Tip 2: Coping with RAM memory limits
+## Tip 2: Coping with RAM memory limits
 
 In some really large GTFS feeds, the output of `gtfs2gps()`
 can sum to dozens of millions of rows. To help with this,
@@ -117,9 +120,9 @@ to a separate file in this directory (`.txt`, or `.rds` with
 
 # Visualizing gtfs2gps output
 
-The output of the `gtfs2gps()` looks like this. Like a traditional
-table of a GPS data set, where each row is the timestamp and
-location of each vehicle of every trip scheduled in the GTFS.
+The output of `gtfs2gps()` looks like a traditional GPS data set:
+each row is the timestamp and location of a vehicle on a trip
+scheduled in the GTFS.
 The output includes a few columns indicating the speed, distance
 travelled and whether a given point is at a transit stop.
 
@@ -128,7 +131,7 @@ head(poa_gps)
 ```
 
 To help with the spatial visualization of the output, you can use 
-two support functions to convert the GPS-like data can into `simple feature` 
+two support functions to convert the GPS-like data into `simple feature` 
 points or linestrings. Let's see an example with the first 100 data 
 points of the sample data we processed, coloured by speed.
 
@@ -156,22 +159,26 @@ ggplot() +
 
 ```
 
-Note. the lengh of the trip segments in `gtfs2gps::gps_as_sflinestring()` 
-is controlled  with the argument spatial resolition in `gtfs2gps(spatial_resolution = 100)`, which defaults to 100 meters.
+Note: `gps_as_sflinestring()` creates one linestring for each segment
+between two consecutive stops of a trip, assuming a constant average speed
+between them. The `spatial_resolution` argument of `gtfs2gps()` controls how
+far apart the points are within each segment, not the length of the segments.
 
 # Methodological note
 
 For a given trip, the function `gtfs2gps` calculates the average speed between each pair of consecutive stops given by the ratio between cumulative network distance `S` and departure time `t` for a consecutive pair of valid stop_ids (`i`),
 
 ```{r equation, echo = FALSE, message = FALSE}
-knitr::include_graphics("https://github.com/ipea/gtfs2gps/blob/master/man/figures/equation1.png?raw=true")
+knitr::include_graphics("../man/figures/equation1.png")
 ```
 
-Since the beginning of each trip usually starts before the first stop_id, the mean speed cannot be calculated as shown in the previous equation because information on `i` period does not exist. In this case, the function consider the mean speed for the whole trip. It also happens after the last valid stop_id (`N`) of the trips, where info on `i + 1` also does not exist.
-
-```{r speed, echo = FALSE, message = FALSE}
-knitr::include_graphics("https://github.com/ipea/gtfs2gps/blob/master/man/figures/speed.PNG?raw=true")
-```
+Each trip starts at its first stop. Each stop appears as two data points in
+the output: the first has the time the vehicle arrives at the stop
+(`arrival_time` in `stop_times.txt`), and the second the time it departs
+(`departure_time`), with the vehicle stationary between them. The `speed`,
+`dist` and `cumtime` columns are computed from the difference between each row
+and the previous row of the same trip, so the first data point of each trip
+represents a stationary vehicle.
 
 # Final remarks
 
