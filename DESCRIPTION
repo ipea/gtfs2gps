@@ -8,7 +8,7 @@ Authors@R: c(person(given="Rafael H. M.", family="Pereira", email="rafa.pereira.
             person(given = "Daniel", family = "Herszenhut", role = "ctb", email = "dhersz@gmail.com", comment = c(ORCID = "0000-0001-8066-1105")),
             person(given="Marcin", family="Stepniak", role="ctb"),
             person(given="Marcus", family="Saraiva", email="marcus.saraiva@gmail.com", role="ctb", comment = c(ORCID = "0000-0001-6218-2338")),
-            person("Ipea - Institue for Applied Economic Research", role = c("cph", "fnd")))
+            person("Ipea - Institute for Applied Economic Research", role = c("cph", "fnd")))
 URL: https://github.com/ipea/gtfs2gps, https://ipea.github.io/gtfs2gps/
 BugReports: https://github.com/ipea/gtfs2gps/issues
 Description: Convert general transit feed specification (GTFS) data to global positioning system (GPS) records in 'data.table' format. It also has some functions to subset GTFS data in time and space and to convert both representations to simple feature format.
@@ -16,29 +16,26 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Depends:
     R (>= 4.1.0)
+Imports:
+      checkmate,
+      cli (>= 3.4.0),
+      data.table,
+      gtfstools (>= 2.0.0),
+      lwgeom,
+      rlang (>= 1.1.0),
+      sf,
+      sfheaders,
+      terra,
+      units
 Suggests:
     rmarkdown,
     markdown,
     knitr,
-    testthat,
+    testthat (>= 3.1.7),
     dplyr,
-    bit64
-Imports:
-      data.table,
-      furrr,
-      future,
-      gtfstools (>= 2.0.0),
-      Rcpp,
-      units,
-      sf,
-      terra,
-      sfheaders,
-      progressr,
-      lwgeom,
-      checkmate,
-      parallelly,
-      cli
-RoxygenNote: 7.3.3
+    bit64,
+    ggplot2
 VignetteBuilder: knitr
-LinkingTo: Rcpp
-Remotes: ipea/gtfstools
+LinkingTo: cpp11 (>= 0.4.0)
+Config/roxygen2/markdown: TRUE
+Config/roxygen2/version: 8.1.0

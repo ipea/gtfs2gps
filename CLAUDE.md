@@ -4,11 +4,11 @@
 format into GPS-like records: one `data.table` row per vehicle position, with
 timestamps, distances and speeds interpolated along each trip's shape at a
 given spatial resolution. It also converts GTFS and GPS data to `sf`. Built on
-`data.table`, `sf`/`sfheaders`, Rcpp, and `future`/`furrr` for parallelism;
+`data.table`, `sf`/`sfheaders`, and C++ via cpp11 (OpenMP threads for parallelism);
 GTFS reading/writing and filtering are delegated to {gtfstools}. Published on
-CRAN; developed by Ipea (ipeaGIT). Maintainer (cre): Pedro R. Andrade; authors
+CRAN; developed by Ipea (GitHub org `ipea`). Maintainer (cre): Pedro R. Andrade; authors
 include Rafael H. M. Pereira and Joao Bazzo. License MIT. Docs:
-<https://ipeagit.github.io/gtfs2gps/>. Default branch: `master`.
+<https://ipea.github.io/gtfs2gps/>. Default branch: `master`.
 
 ---
 
@@ -52,8 +52,7 @@ gates are in [`.claude/rules/quality-gates.md`](.claude/rules/quality-gates.md).
 gtfs2gps/
 ├── DESCRIPTION, NAMESPACE        # NAMESPACE is roxygen-generated; never hand-edit
 ├── R/
-│   ├── gtfs2gps.R                # core: per-shape corefun() run via furrr::future_map
-│   ├── mod_updates.R             # internal: per-trip / frequency expansion (update_freq, update_dt)
+│   ├── gtfs2gps.R                # core: feed_to_gps() converts all shapes in one pass
 │   ├── read_gtfs.R, write_gtfs.R # thin wrappers around gtfstools
 │   ├── filter_gtfs.R             # filter_single_trip, filter_valid_stop_times, remove_invalid
 │   ├── adjust_speed.R, adjust_arrival_departure.R, append_height.R
@@ -61,8 +60,8 @@ gtfs2gps/
 │   ├── test_gtfs_freq.R          # "frequency" vs "simple" feed
 │   ├── utils.R                   # @importFrom, globalVariables, time helpers
 │   ├── zzz.R                     # .onLoad / .onAttach
-│   └── RcppExports.R             # generated; never hand-edit
-├── src/                          # Rcpp: snap_points.cpp, distance_calcs.cpp (+ generated RcppExports.cpp)
+│   └── cpp11.R                   # generated; never hand-edit
+├── src/                          # cpp11: expand_pattern.cpp (trips → GPS points; R reference in tests/testthat/helper-update-dt.R) (+ generated cpp11.cpp)
 ├── tests/testthat/               # test_<function>.R (underscore); suite also runs on CRAN
 ├── inst/extdata/                 # fixtures: poa.zip, saopaulo.zip (frequencies), fortaleza.zip (+ srtm.tif), berlin.zip, warsaw.zip
 ├── vignettes/intro_to_gtfs2gps.Rmd
@@ -77,7 +76,8 @@ gtfs2gps/
 Exports: `gtfs2gps` · `read_gtfs`/`write_gtfs` · `filter_single_trip`,
 `filter_valid_stop_times`, `remove_invalid` · `adjust_speed`,
 `adjust_arrival_departure`, `append_height` · `gps_as_sfpoints`,
-`gps_as_sflinestring`, `gtfs_shapes_as_sf`, `gtfs_stops_as_sf`.
+`gps_as_sflinestring` · deprecated (`@keywords internal`, warn on call):
+`gtfs_shapes_as_sf`, `gtfs_stops_as_sf` (internal body: `shapes_as_sf()`).
 
 Local-only workflow files (gitignored and Rbuildignored): `MEMORY.md`,
 `quality_reports/`, `templates/`, and everything in `.claude/` except `rules/`.
@@ -88,7 +88,7 @@ Local-only workflow files (gitignored and Rbuildignored): `MEMORY.md`,
 
 ```r
 devtools::load_all()
-devtools::document()                         # regenerate man/, NAMESPACE, RcppExports
+devtools::document()                         # regenerate man/, NAMESPACE, cpp11 registration
 devtools::test()                             # full suite (slow: parallel gtfs2gps)
 devtools::test(filter = "adjust_speed")      # matches tests/testthat/test_adjust_speed.R
 devtools::check(args = "--as-cran")          # ~5 min; run in background
@@ -99,8 +99,10 @@ covr::package_coverage()
 - Compiled code needs a toolchain (Rtools on Windows). `core.autocrlf=true`
   here, so regenerated files can show line-ending-only diffs: check drift with
   `git diff`, not `git status`.
-- `gtfs2gps()` defaults to `parallel = TRUE` with `availableCores() - 1`
-  workers; for quick local checks pass `parallel = FALSE`.
+- `gtfs2gps()` defaults to `parallel = FALSE`; `parallel = TRUE` runs the C++
+  expansion in `ncores` threads (default `data.table::getDTthreads()`). The
+  furrr/future worker sessions were removed on 2026-10-29: they were slower than
+  sequential.
 
 ---
 
@@ -108,7 +110,7 @@ covr::package_coverage()
 
 | Checkpoint | Must hold |
 |---|---|
-| Commit | `document()` produces no content drift (`git diff`, incl. RcppExports); tests for touched functions pass; parallel/sequential parity if the worker path changed; `NEWS.md` entry for user-facing changes |
+| Commit | `document()` produces no content drift (`git diff`, incl. cpp11.R/cpp11.cpp); tests for touched functions pass; parallel/sequential parity if the worker path changed; `NEWS.md` entry for user-facing changes |
 | PR | Full `test()` passes; `check(--as-cran)` gives 0 errors / 0 warnings, NOTEs triaged; review loop converged; `r-package-reviewer` 0 CRITICAL/MAJOR |
 | Release | `/g2g-package-check`; win-builder + rhub; reverse-dependency check; compatibility with current {gtfstools}; `cran-comments.md` updated |
 
@@ -151,4 +153,4 @@ user-level rules conflict with `.claude/rules/`, the project rules win.
 
 No commits, pushes, PRs, merges, version bumps or `.github/workflows/`
 changes without an explicit request. Never hand-edit generated files
-(`NAMESPACE`, `man/*.Rd`, `R/RcppExports.R`, `src/RcppExports.cpp`).
+(`NAMESPACE`, `man/*.Rd`, `R/cpp11.R`, `src/cpp11.cpp`).

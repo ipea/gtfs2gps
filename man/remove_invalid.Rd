@@ -2,14 +2,14 @@
 % Please edit documentation in R/filter_gtfs.R
 \name{remove_invalid}
 \alias{remove_invalid}
-\title{Remove invalid objects from GTFS data}
+\title{Remove invalid objects from GTFS data (deprecated)}
 \usage{
 remove_invalid(gtfs_data, only_essential = TRUE, prompt_invalid = FALSE)
 }
 \arguments{
-\item{gtfs_data}{A list of data.tables read using gtfs2gps::reag_gtfs().}
+\item{gtfs_data}{A list of data.tables read using gtfs2gps::read_gtfs().}
 
-\item{only_essential}{Remove only the essential files? The essential files are all but 
+\item{only_essential}{Remove only the essential files? The essential files are all but
 agency, calendar, and routes. Default is TRUE, which means that agency-routes,
 routes-trips, and trips-calendar relations
 will not be processed as restrictions to remove objects.}
@@ -20,9 +20,16 @@ will not be processed as restrictions to remove objects.}
 A subset of the input GTFS data.
 }
 \description{
+This function is deprecated and will be removed in a future
+version. Use \code{gtfstools::remove_duplicates()} and
+\code{gtfstools::remove_unused_ids()} instead. Unlike this function, they
+keep trips whose \code{shape_id} or \code{route_id} is not in the feed;
+\code{gtfs2gps()} skips trips without a shape and returns an \code{NA}
+\code{route_type} for trips without a route.
+
 Remove all objects from GTFS data that are not used in all relations
 that they are required to be. That is,
-agency-routes relation (agency_id), routes-trips relation (route_id), 
+agency-routes relation (agency_id), routes-trips relation (route_id),
 trips-shapes relation (shape_id), trips-frequencies relation (trip_id),
 trips-stop_times relation (trip_id), stop_times-stops relation (stop_id),
 and trips-calendar relation (service_id),
@@ -34,6 +41,6 @@ did not have any inconsistency.
 \examples{
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
 object.size(poa)
-subset <- remove_invalid(poa)
+subset <- suppressWarnings(remove_invalid(poa))
 object.size(subset)
 }

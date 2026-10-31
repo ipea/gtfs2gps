@@ -1,7 +1,14 @@
 
-#' @title Remove invalid objects from GTFS data
-#' 
-#' @description Remove all objects from GTFS data that are not used in all relations
+#' @title Remove invalid objects from GTFS data (deprecated)
+#'
+#' @description This function is deprecated and will be removed in a future
+#' version. Use \code{gtfstools::remove_duplicates()} and
+#' \code{gtfstools::remove_unused_ids()} instead. Unlike this function, they
+#' keep trips whose \code{shape_id} or \code{route_id} is not in the feed;
+#' \code{gtfs2gps()} skips trips without a shape and returns an \code{NA}
+#' \code{route_type} for trips without a route.
+#'
+#' Remove all objects from GTFS data that are not used in all relations
 #' that they are required to be. That is,
 #' agency-routes relation (agency_id), routes-trips relation (route_id), 
 #' trips-shapes relation (shape_id), trips-frequencies relation (trip_id),
@@ -11,7 +18,7 @@
 #' if one agency_id belongs to routes but not to agency will be removed. This might
 #' cause one cascade removal of objects in other relations that originally
 #' did not have any inconsistency.
-#' @param gtfs_data A list of data.tables read using gtfs2gps::reag_gtfs().
+#' @param gtfs_data A list of data.tables read using gtfs2gps::read_gtfs().
 #' @param only_essential Remove only the essential files? The essential files are all but 
 #' agency, calendar, and routes. Default is TRUE, which means that agency-routes,
 #' routes-trips, and trips-calendar relations
@@ -22,9 +29,13 @@
 #' @examples
 #' poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
 #' object.size(poa)
-#' subset <- remove_invalid(poa)
+#' subset <- suppressWarnings(remove_invalid(poa))
 #' object.size(subset)
 remove_invalid <- function(gtfs_data, only_essential = TRUE, prompt_invalid = FALSE){
+  cli::cli_warn(c("{.fn remove_invalid} is deprecated and will be removed in a future version.",
+                  "i" = "Use {.fn gtfstools::remove_duplicates} and {.fn gtfstools::remove_unused_ids} instead."),
+                class = "deprecated_remove_invalid")
+
   newsize <- object.size(gtfs_data)
   size <- newsize + 1
   
@@ -111,16 +122,19 @@ remove_invalid <- function(gtfs_data, only_essential = TRUE, prompt_invalid = FA
       len <- length(removed[[element]])
       
       if(len > 0)
-        message(paste(len, element, "removed:", paste0(removed[[element]], collapse = ", ")))
+        cli::cli_inform("{len} {element} removed: {.val {cli::cli_vec(removed[[element]], list('vec-trunc' = Inf))}}")
     }
   }
   
   return(gtfs_data)
 }
 
-#' @title Filter GTFS data using valid stop times
+#' @title Filter GTFS data using valid stop times (deprecated)
 #'
-#' @description Filter a GTFS data read using gtfs2gps::read_gtfs(). It removes
+#' @description This function is deprecated and will be removed in a future
+#' version. \code{gtfs2gps()} does not need it.
+#'
+#' Filter a GTFS data read using gtfs2gps::read_gtfs(). It removes
 #' stop_times whose arrival_time or departure_time is missing or is not a
 #' well-formed "H:MM:SS" time string (hours may exceed 24). It also filters stops and routes accordingly.
 #' The input data is not modified.
@@ -130,8 +144,11 @@ remove_invalid <- function(gtfs_data, only_essential = TRUE, prompt_invalid = FA
 #' @examples
 #' poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
 #'
-#' subset <- filter_valid_stop_times(poa)
+#' subset <- suppressWarnings(filter_valid_stop_times(poa))
 filter_valid_stop_times <- function(gtfs_data){
+  cli::cli_warn("{.fn filter_valid_stop_times} is deprecated and will be removed in a future version.",
+                class = "deprecated_filter_valid_stop_times")
+
   gtfs_data <- data.table::copy(gtfs_data)
 
   # keep only well-formed "H:MM:SS" times, ignoring surrounding whitespace (NA,
@@ -152,35 +169,24 @@ filter_valid_stop_times <- function(gtfs_data){
 
 #' @title Filter GTFS trips in order to have one trip per shape_id
 #' 
-#' @description Filter a GTFS data by keeping only one trip per shape_id.
-#' It also removes the unnecessary routes and stop_times accordingly.
-#' @param gtfs_data A list of data.tables read using gtfs2gps::reag_gtfs().
-#' @return A filtered GTFS data. 
+#' @description Filter a GTFS data by keeping only the first trip of each
+#' shape_id, using \code{gtfstools::filter_by_trip_id()}. Trips without a
+#' shape_id are dropped. The other tables (stop_times, frequencies, shapes,
+#' routes, stops, calendar, etc.) keep only the rows used by the remaining
+#' trips. The input data is not modified.
+#' @param gtfs_data A list of data.tables read using gtfs2gps::read_gtfs().
+#' @return A filtered GTFS data.
 #' @export
 #' @examples
 #' poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#' 
+#'
 #' subset <- filter_single_trip(poa)
 filter_single_trip <- function(gtfs_data){
-  gtfs_data$trips <- gtfs_data$trips[!duplicated(gtfs_data$trips$shape_id), ]
+  # one trip per shape; trips without a shape can't be converted
+  trips <- gtfs_data$trips
+  trip_ids <- trips$trip_id[!is.na(trips$shape_id) & !duplicated(trips$shape_id) & !is.na(trips$trip_id)]
 
-
-  # unique trips
-  trip_ids <- unique(gtfs_data$trips$trip_id)
-
-  # filter stop_times
-  gtfs_data$stop_times <- subset(gtfs_data$stop_times, trip_id %chin% trip_ids)
-  
-  # filter frequencies
-  if(!is.null(gtfs_data$frequencies)){
-    gtfs_data$frequencies <- subset(gtfs_data$frequencies, trip_id %chin% trip_ids)
-  }
-  
-  # filter routes
-  if(!is.null(gtfs_data$routes)){
-    route_ids <- unique(gtfs_data$trips$route_id)
-    gtfs_data$routes <- subset(gtfs_data$routes, route_id %in% route_ids)
-  }
+  gtfs_data <- gtfstools::filter_by_trip_id(gtfs_data, trip_ids)
 
   return(gtfs_data)
 }

@@ -85,3 +85,15 @@ test_that("write_gtfs respects overwrite", {
     # input data is not modified
     expect_equal(poa_small, poa_small_old)
 })
+
+test_that("write_gtfs passes compression_level", {
+    poa_zip <- tempfile(pattern = 'poa_level', fileext = '.zip')
+    on.exit(unlink(poa_zip), add = TRUE)
+
+    poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps"))
+
+    write_gtfs(poa, zipfile = poa_zip, quiet = TRUE, compression_level = 1)
+    expect_equal(nrow(read_gtfs(poa_zip)$trips), nrow(poa$trips))
+
+    expect_error(write_gtfs(poa, zipfile = poa_zip, quiet = TRUE, compression_level = 10), "compression_level")
+})

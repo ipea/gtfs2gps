@@ -7,12 +7,12 @@
 gtfs2gps(
   gtfs_data,
   spatial_resolution = 100,
-  parallel = TRUE,
+  parallel = FALSE,
   ncores = NULL,
   strategy = NULL,
   filepath = NULL,
   compress = FALSE,
-  snap_method = "nearest2",
+  snap_method = NULL,
   continue = FALSE,
   quiet = FALSE
 )
@@ -21,25 +21,26 @@ gtfs2gps(
 \item{gtfs_data}{A path to a GTFS file to be converted to GPS, or a GTFS data
 represented as a list of data.tables.}
 
-\item{spatial_resolution}{The spatial resolution in meters. Default is 100m.
+\item{spatial_resolution}{The spatial resolution in meters: a number of at
+least 1, or a \code{units} length. Default is 100m.
 This function only creates points in order to guarantee that the minimum
 distance between two consecutive points will be at most the
 spatial_resolution. If a given shape has two consecutive points with a
 distance lower than the spatial resolution, the algorithm will not remove
 such points.}
 
-\item{parallel}{Decides whether the function should run in parallel. Defaults is FALSE.
-When TRUE, it will use all cores available minus one using future::plan() with
-strategy "multisession" internally.
-Note that it is possible to create your own plan before calling gtfs2gps().
-In this case, do not use this argument.}
+\item{parallel}{Decides whether the function should run in parallel. Defaults to FALSE.
+When TRUE, the points of the trips are computed in several threads of the
+current R session (when the package was compiled with OpenMP). The result is
+the same either way.}
 
-\item{ncores}{Number of cores to be used in parallel execution. When 
-`parallel = FALSE`, this argument is ignored. When `parallel = TRUE`,
-then by default the function uses all available cores minus one.}
+\item{ncores}{Number of threads to be used in parallel execution. When
+\code{parallel = FALSE}, this argument is ignored. When \code{parallel = TRUE},
+then by default the function uses as many threads as
+\code{data.table::getDTthreads()}.}
 
-\item{strategy}{This argument is deprecated. Please use argument plan instead or
-use future::plan() directly.}
+\item{strategy}{This argument is deprecated and ignored. Please use arguments
+parallel and ncores instead.}
 
 \item{filepath}{Output file path. As default, the output is returned when gtfs2gps finishes.
 When this argument is set, each route is saved into a txt file within filepath,
@@ -50,34 +51,33 @@ compress for another option.}
 compresses the output files by saving them using rds format. Default value is FALSE.
 Note that compress guarantees that the data saved will be read in the same way as it
 was created in R. If not compress, the txt extension requires the data to be converted
-from ITime to string, and therefore they need to manually converted back to ITime to 
+from ITime to string, and therefore they need to be manually converted back to ITime to
 be properly handled by gtfs2gps.}
 
-\item{snap_method}{The method used to snap stops to the route geometry. There
-are two available methods: `nearest1` and `nearest2`. Defaults to 
-`nearest2`. See details for more info.}
+\item{snap_method}{This argument is deprecated and ignored. Stops are now
+located along the shapes with \code{gtfstools::interpolate_shape_dist_traveled()}
+(see details).}
 
 \item{continue}{Argument that can be used only with filepath. When TRUE, it
-skips processing the shape identifiers that were already saved into 
+skips processing the shape identifiers that were already saved into
 files. It is useful to continue processing a GTFS file that was stopped
 for some reason. Default value is FALSE.}
 
 \item{quiet}{Hide messages while processing the data? Defaults to FALSE.}
 }
 \value{
-A `data.table`, where each row represents a GPS point. The following 
-columns are returned (units of measurement in parenthesis): dist and cumdist 
-(meters), cumtime (seconds), shape_pt_lon and shape_pt_lat (degrees), speed 
-(km/h), timestamp (hh:mm:ss).
+A \code{data.table}, where each row represents a GPS point. The following
+columns are returned (units of measurement in parenthesis): dist and cumdist
+(meters), cumtime (seconds), shape_pt_lon and shape_pt_lat (degrees), speed
+(km/h), timestamp (hh:mm:ss). Speed, dist, cumdist and cumtime are rounded to
+3 decimal places (also when written to filepath), except speeds closer to zero
+than that, which keep their value (such as the 1e-12 km/h of stops).
 }
 \description{
 Convert GTFS data to GPS format by sampling points using a given
 spatial resolution. This function creates additional points in order to
 guarantee that two points in a same trip will have at most a given
-distance, indicated as a spatial resolution. It is possible to use future package
-to parallelize the execution (or use argument plan). This function also
-uses progressr internally to show progress bars. See the example below on how
-to show a progress bar while executing this function.
+distance, indicated as a spatial resolution.
 
 Stops without times are placed along the shape at constant speed between the
 timed stops. \code{\link[gtfstools]{fix_gtfs}} can clean a feed before
@@ -85,38 +85,34 @@ converting it (e.g. duplicated rows and unused ids), but the stop times it
 interpolates may give spiky or infinite speeds here.
 }
 \details{
-After creating geometry points for a given shape id, the `gtfs2gps()`
-function snaps the stops to the route geometry. Two strategies are implemented
-to do this. 
-- The `nearest2` method (default) triangulates the distance between each stop 
-and the two nearest points in the route geometry to decide which point the 
-stop should be snapped to. If there is any stop that is further away to the 
-route geometry  than `spatial_resolution`, the algorithm recursively doubles 
-the `spatial_resolution` to do the search/snap of all stops.
-- The `nearest1` method traverses the geometry points computing their 
-distances to the first stop. Whenever it finds a distance to the stop smaller
-than `spatial_resolution`, then the stop will be snapped to such point. The 
-algorithm then applies the same strategy to the next stop until the vector of
-stops end.
+After creating geometry points for a given shape id, the \code{gtfs2gps()}
+function snaps the stops to the route geometry. The stops of each trip are
+located along the shape with \code{gtfstools::interpolate_shape_dist_traveled()},
+which projects each stop onto the shape keeping the stops in their
+\code{stop_sequence} order, so that loops and shapes that pass by the same place
+more than once are handled. Each stop is then snapped to the nearest point of
+the shape in high resolution, moved forward when needed so that each stop has
+a point of its own. Distances are great-circle distances on the sphere used
+by the s2 and sf packages, with a radius of 6,371,010 m.
 
-The `speed`, `cumdist`, and `cumtime` are based on the difference of distance 
-and time between the current and previous row of the same trip. It means that 
-the first data point at the first stop of each trip represens a stationary 
-vehicle. The `adjust_speed()` function can be used to post-process the output 
-to replace eventual `NA` values in the `speed` column.
+The \code{speed}, \code{cumdist}, and \code{cumtime} are based on the difference of distance
+and time between the current and previous row of the same trip. It means that
+the first data point at the first stop of each trip represents a stationary
+vehicle. The \code{adjust_speed()} function can be used to post-process the output
+to replace eventual \code{NA} values in the \code{speed} column.
 
-Each stop is presented as two data points for each trip in the output. The 
-`timestamp` value in the first data point represents the time when the 
-vehicle arrived at that stop (corresponding the `arrival_time` column in the
-`stop_times.txt` file), while the `timestamp` in the second data point 
-represents the time when the vehicle departured from that stop (corresponding
-the `departure_time` column in the `stop_times.txt` file). The second point 
-considers that the vehicle is stationary at the stop, immediately before 
+Each stop is presented as two data points for each trip in the output. The
+\code{timestamp} value in the first data point represents the time when the
+vehicle arrived at that stop (corresponding the \code{arrival_time} column in the
+\code{stop_times.txt} file), while the \code{timestamp} in the second data point
+represents the time when the vehicle departed from that stop (corresponding
+the \code{departure_time} column in the \code{stop_times.txt} file). The second point
+considers that the vehicle is stationary at the stop, immediately before
 departing.
 
-Some GTFS feeds do not report embark/disembark times (so `arrival_time` and 
-`departure_time` are identical at the same stop). In this case, the user can
-call the `adjust_arrival_departure()` function to set the minimum time each 
+Some GTFS feeds do not report embark/disembark times (so \code{arrival_time} and
+\code{departure_time} are identical at the same stop). In this case, the user can
+call the \code{adjust_arrival_departure()} function to set the minimum time each
 vehicle will spend at stops to embark/disembark passengers.
 
 To avoid division by zero, the minimum speed of vehicles in the output is
@@ -128,7 +124,7 @@ library(gtfs2gps)
 gtfs <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   filter_single_trip()
-  
-poa_gps <- progressr::with_progress(gtfs2gps(gtfs, quiet=TRUE))
+
+poa_gps <- gtfs2gps(gtfs, quiet = TRUE)
 
 }

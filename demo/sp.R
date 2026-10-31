@@ -8,7 +8,7 @@ sp$trips
 
 sp_small <- gtfstools::filter_by_shape_id(sp, 53000:53020)
 
-sp_small_sf <- gtfs_shapes_as_sf(sp_small)
+sp_small_sf <- gtfstools::get_shapes_geometry(sp_small)
 
 sp_gps <- gtfs2gps(sp_small, parallel = TRUE)
 sp_gps
