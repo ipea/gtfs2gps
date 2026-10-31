@@ -97,7 +97,6 @@ poa_gps <- gtfs2gps(
   spatial_resolution = 100
   )
 ```
-
 ## Tip 1: Parallelization
 
 You can use the arguments `parallel = TRUE` and `ncores` to set how
