@@ -9,7 +9,8 @@
 #' The default value is 0, which means that no data will be lost.
 #' 
 #' @return A GTFS data whose shapes is a subset of the input data.
-#' 
+#' @keywords internal
+#'
 simplify_shapes <- function(gtfs_data, tol = 0){
   
   gtfs_sf <- shapes_as_sf(gtfs_data)

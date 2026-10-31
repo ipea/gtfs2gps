@@ -6,3 +6,29 @@ template:
 
 development:
   mode: auto
+
+reference:
+- title: "Input/output"
+- contents:
+  - read_gtfs
+  - write_gtfs
+- title: "Convert GTFS to GPS-like table"
+- contents:
+  - gtfs2gps
+- title: "Support functions to edit GTFS input"
+- contents:
+  - adjust_arrival_departure
+  - adjust_speed
+  - filter_single_trip
+  - simplify_shapes
+- title: "Spatial functions to treat GPS output"
+- contents:
+  - gps_as_sfpoints
+  - gps_as_sflinestring
+  - append_height
+- title: "Deprecated and defunct"
+- contents:
+  - filter_valid_stop_times
+  - gtfs_shapes_as_sf
+  - gtfs_stops_as_sf
+  - remove_invalid

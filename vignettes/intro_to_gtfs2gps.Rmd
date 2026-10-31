@@ -5,7 +5,7 @@ output: rmarkdown::html_vignette
 abstract: Package `gtfs2gps` has a set of functions to convert public transport GTFS data to GPS-like format using `data.table`. It also has some functions to convert both representations to simple feature format.
 urlcolor: blue
 vignette: |
-  %\VignetteIndexEntry{gtfs2gps}
+  %\VignetteIndexEntry{gtfs2gps: Converting GTFS data to GPS-like format}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -14,15 +14,16 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+has_ggplot <- requireNamespace("ggplot2", quietly = TRUE)
 ```
-# Introduction 
+# Introduction
 
-Package `gtfs2gps` allows users to convert public transport GTFS data 
-into a single `data.table` format with GPS-like records, tracking the 
-space-time position of individual vehicles at high spatial and temporal 
-resolutions. This GPS-like data format is quite convinient as it can be
-easily used in various applications for running transport simulations, 
-scenario analyses, data visualizations etc. 
+Package `gtfs2gps` allows users to convert public transport GTFS data
+into a single `data.table` format with GPS-like records, tracking the
+space-time position of individual vehicles at high spatial and temporal
+resolutions. This GPS-like data format is quite convenient as it can be
+easily used in various applications for running transport simulations,
+scenario analyses, data visualizations etc.
 
 To start using the package, you can install it from CRAN:
 
@@ -33,40 +34,37 @@ install.packages("gtfs2gps")
 # Loading data
 
 After loading the package, you can read a GTFS feed using `read_gtfs()`.
-This function gets a zipped GTFS file and returns a list of `data.table` 
-objects. To demonstrate the package, we will use a small sample of the 
-GTFS from Porto Alegre, Brazil
+This function gets a zipped GTFS file and returns a list of `data.table`
+objects (a `dt_gtfs` object from {gtfstools}). To demonstrate the package,
+we will use a small sample of the GTFS from Porto Alegre, Brazil.
 
 ```{r, message = FALSE, warning = FALSE}
 library("gtfs2gps")
 
 # path to gtfs file
-gtfs_file <- system.file("extdata/poa.zip", package ="gtfs2gps")
+gtfs_file <- system.file("extdata/poa.zip", package = "gtfs2gps")
 
-# read gtfs to memory 
+# read gtfs to memory
 poa <- gtfs2gps::read_gtfs(gtfs_file)
 
 names(poa)
 ```
 
-The returning list contains the tables from the GTFS file indexed 
-according to their file names. Note that this function only loads 
-those tables that are necessary for the operations in {gtfs2gps},
-which are:
+The returning list contains the tables from the GTFS file indexed
+according to their file names. `read_gtfs()` checks that the tables
+required by {gtfs2gps} are present and not empty:
+
 - `shapes.txt`
 - `stop_times.txt`
 - `stops.txt`
 - `trips.txt`
-- `agency.txt` (optional)
-- `calendar.txt` (optional)
-- `routes.txt` (optional)
-- `frequencies.txt` (optional)
 
-If you'd like to visualize how the transport network looks like, you can use a few convinient functions from [{gtfstools}](https://github.com/ipea/gtfstools/), our sister package.
+If the feed has a `frequencies.txt` file, it is used as well.
 
-```{r poa_small_shapes_sf, message = FALSE}
+If you'd like to visualize how the transport network looks like, you can use a few convenient functions from [{gtfstools}](https://github.com/ipea/gtfstools/), our sister package.
+
+```{r poa_shapes_sf, message = FALSE, warning = FALSE, eval = has_ggplot}
 library(ggplot2)
-library(gtfstools)
 
 # get spatial geometries of GTFS
 shapes_sf <- gtfstools::get_shapes_geometry(poa)
@@ -77,90 +75,99 @@ ggplot() +
   geom_sf(data = stops_sf, color = "red", size = .2)
 ```
 
-Some times, GTFS feeds come with internal inconsistencies, for example with trips going too fast, or not accounting for dwell time, etc. We highly recommend that you use {gtfstools} functions to profile, clean and edit your GTFS data before running {gtfs2gps} on it. In this example below, we run `gtfstools::fix_gtfs()` a simple and convinient function to fix a few of these issues. Here, we use this function to cap max speed to 25 Km/h and set a min dwell time of 30 secs, and the funcion recalculates the stop times of the feed.
+Sometimes, GTFS feeds come with internal inconsistencies, for example with trips going too fast, or not accounting for dwell time, etc. We highly recommend that you use {gtfstools} functions to profile, clean and edit your GTFS data before running {gtfs2gps} on it. In the example below, we run `gtfstools::fix_gtfs()`, a simple and convenient function to fix a few of these issues. Here, we use this function to try to cap the max speed between stops at 25 km/h and to set a min dwell time of 30 secs, and the function recalculates the stop times of the feed. Note that `fix_gtfs()` works on the stop times, so some segments of the output of `gtfs2gps()` can still be faster than 25 km/h.
 
-```{r poa_small_shapes_sf, message = FALSE}
+```{r fix_gtfs, message = FALSE, warning = FALSE}
 # quick fix
 poa_fixed <- gtfstools::fix_gtfs(
-  gtfs = poa, 
-  max_speed = 25, 
+  gtfs = poa,
+  max_speed = 25,
   min_dwell_time = 30
   )
-
 ```
 
 
 # Converting to GPS-like format
 
-To convert GTFS to GPS-like format, use `gtfs2gps()`. This is the core function of the package. It takes a GTFS zipped file as an input and returns a `data.table` where each row represents a 'GPS-like' data point for every trip in the GTFS file. In summary, this function interpolates the space-time position of each vehicle in each trip considering the network distance and average speed between stops. The function samples the timestamp of each vehicle every $100m$ by default, but the user can set a different value in the `spatial_resolution` argument. See the example below.
+To convert GTFS to GPS-like format, use `gtfs2gps()`. This is the core function of the package. It takes a GTFS zipped file or a GTFS object as an input and returns a `data.table` where each row represents a 'GPS-like' data point for every trip in the GTFS file. In summary, this function interpolates the space-time position of each vehicle in each trip considering the network distance and average speed between stops. The function samples the timestamp of each vehicle every $100m$ by default, but the user can set a different value in the `spatial_resolution` argument. See the example below.
 
 ```{r, message = FALSE, warning = FALSE}
 poa_gps <- gtfs2gps(
-  gtfs_data = poa_fixed, 
-  spatial_resolution = 100, 
-  ncores = 1
+  gtfs_data = poa_fixed,
+  spatial_resolution = 100
   )
-
 ```
 
-obs. Remember you can user the argument `ncores` to set how many 
-threads the function can use to parallelize operations. Setting
-`ncores` to `4` or `6` can lead to substantial reductions in 
-computation time in large GTFS feeds.
 
+### Tip 1: Parallelization
 
+You can use the arguments `parallel = TRUE` and `ncores` to set how
+many threads the function can use to parallelize operations. Setting
+`ncores` to `4` or `6` can lead to substantial reductions in computation
+time in large GTFS feeds.
+
+### Tip 2: Coping with RAM memory limits
+
+In some really large GTFS feeds, the output of `gtfs2gps()`
+can sum to dozens of millions of rows. To help with this,
+you can pass to the argument `filepath` the path to a local
+directory, and the function will save the output of each shape
+to a separate file in this directory (`.txt`, or `.rds` with
+`compress = TRUE`) without loading them to your RAM.
 
 # Visualizing gtfs2gps output
 
-The output of the `gtfs2gps()` looks like this. Like a traditional 
-table of a GPS data set, with each row marking the timestamp and 
-location of each vechile of every trip schedulded in the GTFS.
+The output of the `gtfs2gps()` looks like this. Like a traditional
+table of a GPS data set, where each row is the timestamp and
+location of each vehicle of every trip scheduled in the GTFS.
+The output includes a few columns indicating the speed, distance
+travelled and whether a given point is at a transit stop.
 
 ```{r, message = FALSE}
-
 head(poa_gps)
-
 ```
- The following figure maps the first 100 data points of the sample data we processed. They can be converted to `simple feature` points or linestring.
 
-```{r, message = FALSE}
-poa_gps60 <- poa_gps[1:100, ]
+To help with the spatial visualization of the output, you can use 
+two support functions to convert the GPS-like data can into `simple feature` 
+points or linestrings. Let's see an example with the first 100 data 
+points of the sample data we processed, coloured by speed.
+
+```{r, message = FALSE, eval = has_ggplot}
+poa_gps100 <- poa_gps[1:100, ]
 
 # points
-poa_gps60_sfpoints <- gps_as_sfpoints(poa_gps60)
+points_sf <- gtfs2gps::gps_as_sfpoints(poa_gps100)
 
+ggplot() +
+  geom_sf(data = points_sf, aes(color = as.numeric(speed))) +
+  scale_color_viridis_c(option = "cividis") +
+  labs(color = "Speed (km/h)")
+```
+
+
+```{r, message = FALSE, eval = has_ggplot}
 # linestring
-poa_gps60_sflinestring <- gps_as_sflinestring(poa_gps60)
+linestring_sf <- gtfs2gps::gps_as_sflinestring(poa_gps100)
 
-# plot
-plot(sf::st_geometry(poa_gps60_sfpoints), pch = 20)
-plot(sf::st_geometry(poa_gps60_sflinestring), col = "blue", add = TRUE)
-box()
+ggplot() +
+  geom_sf(data = linestring_sf, aes(color = as.numeric(speed))) +
+  scale_color_viridis_c(option = "cividis") +
+  labs(color = "Speed (km/h)")
+
 ```
 
-The function `gtfs2gps()` automatically recognizes whether the GTFS data brings detailed `stop_times.txt` information or whether it is a `frequencies.txt` GTFS file. A sample data of a GTFS with detailed  `stop_times.txt` can be found below:
-
-```{r, message = FALSE}
-poa <- system.file("extdata/poa.zip", package ="gtfs2gps")
-
-poa_gps <- gtfs2gps(poa, spatial_resolution = 50)
-
-poa_gps_sfpoints <- gps_as_sfpoints(poa_gps)
-
-plot(sf::st_geometry(poa_gps_sfpoints[1:200,]))
-
-box()
-```
+Note. the lengh of the trip segments in `gtfs2gps::gps_as_sflinestring()` 
+is controlled  with the argument spatial resolition in `gtfs2gps(spatial_resolution = 100)`, which defaults to 100 meters.
 
 # Methodological note
 
-For a given trip, the function `gtfs2gps` calculates the average speed between each pair of consecutive stops given by the ratio between cumulative network distance `S` and departure time `t` for a consecutive pair of valid stop_ids (`i`), 
+For a given trip, the function `gtfs2gps` calculates the average speed between each pair of consecutive stops given by the ratio between cumulative network distance `S` and departure time `t` for a consecutive pair of valid stop_ids (`i`),
 
 ```{r equation, echo = FALSE, message = FALSE}
 knitr::include_graphics("https://github.com/ipea/gtfs2gps/blob/master/man/figures/equation1.png?raw=true")
 ```
 
-Since the beginning of each trip usually starts before the first stop_id, the mean speed cannot be calculated as shown in the previous equation because information on `i` period does not exist. In this case, the function consider the mean speed for the whole trip. It also happens after the last valid stop_id (`N`) of the trips, where info on `i + 1` also does not exist. 
+Since the beginning of each trip usually starts before the first stop_id, the mean speed cannot be calculated as shown in the previous equation because information on `i` period does not exist. In this case, the function consider the mean speed for the whole trip. It also happens after the last valid stop_id (`N`) of the trips, where info on `i + 1` also does not exist.
 
 ```{r speed, echo = FALSE, message = FALSE}
 knitr::include_graphics("https://github.com/ipea/gtfs2gps/blob/master/man/figures/speed.PNG?raw=true")
