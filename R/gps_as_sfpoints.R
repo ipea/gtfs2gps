@@ -22,6 +22,8 @@
 #' for_gps <- gtfs2gps(subset)
 #' for_gps_sf_points <- gps_as_sfpoints(for_gps)
 gps_as_sfpoints <- function(gps, crs = 4326){
+  checkmate::assert_data_frame(gps, min.rows = 1)
+
   if(is.null(gps$height))
     temp_gps <- sfheaders::sf_point(gps, x = "shape_pt_lon", y = "shape_pt_lat", keep = TRUE)
   else

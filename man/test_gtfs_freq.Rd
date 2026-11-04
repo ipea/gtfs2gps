@@ -16,3 +16,4 @@ A string "frequency" or "simple".
 Test whether a GTFS feed is frequency based or whether it
 presents detailed time table for all routes and trip ids.
 }
+\keyword{internal}

@@ -9,32 +9,31 @@ adjust_arrival_departure(gtfs_data, min_lag = 20)
 \arguments{
 \item{gtfs_data}{A GTFS data created with \code{\link{read_gtfs}}.}
 
-\item{min_lag}{Numeric. Minimum waiting time when a vehicle arrives 
+\item{min_lag}{Numeric. Minimum waiting time when a vehicle arrives
 at a stop. It can be a numeric or a units value that can be converted
 to seconds, rounded to whole seconds. Default is 20s.}
 }
 \value{
-A GTFS with adjusted `arrival_time` and `departure_time` on
-data.table `stop_times`.
+A GTFS with adjusted \code{arrival_time} and \code{departure_time} on
+data.table \code{stop_times}.
 }
 \description{
 Some GTFS.zip data have issues related to arrival and departure
 time on stops. This function makes sure the GTFS has dis/embarking times at
 each stop. For each stop time row, this function applies the following steps:
-
-1. If there is `arrival_time` but no `departure_time`, it creates a departure_time 
-column by summing the arrival plus a pre-defined `min_lag`.
-
-2. If there is `departure_time` but no `arrival_time`, it creates an arrival_time 
-column by subtracting a pre-defined `min_lag` from the departure.
-
-3. If there is an `arrival_time` and a `departure_time` but their difference
-is smaller than `min_lag`, it reduces the `arrival_time` and increases
-`departure_time` so that the difference will be exactly `min_lag`. Odd
+\enumerate{
+\item If there is \code{arrival_time} but no \code{departure_time}, it creates a departure_time
+column by summing the arrival plus a pre-defined \code{min_lag}.
+\item If there is \code{departure_time} but no \code{arrival_time}, it creates an arrival_time
+column by subtracting a pre-defined \code{min_lag} from the departure.
+\item If there is an \code{arrival_time} and a \code{departure_time} but their difference
+is smaller than \code{min_lag}, it reduces the \code{arrival_time} and increases
+\code{departure_time} so that the difference will be exactly \code{min_lag}. Odd
 differences give the extra second to the departure.
+}
 
 Arrivals before 00:00:00 are set to 00:00:00 and the departure moved to
-keep `min_lag`. Times are not kept increasing across consecutive stops.
+keep \code{min_lag}. Times are not kept increasing across consecutive stops.
 
 The input GTFS data is not modified.
 }

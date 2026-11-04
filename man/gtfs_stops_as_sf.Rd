@@ -2,26 +2,35 @@
 % Please edit documentation in R/gtfs_as_sf.R
 \name{gtfs_stops_as_sf}
 \alias{gtfs_stops_as_sf}
-\title{Convert GTFS stops to simple feature object}
+\title{Convert GTFS stops to simple feature object (deprecated)}
 \usage{
 gtfs_stops_as_sf(gtfs, crs = 4326)
 }
 \arguments{
-\item{gtfs}{A GTFS data.}
+\item{gtfs}{A GTFS data. \code{stop_id} must be character and
+\code{stop_lon} and \code{stop_lat} numeric, as produced by
+\code{\link{read_gtfs}}.}
 
-\item{crs}{The coordinate reference system of the output, as accepted by
-\code{\link[sf]{st_crs}}. Stops are read as WGS84 (EPSG:4326) and
-transformed to \code{crs}. The default value is 4326 (no transformation).}
+\item{crs}{The coordinate reference system of the output: an EPSG code, a
+string accepted by \code{\link[sf]{st_crs}}, or a \code{crs} object. Stops
+are read as WGS84 (EPSG:4326) and transformed to \code{crs}. The default
+value is 4326 (no transformation). Other inputs (e.g. \code{NA}) raise an
+error, and an empty or unknown CRS raises an error of class
+\code{gtfs2gps_crs_error}.}
 }
 \value{
 A simple feature (sf) object.
 }
 \description{
-Convert a GTFS stops data loaded using gtfs2gps::read_gtf()
-into a point simple feature (sf).
+This function is deprecated and will be removed in a future
+version. Use \code{gtfstools::get_stops_geometry()} instead.
+
+Convert the stops of a GTFS data loaded using
+\code{\link{read_gtfs}} into a POINT simple feature (sf) object, using
+\code{\link[gtfstools]{get_stops_geometry}}. The input data is not modified.
 }
 \examples{
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-poa_shapes <- gtfs_shapes_as_sf(poa)
-poa_stops <- gtfs_stops_as_sf(poa)
+poa_stops <- suppressWarnings(gtfs_stops_as_sf(poa))
 }
+\keyword{internal}

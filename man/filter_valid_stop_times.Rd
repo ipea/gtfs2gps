@@ -2,7 +2,7 @@
 % Please edit documentation in R/filter_gtfs.R
 \name{filter_valid_stop_times}
 \alias{filter_valid_stop_times}
-\title{Filter GTFS data using valid stop times}
+\title{Filter GTFS data using valid stop times (deprecated)}
 \usage{
 filter_valid_stop_times(gtfs_data)
 }
@@ -13,6 +13,9 @@ filter_valid_stop_times(gtfs_data)
 A filtered GTFS data.
 }
 \description{
+This function is deprecated and will be removed in a future
+version. \code{gtfs2gps()} does not need it.
+
 Filter a GTFS data read using gtfs2gps::read_gtfs(). It removes
 stop_times whose arrival_time or departure_time is missing or is not a
 well-formed "H:MM:SS" time string (hours may exceed 24). It also filters stops and routes accordingly.
@@ -21,5 +24,5 @@ The input data is not modified.
 \examples{
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
 
-subset <- filter_valid_stop_times(poa)
+subset <- suppressWarnings(filter_valid_stop_times(poa))
 }

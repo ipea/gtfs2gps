@@ -25,7 +25,8 @@ gps_as_sflinestring  <- function(gps){
   } else {
     dt <- data.table::copy(gps)
   }
-  
+  checkmate::assert_data_frame(dt, min.rows = 1, .var.name = "gps")
+
   # stops without departure_time have one row: duplicate them so that every stop is an arrival/departure pair
   dt[, numbers := .N, by = .(shape_id, trip_id, stop_id, stop_sequence, trip_number)]
   dt <- dt[rep(seq_len(.N), data.table::fifelse(!is.na(stop_sequence) & numbers == 1L, 2L, 1L))]
@@ -125,7 +126,7 @@ gps_as_sflinestring  <- function(gps){
                                      keep = TRUE)
   gps_sf <- sf::st_set_crs(gps_sf, 4326) 
   
-  # calculate legnth of each segment
+  # calculate length of each segment
   data.table::setDT(gps_sf)[, dist := sf::st_length(geometry)]
   gps_sf[,dist := as.numeric(dist)] # m
   gps_sf[,speed := as.numeric(speed/ 3.6)] # km/h to m/s

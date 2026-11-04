@@ -25,38 +25,6 @@ test_that("read_gtfs", {
   
   expect_type(sp$frequencies$start_time, "character")
   expect_type(sp$frequencies$end_time, "character")
-  
-  file.copy(system.file("extdata/poa.zip", package="gtfs2gps"), "poa.zip")
-  
-  unzip("poa.zip")
-  
-  # the last three will be ignored in the tests but need to be removed
-  files <- c("stops.txt", "stop_times.txt", "shapes.txt", "trips.txt", "calendar.txt", "agency.txt", "routes.txt")
-  
-  # for(i in 1:(length(files) - 3)){
-  #   if(file.exists("myfile.zip")) file.remove("myfile.zip")
-  #   zip("myfile.zip", files[-i], flags = "-q")
-  #   expect_error(read_gtfs("myfile.zip"))
-  # }
-  # 
-  # file.remove("myfile.zip")
-  # file.remove(files)
-  # 
-  # empty_files <- c("stops.txt", "stop_times.txt", "shapes.txt", "trips.txt")
-  # 
-  # for(i in empty_files){
-  #   unzip("poa.zip")
-  #   if(file.exists("myfile.zip")) file.remove("myfile.zip")
-  #   file.remove(i)
-  #   file.create(i)
-  #   zip("myfile.zip", files, flags = "-q")
-  #   
-  #   expect_error(expect_warning(read_gtfs("myfile.zip", quiet = TRUE)))
-  # }
-  # 
-  # file.remove("myfile.zip")
-  # file.remove(files)
-  # file.remove("poa.zip")
 })
 
 test_that("read_gtfs accepts optional routes fields and a header-only frequencies.txt", {

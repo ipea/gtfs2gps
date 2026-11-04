@@ -9,8 +9,8 @@ read_gtfs(gtfszip, quiet = FALSE)
 \arguments{
 \item{gtfszip}{A zipped GTFS data.}
 
-\item{quiet}{A logical. Whether to hide log messages and progress bars. 
-Defaults to `FALSE`.}
+\item{quiet}{A logical. Whether to hide log messages and progress bars.
+Defaults to \code{FALSE}.}
 }
 \value{
 A list of data.tables, where each index represents the respective GTFS file name.

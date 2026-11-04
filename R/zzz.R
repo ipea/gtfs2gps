@@ -1,13 +1,5 @@
 
 utils::globalVariables(c(".", ":="))
-.onLoad <- function(lib, pkg) {
-  # Use GForce Optimisations in data.table operations
-  # details > https://jangorecki.gitlab.io/data.cube/library/data.table/html/datatable-optimize.html
-  options(datatable.optimize = Inf) # nocov
-  
-  # set number of threads used in data.table to 100% 
-  data.table::setDTthreads(percent = 100) # nocov
-}
 
 .onAttach <- function(lib, pkg){
   message <- paste0(
@@ -18,11 +10,12 @@ utils::globalVariables(c(".", ":="))
 
 # NOTE: lwgeom must stay in Imports. sf::st_segmentize() on lon/lat shapes
 # (used by gtfs2gps()) calls lwgeom::st_geod_segmentize() and errors without it.
+# rlang is imported because cli::cli_abort(), cli_warn() and cli_inform() need it
+# at runtime, while cli only suggests it.
 #' @importFrom data.table := %between% fifelse %chin%
-#' @importFrom stats na.omit
 #' @importFrom utils head tail object.size
-#' @importFrom Rcpp compileAttributes
 #' @importFrom lwgeom st_geod_length
+#' @importFrom rlang abort
 #' @useDynLib gtfs2gps, .registration = TRUE
 NULL
 
@@ -39,4 +32,6 @@ if(getRversion() >= "2.15.1") utils::globalVariables(
     'N_intervals', 'as.ITime', 'from_stop_id', 'from_timestamp', 'i.from_stop_id',
     'i.from_timestamp', 'i.interval_status', 'i.shape_id', 'i.to_stop_id',
     'i.to_timestamp', 'interval_status', 'numbers', 'to_timestamp',
-    'time', 'timestamp', 'i.arrival_time', 'i.route_type'))
+    'time', 'timestamp', 'i.arrival_time', 'i.route_type',
+    'shape_rank', 'pattern_key', 'pattern', 'trip_rank', 'pattern_id', 'i.pattern_id',
+    'point', 'k', 'status', 'ref', 'kidx', 'N', 'n_na', 'n_inf', 'n_nonpos', 'n_neg'))

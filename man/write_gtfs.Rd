@@ -4,7 +4,13 @@
 \alias{write_gtfs}
 \title{Write GTFS data into a zip file}
 \usage{
-write_gtfs(gtfs, zipfile, overwrite = TRUE, quiet = FALSE)
+write_gtfs(
+  gtfs,
+  zipfile,
+  overwrite = TRUE,
+  quiet = FALSE,
+  compression_level = 6
+)
 }
 \arguments{
 \item{gtfs}{A GTFS data set stored in memory as a list of data.tables/data.frames.}
@@ -15,8 +21,11 @@ write_gtfs(gtfs, zipfile, overwrite = TRUE, quiet = FALSE)
 If \code{FALSE} and \code{zipfile} already exists, an error is
 raised. Defaults to \code{TRUE}.}
 
-\item{quiet}{A logical. Whether to hide log messages and progress bars. 
+\item{quiet}{A logical. Whether to hide log messages and progress bars.
 Defaults to \code{FALSE}.}
+
+\item{compression_level}{A whole number from 1 (fastest) to 9 (smallest
+file). The compression level of the zip file. Defaults to 6.}
 }
 \value{
 The GTFS data, invisibly.

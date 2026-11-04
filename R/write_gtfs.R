@@ -10,7 +10,9 @@
 #'        raised. Defaults to \code{TRUE}.
 #' @param quiet A logical. Whether to hide log messages and progress bars. 
 #'        Defaults to \code{FALSE}.
-#'        
+#' @param compression_level A whole number from 1 (fastest) to 9 (smallest
+#'        file). The compression level of the zip file. Defaults to 6.
+#'
 #' @return The GTFS data, invisibly.
 #' 
 #' @export
@@ -25,11 +27,12 @@
 #' # write GTFS data into a zip file
 #' write_gtfs(poa, paste0(tempdir(), "/mypoa.zip"))
 #' 
-write_gtfs <- function(gtfs, zipfile, overwrite = TRUE, quiet = FALSE){
+write_gtfs <- function(gtfs, zipfile, overwrite = TRUE, quiet = FALSE, compression_level = 6){
 
   checkmate::assert_string(zipfile)
   checkmate::assert_flag(overwrite)
   checkmate::assert_flag(quiet)
+  checkmate::assert_int(compression_level, lower = 1, upper = 9)
 
   if(!overwrite && file.exists(zipfile)){
     cli::cli_abort(
@@ -41,7 +44,8 @@ write_gtfs <- function(gtfs, zipfile, overwrite = TRUE, quiet = FALSE){
 
   gtfstools::write_gtfs(gtfs = gtfs, 
                       path = zipfile, 
-                      overwrite = overwrite, 
-                      quiet = quiet
+                      overwrite = overwrite,
+                      quiet = quiet,
+                      compression_level = compression_level
   )
 }
