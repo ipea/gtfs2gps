@@ -25,16 +25,30 @@ The GPS data with a new column named height.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# this example takes more than 10s to run
-
+# \donttest{
 fortaleza <- system.file("extdata/fortaleza.zip", package = "gtfs2gps")
 srtmfile <- system.file("extdata/fortaleza-srtm.tif", package = "gtfs2gps")
 
 gtfs <- read_gtfs(fortaleza) |>
   gtfstools::filter_by_shape_id("shape836-I") |>
-  filter_single_trip() 
+  filter_single_trip()
+#> Unzipped the following files to /tmp/RtmpNavyfO/gtfsio:
+#>   * agency.txt
+#>   * calendar.txt
+#>   * routes.txt
+#>   * shapes.txt
+#>   * stop_times.txt
+#>   * stops.txt
+#>   * trips.txt
+#> Reading agency
+#> Reading calendar
+#> Reading routes
+#> Reading shapes
+#> Reading stop_times
+#> Reading stops
+#> Reading trips
 
-fortaleza_gps <- gtfs2gps(gtfs, spatial_resolution = 500) |> append_height(srtmfile)
-} # }
+fortaleza_gps <- gtfs2gps(gtfs, spatial_resolution = 500, parallel = FALSE, quiet = TRUE) |>
+  append_height(srtmfile)
+# }
 ```

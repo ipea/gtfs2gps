@@ -31,7 +31,7 @@ A simple feature (sf) object with point data.
 library(gtfs2gps)
 
 fortaleza <- read_gtfs(system.file("extdata/fortaleza.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpAlS3ps/gtfsio:
+#> Unzipped the following files to /tmp/RtmpNavyfO/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -54,9 +54,11 @@ subset <- fortaleza |>
   gtfstools::filter_by_shape_id("shape806-I")
 
 for_gps <- gtfs2gps(subset)
-#> Converting shapes to sf objects
-#> Using 3 CPU cores
-#> Processing the data
-#> Warning: UNRELIABLE VALUE: Future (<unnamed-4>) unexpectedly generated random numbers without specifying argument 'seed'. There is a risk that those random numbers are not statistically sound and the overall results might be invalid. To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe random numbers are produced. To disable this check, use 'seed=NULL', or set option 'future.rng.onMisuse' to "ignore". [future <unnamed-4> (3a8976944027d6a7ca7329284f57033f-4); on 3a8976944027d6a7ca7329284f57033f@runnervmwhx2h<7094>]
+#> ℹ Converting shapes to sf objects
+#> ✔ Converting shapes to sf objects [21ms]
+#> 
+#> ℹ Processing the data
+#> ✔ Processing the data [246ms]
+#> 
 for_gps_sf_points <- gps_as_sfpoints(for_gps)
 ```

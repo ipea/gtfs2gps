@@ -18,22 +18,26 @@
 - **Marcus Saraiva**. Contributor.
   [](https://orcid.org/0000-0001-6218-2338)
 
-- **Ipea - Institue for Applied Economic Research**. Copyright holder,
+- **Ipea - Institute for Applied Economic Research**. Copyright holder,
   funder.
 
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/ipea/gtfs2gps/blob/master/DESCRIPTION)
+[`inst/CITATION`](https://github.com/ipea/gtfs2gps/blob/master/inst/CITATION)
 
-Pereira R, Andrade P, Bazzo J (2026). *gtfs2gps: Converting Transport
-Data from GTFS Format to GPS-Like Records*. R package version
-2.1-4.9000, <https://github.com/ipea/gtfs2gps>.
+Pereira R, Andrade P, Vieira J (2023). “Exploring the time geography of
+public transport networks with the gtfs2gps package.” *Journal of
+Geographical Systems*, **25**(3), 453–466.
+[doi:10.1007/s10109-022-00400-x](https://doi.org/10.1007/s10109-022-00400-x).
 
-    @Manual{,
-      title = {gtfs2gps: Converting Transport Data from GTFS Format to GPS-Like Records},
-      author = {Rafael H. M. Pereira and Pedro R. Andrade and Joao Bazzo},
-      year = {2026},
-      note = {R package version 2.1-4.9000},
-      url = {https://github.com/ipea/gtfs2gps},
+    @Article{,
+      title = {Exploring the time geography of public transport networks with the gtfs2gps package},
+      author = {Rafael H. M. Pereira and Pedro R. Andrade and João Pedro Bazzo Vieira},
+      journal = {Journal of Geographical Systems},
+      year = {2023},
+      volume = {25},
+      number = {3},
+      pages = {453--466},
+      doi = {10.1007/s10109-022-00400-x},
     }

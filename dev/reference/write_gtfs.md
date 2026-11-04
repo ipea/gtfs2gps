@@ -9,7 +9,13 @@ to raise an error instead.
 ## Usage
 
 ``` r
-write_gtfs(gtfs, zipfile, overwrite = TRUE, quiet = FALSE)
+write_gtfs(
+  gtfs,
+  zipfile,
+  overwrite = TRUE,
+  quiet = FALSE,
+  compression_level = 6
+)
 ```
 
 ## Arguments
@@ -32,6 +38,11 @@ write_gtfs(gtfs, zipfile, overwrite = TRUE, quiet = FALSE)
   A logical. Whether to hide log messages and progress bars. Defaults to
   `FALSE`.
 
+- compression_level:
+
+  A whole number from 1 (fastest) to 9 (smallest file). The compression
+  level of the zip file. Defaults to 6.
+
 ## Value
 
 The GTFS data, invisibly.
@@ -44,7 +55,7 @@ The GTFS data, invisibly.
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/RtmpAlS3ps/gtfsio:
+#> Unzipped the following files to /tmp/RtmpNavyfO/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -62,7 +73,7 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps")) |>
 
 # write GTFS data into a zip file
 write_gtfs(poa, paste0(tempdir(), "/mypoa.zip"))
-#> Writing text files to /tmp/RtmpAlS3ps/gtfsio1bb659b7a10a
+#> Writing text files to /tmp/RtmpNavyfO/gtfsio1fc65445bf53
 #>   - Writing agency.txt
 #>   - Writing calendar.txt
 #>   - Writing routes.txt
@@ -70,5 +81,5 @@ write_gtfs(poa, paste0(tempdir(), "/mypoa.zip"))
 #>   - Writing stop_times.txt
 #>   - Writing stops.txt
 #>   - Writing trips.txt
-#> GTFS object successfully zipped to /tmp/RtmpAlS3ps/mypoa.zip
+#> GTFS object successfully zipped to /tmp/RtmpNavyfO/mypoa.zip
 ```

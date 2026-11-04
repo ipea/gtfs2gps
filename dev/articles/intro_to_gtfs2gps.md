@@ -9,10 +9,13 @@ functions to convert both representations to simple feature format.
 ## Introduction
 
 Package `gtfs2gps` allows users to convert public transport GTFS data
-into a single `data.table` format with GPS-like records, which can then
-be used in various applications such as running transport simulations or
-scenario analyses. Before using the package, just install it from
-GitHub.
+into a single `data.table` format with GPS-like records, tracking the
+space-time position of individual vehicles at high spatial and temporal
+resolutions. This GPS-like data format is quite convenient as it can be
+easily used in various applications for running transport simulations,
+scenario analyses, data visualizations etc.
+
+To start using the package, you can install it from CRAN:
 
 ``` r
 
@@ -21,219 +24,203 @@ install.packages("gtfs2gps")
 
 ## Loading data
 
-After loading the package, GTFS data can be read into R by using
+After loading the package, you can read a GTFS feed using
 [`read_gtfs()`](https://ipea.github.io/gtfs2gps/dev/reference/read_gtfs.md).
 This function gets a zipped GTFS file and returns a list of `data.table`
-objects. The returning list contains the data of each GTFS file indexed
-according to their file names without extension.
+objects (a `dt_gtfs` object from {gtfstools}). To demonstrate the
+package, we will use a small sample of the GTFS from Porto Alegre,
+Brazil.
 
 ``` r
 
 library("gtfs2gps")
-#> gtfs2gps version 2.1-4.9000 is now loaded
-poa <- read_gtfs(system.file("extdata/poa.zip", package ="gtfs2gps"))
-#> Unzipped the following files to /tmp/Rtmpyh9HZR/gtfsio:
-#>   * agency.txt
-#>   * calendar.txt
-#>   * routes.txt
-#>   * shapes.txt
-#>   * stop_times.txt
-#>   * stops.txt
-#>   * trips.txt
-#> Reading agency
-#> Reading calendar
-#> Reading routes
-#> Reading shapes
-#> Reading stop_times
-#> Reading stops
-#> Reading trips
+
+# path to gtfs file
+gtfs_file <- system.file("extdata/poa.zip", package = "gtfs2gps")
+
+# read gtfs to memory
+poa <- gtfs2gps::read_gtfs(gtfs_file)
+
 names(poa)
 #> [1] "agency"     "calendar"   "routes"     "shapes"     "stop_times"
 #> [6] "stops"      "trips"
-head(poa$trips)
-#>    route_id service_id    trip_id shape_id
-#>      <char>     <char>     <char>   <char>
-#> 1:       T2       T2@1 T2-1@1#520     T2-1
-#> 2:       T2       T2@1 T2-1@1#540     T2-1
-#> 3:       T2       T2@1 T2-1@1#555     T2-1
-#> 4:       T2       T2@1 T2-1@1#610     T2-1
-#> 5:       T2       T2@1 T2-1@1#620     T2-1
-#> 6:       T2       T2@1 T2-1@1#628     T2-1
 ```
 
-Note that not all GTFS files are loaded into R. This function only loads
-the necessary data to spatially and temporally handle trips and stops,
-which are: “shapes.txt”, “stop_times.txt”, “stops.txt”, “trips.txt”,
-“agency.txt”, “calendar.txt”, “routes.txt”, and “frequencies.txt”, with
-this last four being optional. If a given GTFS zipped file does not
-contain all of these required files then
+The returning list contains the tables from the GTFS file indexed
+according to their file names.
 [`read_gtfs()`](https://ipea.github.io/gtfs2gps/dev/reference/read_gtfs.md)
-will stop with an error.
+checks that the tables required by {gtfs2gps} are present and not empty:
 
-In the code below we filter only the shape ids \`c(“T2-1”, “A141-1”) to
-allow faster execution the next scripts.
+- `routes.txt`
+- `shapes.txt`
+- `stop_times.txt`
+- `stops.txt`
+- `trips.txt`
+
+If the feed has a `frequencies.txt` file, it is used as well.
+
+If you’d like to visualize how the transport network looks like, you can
+use a few convenient functions from
+[{gtfstools}](https://github.com/ipea/gtfstools/), our sister package.
 
 ``` r
 
-object.size(poa) |> format(units = "Kb")
-#> [1] "1147.1 Kb"
-poa_small <- gtfstools::filter_by_shape_id(poa, c("T2-1", "A141-1"))
-object.size(poa_small) |> format(units = "Kb")
-#> [1] "560.8 Kb"
+library(ggplot2)
+
+# get spatial geometries of GTFS
+shapes_sf <- gtfstools::get_shapes_geometry(poa)
+stops_sf <- gtfstools::get_stops_geometry(poa)
+
+ggplot() +
+  geom_sf(data = shapes_sf) +
+  geom_sf(data = stops_sf, color = "red", size = .2)
 ```
 
-We can then easily convert the data to simple feature format and plot
-them.
+![](intro_to_gtfs2gps_files/figure-html/poa_shapes_sf-1.png)
+
+Sometimes, GTFS feeds come with internal inconsistencies, for example
+with trips going too fast, or not accounting for dwell time, etc. We
+highly recommend that you use {gtfstools} functions to profile, clean
+and edit your GTFS data before running {gtfs2gps} on it. In the example
+below, we run
+[`gtfstools::fix_gtfs()`](https://ipea.github.io/gtfstools/reference/fix_gtfs.html),
+a simple and convenient function to fix a few of these issues. Here, we
+use this function to try to cap the max speed between stops at 25 km/h
+and to set a min dwell time of 30 secs, and the function recalculates
+the stop times of the feed. Note that `fix_gtfs()` works on the stop
+times, so some segments of the output of
+[`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+can still be faster than 25 km/h.
 
 ``` r
 
-poa_small_shapes_sf <- gtfs2gps::gtfs_shapes_as_sf(poa_small)
-poa_small_stops_sf <- gtfs2gps::gtfs_stops_as_sf(poa_small)
-plot(sf::st_geometry(poa_small_shapes_sf))
-plot(sf::st_geometry(poa_small_stops_sf), pch = 20, col = "red", add = TRUE)
-box()
-```
-
-![](intro_to_gtfs2gps_files/figure-html/poa_small_shapes_sf-1.png)
-
-After subsetting the data, it is also possible to save it as a new GTFS
-file using
-[`write_gtfs()`](https://ipea.github.io/gtfs2gps/dev/reference/write_gtfs.md),
-as shown below.
-
-``` r
-
-temp_gtfs <- tempfile(pattern = 'poa_small', fileext = '.zip')
-
-gtfs2gps::write_gtfs(poa_small, temp_gtfs)
+# quick fix
+poa_fixed <- gtfstools::fix_gtfs(
+  gtfs = poa,
+  max_speed = 25,
+  min_dwell_time = 30
+  )
 ```
 
 ## Converting to GPS-like format
 
 To convert GTFS to GPS-like format, use
 [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md).
-This is the core function of the package. It takes a GTFS zipped file as
-an input and returns a `data.table` where each row represents a
-‘GPS-like’ data point for every trip in the GTFS file. In summary, this
-function interpolates the space-time position of each vehicle in each
-trip considering the network distance and average speed between stops.
-The function samples the timestamp of each vehicle every $`15m`$ by
-default, but the user can set a different value in the
+This is the core function of the package. It takes a GTFS zipped file or
+a GTFS object as an input and returns a `data.table` where each row
+represents a ‘GPS-like’ data point for every trip in the GTFS file. In
+summary, this function interpolates the space-time position of each
+vehicle in each trip considering the network distance and average speed
+between stops. The function samples the timestamp of each vehicle every
+$`100m`$ by default, but the user can set a different value in the
 `spatial_resolution` argument. See the example below.
 
 ``` r
 
-poa_gps <- gtfs2gps(temp_gtfs, spatial_resolution = 100)
-#> Warning: UNRELIABLE VALUE: Future (<unnamed-1>) unexpectedly generated random
-#> numbers without specifying argument 'seed'. There is a risk that those random
-#> numbers are not statistically sound and the overall results might be invalid.
-#> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
-#> random numbers are produced. To disable this check, use 'seed=NULL', or set
-#> option 'future.rng.onMisuse' to "ignore". [future <unnamed-1>
-#> (125346e83ee1d55d5614dec53e41ba3c-1); on
-#> 125346e83ee1d55d5614dec53e41ba3c@runnervmwhx2h<8180>]
-#> Warning: UNRELIABLE VALUE: Future (<unnamed-2>) unexpectedly generated random
-#> numbers without specifying argument 'seed'. There is a risk that those random
-#> numbers are not statistically sound and the overall results might be invalid.
-#> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
-#> random numbers are produced. To disable this check, use 'seed=NULL', or set
-#> option 'future.rng.onMisuse' to "ignore". [future <unnamed-2>
-#> (125346e83ee1d55d5614dec53e41ba3c-2); on
-#> 125346e83ee1d55d5614dec53e41ba3c@runnervmwhx2h<8180>]
-head(poa_gps)
-#>    shape_id     trip_id route_type    id timestamp shape_pt_lon shape_pt_lat
-#>      <char>      <char>      <int> <int>   <ITime>        <num>        <num>
-#> 1:   A141-1 A141-1@1#30          3     1      <NA>    -51.14692    -30.14979
-#> 2:   A141-1 A141-1@1#30          3     2      <NA>    -51.14610    -30.15014
-#> 3:   A141-1 A141-1@1#30          3     3  00:30:00    -51.14570    -30.15031
-#> 4:   A141-1 A141-1@1#30          3     4  00:30:00    -51.14570    -30.15031
-#> 5:   A141-1 A141-1@1#30          3     5  00:30:29    -51.14493    -30.15064
-#> 6:   A141-1 A141-1@1#30          3     6  00:30:58    -51.14417    -30.15097
-#>    stop_id stop_sequence               speed         dist       cumdist
-#>     <char>         <int>             <units>      <units>       <units>
-#> 1:    <NA>            NA 1.000000e-12 [km/h]  0.00000 [m]   0.00000 [m]
-#> 2:    <NA>            NA           NA [km/h] 87.23608 [m]  87.23608 [m]
-#> 3:     434             1           NA [km/h] 43.32548 [m] 130.56155 [m]
-#> 4:     434             1 1.000000e-12 [km/h]  0.00000 [m] 130.56155 [m]
-#> 5:    <NA>            NA 1.013763e+01 [km/h] 82.11437 [m] 212.67592 [m]
-#> 6:    <NA>            NA 1.013763e+01 [km/h] 82.11437 [m] 294.79029 [m]
-#>         cumtime trip_number
-#>         <units>       <int>
-#> 1:  0.00000 [s]           1
-#> 2:       NA [s]           1
-#> 3:       NA [s]           1
-#> 4:  0.00000 [s]           1
-#> 5: 29.15983 [s]           1
-#> 6: 58.31967 [s]           1
+poa_gps <- gtfs2gps(
+  gtfs_data = poa_fixed,
+  spatial_resolution = 100
+  )
 ```
 
-The following figure maps the first 100 data points of the sample data
-we processed. They can be converted to `simple feature` points or
-linestring.
+### Tip 1: Parallelization
+
+You can use the arguments `parallel = TRUE` and `ncores` to set how many
+threads the function can use to parallelize operations. Setting `ncores`
+to run in parallel can lead to reductions in computation time in large
+GTFS feeds. You can check the number of threads available in your
+machine with
+[`data.table::getDTthreads()`](https://rdrr.io/pkg/data.table/man/openmp-utils.html).
+
+### Tip 2: Coping with RAM memory limits
+
+In some really large GTFS feeds, the output of
+[`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+can sum to dozens of millions of rows. To help with this, you can pass
+to the argument `filepath` the path to a local directory, and the
+function will save the output of each shape to a separate file in this
+directory (`.txt`, or `.rds` with `compress = TRUE`) without loading
+them to your RAM.
+
+## Visualizing gtfs2gps output
+
+The output of
+[`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+looks like a traditional GPS data set: each row is the timestamp and
+location of a vehicle on a trip scheduled in the GTFS. The output
+includes a few columns indicating the speed, distance travelled and
+whether a given point is at a transit stop.
 
 ``` r
 
-poa_gps60 <- poa_gps[1:100, ]
+head(poa_gps)
+#>    shape_id     trip_id route_type    id timestamp shape_pt_lon shape_pt_lat
+#>      <char>      <char>      <int> <int>   <ITime>        <num>        <num>
+#> 1:    176-1 176-1@1#602          3     1  06:02:00    -51.22170    -30.14870
+#> 2:    176-1 176-1@1#602          3     2  06:02:00    -51.22170    -30.14870
+#> 3:    176-1 176-1@1#602          3     3  06:02:04    -51.22143    -30.14875
+#> 4:    176-1 176-1@1#602          3     4  06:02:13    -51.22085    -30.14881
+#> 5:    176-1 176-1@1#602          3     5  06:02:26    -51.21991    -30.14894
+#> 6:    176-1 176-1@1#602          3     6  06:02:31    -51.21960    -30.14897
+#>    stop_id stop_sequence             speed       dist     cumdist    cumtime
+#>     <char>         <int>           <units>    <units>     <units>    <units>
+#> 1:      59             1 1.0000e-12 [km/h]  0.000 [m]   0.000 [m]  0.000 [s]
+#> 2:      59             1 1.0000e-12 [km/h]  0.000 [m]   0.000 [m]  0.000 [s]
+#> 3:    <NA>            NA 2.3792e+01 [km/h] 26.649 [m]  26.649 [m]  4.032 [s]
+#> 4:    <NA>            NA 2.3792e+01 [km/h] 56.249 [m]  82.898 [m] 12.544 [s]
+#> 5:    <NA>            NA 2.3792e+01 [km/h] 91.527 [m] 174.425 [m] 26.393 [s]
+#> 6:    5776             2 2.3792e+01 [km/h] 30.448 [m] 204.873 [m] 31.000 [s]
+#>    trip_number
+#>          <int>
+#> 1:           1
+#> 2:           1
+#> 3:           1
+#> 4:           1
+#> 5:           1
+#> 6:           1
+```
+
+To help with the spatial visualization of the output, you can use two
+support functions to convert the GPS-like data into `simple feature`
+points or linestrings. Let’s see an example with the first 100 data
+points of the sample data we processed, coloured by speed.
+
+``` r
+
+poa_gps100 <- poa_gps[1:100, ]
 
 # points
-poa_gps60_sfpoints <- gps_as_sfpoints(poa_gps60)
+points_sf <- gtfs2gps::gps_as_sfpoints(poa_gps100)
+
+ggplot() +
+  geom_sf(data = points_sf, aes(color = as.numeric(speed))) +
+  scale_color_viridis_c(option = "cividis") +
+  labs(color = "Speed (km/h)")
+```
+
+![](intro_to_gtfs2gps_files/figure-html/unnamed-chunk-6-1.png)
+
+``` r
 
 # linestring
-poa_gps60_sflinestring <- gps_as_sflinestring(poa_gps60)
+linestring_sf <- gtfs2gps::gps_as_sflinestring(poa_gps100)
 
-# plot
-plot(sf::st_geometry(poa_gps60_sfpoints), pch = 20)
-plot(sf::st_geometry(poa_gps60_sflinestring), col = "blue", add = TRUE)
-box()
+ggplot() +
+  geom_sf(data = linestring_sf, aes(color = as.numeric(speed))) +
+  scale_color_viridis_c(option = "cividis") +
+  labs(color = "Speed (km/h)")
 ```
 
 ![](intro_to_gtfs2gps_files/figure-html/unnamed-chunk-7-1.png)
 
-The function
+Note:
+[`gps_as_sflinestring()`](https://ipea.github.io/gtfs2gps/dev/reference/gps_as_sflinestring.md)
+creates one linestring for each segment between two consecutive stops of
+a trip, assuming a constant average speed between them. The
+`spatial_resolution` argument of
 [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
-automatically recognizes whether the GTFS data brings detailed
-`stop_times.txt` information or whether it is a `frequency.txt` GTFS
-file. A sample data of a GTFS with detailed `stop_times.txt` cab be
-found below:
-
-``` r
-
-poa <- system.file("extdata/poa.zip", package ="gtfs2gps")
-
-poa_gps <- gtfs2gps(poa, spatial_resolution = 50)
-#> Warning: UNRELIABLE VALUE: Future (<unnamed-3>) unexpectedly generated random
-#> numbers without specifying argument 'seed'. There is a risk that those random
-#> numbers are not statistically sound and the overall results might be invalid.
-#> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
-#> random numbers are produced. To disable this check, use 'seed=NULL', or set
-#> option 'future.rng.onMisuse' to "ignore". [future <unnamed-3>
-#> (125346e83ee1d55d5614dec53e41ba3c-3); on
-#> 125346e83ee1d55d5614dec53e41ba3c@runnervmwhx2h<8180>]
-#> Warning: UNRELIABLE VALUE: Future (<unnamed-4>) unexpectedly generated random
-#> numbers without specifying argument 'seed'. There is a risk that those random
-#> numbers are not statistically sound and the overall results might be invalid.
-#> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
-#> random numbers are produced. To disable this check, use 'seed=NULL', or set
-#> option 'future.rng.onMisuse' to "ignore". [future <unnamed-4>
-#> (125346e83ee1d55d5614dec53e41ba3c-4); on
-#> 125346e83ee1d55d5614dec53e41ba3c@runnervmwhx2h<8180>]
-#> Warning: UNRELIABLE VALUE: Future (<unnamed-5>) unexpectedly generated random
-#> numbers without specifying argument 'seed'. There is a risk that those random
-#> numbers are not statistically sound and the overall results might be invalid.
-#> To fix this, specify 'seed=TRUE'. This ensures that proper, parallel-safe
-#> random numbers are produced. To disable this check, use 'seed=NULL', or set
-#> option 'future.rng.onMisuse' to "ignore". [future <unnamed-5>
-#> (125346e83ee1d55d5614dec53e41ba3c-5); on
-#> 125346e83ee1d55d5614dec53e41ba3c@runnervmwhx2h<8180>]
-
-poa_gps_sflinestrig <- gps_as_sfpoints(poa_gps)
-
-plot(sf::st_geometry(poa_gps_sflinestrig[1:200,]))
-
-box()
-```
-
-![](intro_to_gtfs2gps_files/figure-html/unnamed-chunk-8-1.png)
+controls how far apart the points are within each segment, not the
+length of the segments.
 
 ## Methodological note
 
@@ -242,18 +229,26 @@ between each pair of consecutive stops given by the ratio between
 cumulative network distance `S` and departure time `t` for a consecutive
 pair of valid stop_ids (`i`),
 
-![](https://github.com/ipeaGIT/gtfs2gps/blob/master/man/figures/equation1.png?raw=true)
+![](../reference/figures/equation1.png)
 
-Since the beginning of each trip usually starts before the first
-stop_id, the mean speed cannot be calculated as shown in the previous
-equation because information on `i` period does not exist. In this case,
-the function consider the mean speed for the whole trip. It also happens
-after the last valid stop_id (`N`) of the trips, where info on `i + 1`
-also does not exist.
+Each stop appears as two data points in the output: the first has the
+time the vehicle arrives at the stop (`arrival_time` in
+`stop_times.txt`), and the second the time it departs
+(`departure_time`), with the vehicle stationary between them. The
+`speed`, `dist` and `cumtime` columns are computed from the difference
+between each row and the previous row of the same trip, and `cumtime`
+starts at zero when the vehicle departs from the first stop.
 
-![](https://github.com/ipeaGIT/gtfs2gps/blob/master/man/figures/speed.PNG?raw=true)
+A trip covers its whole shape, which often begins before the first stop
+or ends after the last one (in the poa feed, about half of the trips
+start before their first stop). The points of the shape before the first
+stop and after the last stop have no time to be interpolated from, so
+their `timestamp`, `speed` and `cumtime` are `NA`, while `dist` and
+`cumdist` are still given.
+[`adjust_speed()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_speed.md)
+fills these values, as well as speeds outside a valid range.
 
 ## Final remarks
 
 If you have any suggestions or want to report an error, please visit the
-GitHub page of the package [here](https://github.com/ipeaGIT/gtfs2gps).
+GitHub page of the package [here](https://github.com/ipea/gtfs2gps).

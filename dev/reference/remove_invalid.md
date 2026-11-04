@@ -1,4 +1,14 @@
-# Remove invalid objects from GTFS data
+# Remove invalid objects from GTFS data (deprecated)
+
+This function is deprecated and will be removed in a future version. Use
+[`gtfstools::remove_duplicates()`](https://ipea.github.io/gtfstools/reference/remove_duplicates.html)
+and
+[`gtfstools::remove_unused_ids()`](https://ipea.github.io/gtfstools/reference/remove_unused_ids.html)
+instead. Unlike this function, they keep trips whose `shape_id` or
+`route_id` is not in the feed;
+[`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+skips trips without a shape and returns an `NA` `route_type` for trips
+without a route.
 
 Remove all objects from GTFS data that are not used in all relations
 that they are required to be. That is, agency-routes relation
@@ -21,7 +31,7 @@ remove_invalid(gtfs_data, only_essential = TRUE, prompt_invalid = FALSE)
 
 - gtfs_data:
 
-  A list of data.tables read using gtfs2gps::reag_gtfs().
+  A list of data.tables read using gtfs2gps::read_gtfs().
 
 - only_essential:
 
@@ -42,7 +52,7 @@ A subset of the input GTFS data.
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpAlS3ps/gtfsio:
+#> Unzipped the following files to /tmp/RtmpNavyfO/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -59,7 +69,7 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
 #> Reading trips
 object.size(poa)
 #> 1174616 bytes
-subset <- remove_invalid(poa)
+subset <- suppressWarnings(remove_invalid(poa))
 object.size(subset)
 #> 1174616 bytes
 ```

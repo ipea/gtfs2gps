@@ -1,4 +1,8 @@
-# Filter GTFS data using valid stop times
+# Filter GTFS data using valid stop times (deprecated)
+
+This function is deprecated and will be removed in a future version.
+[`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+does not need it.
 
 Filter a GTFS data read using gtfs2gps::read_gtfs(). It removes
 stop_times whose arrival_time or departure_time is missing or is not a
@@ -25,7 +29,7 @@ A filtered GTFS data.
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpAlS3ps/gtfsio:
+#> Unzipped the following files to /tmp/RtmpNavyfO/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -41,5 +45,5 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
 #> Reading stops
 #> Reading trips
 
-subset <- filter_valid_stop_times(poa)
+subset <- suppressWarnings(filter_valid_stop_times(poa))
 ```

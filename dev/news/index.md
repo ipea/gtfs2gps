@@ -3,160 +3,124 @@
 ## gtfs2gps (development version)
 
 - Major changes
-  - gtfs2gps now requires gtfstools \>= 2.0.0. With it,
-    [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
-    no longer creates a departure at the `end_time` of a
-    `frequencies.txt` entry (the GTFS specification makes `end_time`
-    exclusive), times with minutes or seconds of 60 or more are treated
-    as missing, and malformed times raise a warning of class
-    `gtfstools_malformed_time`.
-  - [`gtfs_stops_as_sf()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs_stops_as_sf.md)
-    and
-    [`gps_as_sfpoints()`](https://ipea.github.io/gtfs2gps/dev/reference/gps_as_sfpoints.md)
-    now transform the points to `crs` instead of labelling degrees with
-    it, as
-    [`gtfs_shapes_as_sf()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs_shapes_as_sf.md)
-    already did, so `crs = NA` is no longer accepted.
-  - [`adjust_arrival_departure()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_arrival_departure.md)
-    raises an error for a negative `min_lag`, and
-    [`filter_valid_stop_times()`](https://ipea.github.io/gtfs2gps/dev/reference/filter_valid_stop_times.md)
-    also drops times with minutes or seconds of 60 or more.
-  - [`read_gtfs()`](https://ipea.github.io/gtfs2gps/dev/reference/read_gtfs.md)
-    now keeps all the columns of `routes.txt` and reads feeds without
-    `agency_id` or `route_short_name` in it. A header-only
-    `frequencies.txt` (valid GTFS) is dropped instead of raising an
-    error, and empty mandatory files raise an error of class
-    `gtfs2gps_empty_file_error`.
-  - [`remove_invalid()`](https://ipea.github.io/gtfs2gps/dev/reference/remove_invalid.md)
-    keeps trips whose service is in either `calendar.txt` or
-    `calendar_dates.txt` (it used to require both with
-    `only_essential = FALSE`), keeps the timetabled trips of feeds that
-    mix them with frequency-based trips, and no longer empties
-    single-agency feeds whose routes have no `agency_id`.
   - [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
-    returns `NULL` instead of an error when no shape could be converted.
+    is much faster and uses less memory. Compared with v2.1-4
+    (sequential runs), it is about 9× faster on the bundled poa feed,
+    500× on the São Paulo feed, and 1,000× on a full Fortaleza feed (13M
+    points: 95 min → 6 s). All shapes are converted in one pass, and the
+    GPS points are computed in compiled code ({cpp11} replaces {Rcpp}).
+  - [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+    no longer uses {future} workers, which were slower than a sequential
+    run; this also removes the “globals exceed the maximum allowed size”
+    failure ([\#277](https://github.com/ipea/gtfs2gps/issues/277)).
+    `parallel = TRUE` now runs the compiled step in `ncores` threads
+    (default
+    [`data.table::getDTthreads()`](https://rdrr.io/pkg/data.table/man/openmp-utils.html))
+    when the package is built with OpenMP. The default is now
+    `parallel = FALSE`, a `future::plan()` is no longer used, and
+    `strategy` is deprecated.
+  - Stops are located along the shapes with
+    [`gtfstools::interpolate_shape_dist_traveled()`](https://ipea.github.io/gtfstools/reference/interpolate_shape_dist_traveled.html),
+    which keeps them in `stop_sequence` order. Stop patterns are no
+    longer dropped because a stop is far from the shape, loops are
+    handled, and the result no longer depends on `spatial_resolution`.
+    Distances use the sphere of {s2}/{sf}, so `dist`, `cumdist` and
+    `speed` are about 0.11% smaller. `snap_method` is deprecated and
+    ignored.
+  - Fixed two bugs with shapes used by several trips: the trips of every
+    route sharing a shape are now converted (only the first route’s
+    were, e.g. 170 of the 348 trips in the Berlin feed), and trips with
+    a different stop pattern no longer get their times attached to the
+    wrong stops. `trip_number` now counts all trips of a shape.
+  - Output changes: `speed`, `dist`, `cumdist` and `cumtime` are rounded
+    to 3 decimals (stops keep their speed of 1e-12 km/h), and timestamps
+    wrap at midnight (use `cumtime` for elapsed time).
+  - [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+    first drops duplicated rows and unused ids
+    ([`gtfstools::remove_duplicates()`](https://ipea.github.io/gtfstools/reference/remove_duplicates.html)
+    and `remove_unused_ids()`) and ignores trips with an `NA` `trip_id`.
+    It raises classed errors when `routes.txt` is missing or incomplete
+    (`gtfs2gps_missing_routes_error`), when nothing can be converted
+    (`gtfs2gps_nothing_converted_error`; it used to return `NULL`), and
+    when the output would exceed R’s row limit
+    (`gtfs2gps_too_many_points_error`).
+  - Deprecated, to be removed in a future version, each with a warning
+    of class `deprecated_<name>`:
+    [`gtfs_shapes_as_sf()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs_shapes_as_sf.md)
+    and
+    [`gtfs_stops_as_sf()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs_stops_as_sf.md)
+    (use
+    [`gtfstools::get_shapes_geometry()`](https://ipea.github.io/gtfstools/reference/get_shapes_geometry.html),
+    `get_shape_length()` and `get_stops_geometry()`);
+    [`remove_invalid()`](https://ipea.github.io/gtfs2gps/dev/reference/remove_invalid.md)
+    (use
+    [`gtfstools::remove_duplicates()`](https://ipea.github.io/gtfstools/reference/remove_duplicates.html)
+    and `remove_unused_ids()`, which keep trips whose shape or route is
+    missing); and
+    [`filter_valid_stop_times()`](https://ipea.github.io/gtfs2gps/dev/reference/filter_valid_stop_times.md).
   - Fixed
     [`adjust_speed()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_speed.md),
-    which shifted every trip’s timestamps (by about 3 minutes on the poa
-    feed) even when no speed was replaced, made timestamps run backwards
-    before the first stop and dropped dwell times. Each trip now keeps
-    the timestamp of its first timed point and its dwell times, so stop
-    timestamps only change where speeds are replaced. It no longer adds
-    a `time` column, and raises an error of class
-    `gtfs2gps_no_valid_speed_error` instead of returning all-`NA` speeds
-    when no speed is between `min_speed` and `max_speed` and `new_speed`
-    is not given. A `new_speed` that is not a single positive speed
-    raises an error of class `gtfs2gps_invalid_speed_error`.
+    which shifted timestamps even when no speed was replaced, made them
+    run backwards before the first stop, and dropped dwell times. It no
+    longer adds a `time` column and raises classed errors for invalid
+    speeds.
   - Fixed
     [`gps_as_sflinestring()`](https://ipea.github.io/gtfs2gps/dev/reference/gps_as_sflinestring.md),
-    which split trips only at stops with times (2 segments instead of 89
-    in its own example). It now returns one segment per interval between
-    consecutive stops, keeps the timestamps when `gps` is a file, and
-    computes `cumtime` also when
-    [`adjust_speed()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_speed.md)
-    was not run first.
-  - [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
-    timestamps now wrap at midnight, as stop rows already did: a trip
-    crossing midnight no longer mixes values past 24:00:00 with values
-    after 00:00:00. Use `cumtime` for the elapsed time.
-  - The package now requires R \>= 4.1.0, because it uses the native
-    pipe `|>`.
-  - Fixed a bug in
-    [`write_gtfs()`](https://ipea.github.io/gtfs2gps/dev/reference/write_gtfs.md),
-    which ignored the `overwrite` argument and silently overwrote an
-    existing file. With `overwrite = FALSE` it now raises an error of
-    class `gtfs2gps_file_exists_error` if `zipfile` already exists.
-  - Fixed a bug in `gtfs2gps(continue = TRUE)` with `compress = TRUE`:
-    it looked for `.rda` files while saving `.rds`, so shapes already
-    saved were converted and written again instead of being skipped.
-  - [`gtfs_shapes_as_sf()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs_shapes_as_sf.md)
-    now wraps
-    [`gtfstools::get_shapes_geometry()`](https://ipea.github.io/gtfstools/reference/get_shapes_geometry.html).
-    The `crs` argument transforms the shapes from WGS84 instead of
-    relabelling their coordinates, and must be a valid CRS (`NA` is no
-    longer accepted). The input is not modified. The result is a plain
-    `sf` object (no longer also a `data.table`) with columns `shape_id`,
-    `geometry` and `length`. `shape_id` must be character and
-    `shape_pt_sequence` integer, as produced by
-    [`read_gtfs()`](https://ipea.github.io/gtfs2gps/dev/reference/read_gtfs.md).
-  - Fixed two bugs in
-    [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
-    for shapes used by several trips:
-    - Trips were silently dropped when a shape was shared by more than
-      one route; only the first route’s trips were converted (e.g. 170
-      of the 348 trips in the bundled Berlin feed). All trips of a shape
-      that have a `route_id` are now converted, each with its own
-      `route_type`, and `trip_number` is the trip’s index among all
-      trips of the shape.
-    - Trips with a different stop pattern from the shape’s longest trip
-      had their times attached to the wrong stops, and could gain stops
-      they do not serve. Stops are now snapped separately for each
-      distinct stop pattern on a shape.
+    which split trips only at timed stops (2 segments instead of 89 in
+    its example). It now returns one segment per interval between
+    consecutive stops.
+  - Requires R \>= 4.1.0 and gtfstools \>= 2.0.0. With gtfstools 2.0.0,
+    no departure is created at a frequency’s `end_time` (exclusive in
+    GTFS), and malformed times (e.g. `"05:21"`, or minutes of 60 or
+    more) are treated as missing, with a warning of class
+    `gtfstools_malformed_time`.
 - Minor changes
-  - [`adjust_arrival_departure()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_arrival_departure.md)
-    no longer writes negative times near 00:00:00 (e.g. `"-1:59:50"`):
-    such arrivals are set to 00:00:00 and the departure moved to keep
-    `min_lag`, so a first stop with arrival and departure both at
-    00:00:00 (as in frequency-based feeds) now departs `min_lag` after
-    midnight (it was `min_lag / 2`). Odd differences are split in whole
-    seconds without truncation warnings, and `min_lag` is rounded to
-    whole seconds.
-  - Compared with v2.1-4,
-    [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
-    is at least 3× faster on the poa feed and, on the São Paulo feed, at
-    least 7× faster with about 80% lower peak memory (sequential runs).
-  - [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
-    is faster: speeds and timestamps between stops are now interpolated
-    on plain vectors instead of per-segment data.table sub-assignments.
-    Output is unchanged.
-  - `gtfs2gps(parallel = TRUE)` no longer copies the whole feed to every
-    worker: each worker receives only the trips, stop times, stops and
-    geometry of the shapes it converts. This removes the “total size of
-    the globals exported … exceeds the maximum allowed size” failure on
-    large feeds ([\#277](https://github.com/ipea/gtfs2gps/issues/277))
-    and lowers memory use. Shapes are also no longer looked up by
-    scanning the full `trips` and `stop_times` tables, which makes the
-    sequential path somewhat faster too. Output is unchanged.
-  - [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
-    spends less time on each trip: stop times are split by trip once per
-    stop pattern instead of being looked up for every trip, and each
-    trip’s GPS points are built on plain vectors instead of about 15
-    data.table operations. Output is unchanged.
-  - The report of shapes that failed with an internal error (with the
-    code to reproduce it) now also works with `parallel = TRUE`; it was
-    silently lost before.
-  - A `trip_id` listed under two different shapes (invalid GTFS) is now
-    converted once, with the first shape in `trips`, instead of once per
-    shape.
+  - [`filter_single_trip()`](https://ipea.github.io/gtfs2gps/dev/reference/filter_single_trip.md)
+    uses
+    [`gtfstools::filter_by_trip_id()`](https://ipea.github.io/gtfstools/reference/filter_by_trip_id.html):
+    the other tables keep only the rows used by the kept trips, and the
+    input must be a GTFS object, as returned by
+    [`read_gtfs()`](https://ipea.github.io/gtfs2gps/dev/reference/read_gtfs.md).
+  - [`gps_as_sfpoints()`](https://ipea.github.io/gtfs2gps/dev/reference/gps_as_sfpoints.md)
+    transforms the points to `crs` instead of relabelling them, so
+    `crs = NA` is no longer accepted.
+  - [`read_gtfs()`](https://ipea.github.io/gtfs2gps/dev/reference/read_gtfs.md)
+    keeps all columns of `routes.txt`, reads feeds without `agency_id`
+    or `route_short_name`, drops a header-only `frequencies.txt`, and
+    raises `gtfs2gps_empty_file_error` for empty mandatory files.
   - [`write_gtfs()`](https://ipea.github.io/gtfs2gps/dev/reference/write_gtfs.md)
-    now validates its arguments, and its documentation gives the correct
-    default of `quiet` (`FALSE`) and return value (the GTFS data,
-    invisibly).
-  - New dependency: {cli}, used for the new classed error in
-    [`write_gtfs()`](https://ipea.github.io/gtfs2gps/dev/reference/write_gtfs.md).
-    Existing messages will be migrated to it gradually.
-  - Internal code that duplicated {gtfstools} was removed: the frequency
-    expansion inside
-    [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
-    (unreachable since v2.1-1, when
-    [`gtfstools::frequencies_to_stop_times()`](https://ipea.github.io/gtfstools/reference/frequencies_to_stop_times.html)
-    took over) and the R-level time parser, now
-    [`gtfstools::convert_time_to_seconds()`](https://ipea.github.io/gtfstools/reference/convert_time_to_seconds.html).
-    No output change for well-formed `H:MM:SS` times. In
-    [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
-    and
-    [`adjust_arrival_departure()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_arrival_departure.md),
-    malformed time strings (e.g. `"05:21"`, which used to parse to an
-    arbitrary value) are now treated as missing.
+    respects `overwrite = FALSE` (error `gtfs2gps_file_exists_error`),
+    gains `compression_level`, and documents the default of `quiet`
+    correctly.
   - [`adjust_arrival_departure()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_arrival_departure.md)
-    no longer modifies the input GTFS, works when `arrival_time` or
-    `departure_time` is absent from `stop_times`, and returns a
-    `dt_gtfs` object even for plain-list input.
-  - [`filter_valid_stop_times()`](https://ipea.github.io/gtfs2gps/dev/reference/filter_valid_stop_times.md)
-    now drops any time that is not of the form `H:MM:SS`
-    (e.g. `"05:21"`, which used to be kept) and no longer re-formats the
-    strings it keeps.
-  - {gtfstools} \>= 1.3.0 is now required.
+    no longer modifies its input or writes negative times near midnight,
+    rejects a negative `min_lag`, and rounds it to whole seconds.
+  - `gtfs2gps(filepath)` writes shapes whose `shape_id` can’t be a file
+    name (e.g. `"a/b"`, which pointed into a folder that does not
+    exist): `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|` and `%` are
+    written as `%XX` (`a%2Fb.txt`), and
+    [`utils::URLdecode()`](https://rdrr.io/r/utils/URLencode.html) gives
+    the id back.
+  - `gtfs2gps(continue = TRUE, compress = TRUE)` now skips shapes
+    already saved (it looked for `.rda` files instead of `.rds`).
+  - `spatial_resolution` can be a `units` length and must be at least 1
+    metre. `compress`, `continue` and `quiet` must be a single `TRUE` or
+    `FALSE`, `filepath` a writable directory, and
+    [`append_height()`](https://ipea.github.io/gtfs2gps/dev/reference/append_height.md)’s
+    `heightfile` an existing file;
+    [`gps_as_sfpoints()`](https://ipea.github.io/gtfs2gps/dev/reference/gps_as_sfpoints.md)
+    and
+    [`gps_as_sflinestring()`](https://ipea.github.io/gtfs2gps/dev/reference/gps_as_sflinestring.md)
+    reject empty input.
+  - Messages, warnings and errors use {cli}, many with a class. Shapes
+    that fail are reported in a warning of class `gtfs2gps_shape_error`,
+    also with `parallel = TRUE`. {cli} and {rlang} are new dependencies;
+    {furrr}, {future}, {parallelly}, {progressr} and {Rcpp} are no
+    longer used.
+  - Loading the package no longer changes data.table’s options and
+    number of threads.
+  - A `trip_id` listed under two shapes (invalid GTFS) is converted
+    once, with its first shape.
 
 ## gtfs2gps v2.1-2
 
@@ -177,8 +141,8 @@ CRAN release: 2024-10-08
 CRAN release: 2023-04-28
 
 - Major changes
-  - Filter functions were removed from the package because gtftools
-    alredy implements them
+  - Filter functions were removed from the package because gtfstools
+    already implements them
   - Function `gtfs2gps` now uses `parallel = TRUE` by default.
   - Function `gtfs2gps` now uses
     [`gtfstools::frequencies_to_stop_times()`](https://ipea.github.io/gtfstools/reference/frequencies_to_stop_times.html)

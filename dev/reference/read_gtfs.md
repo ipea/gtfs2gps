@@ -23,7 +23,7 @@ read_gtfs(gtfszip, quiet = FALSE)
 - quiet:
 
   A logical. Whether to hide log messages and progress bars. Defaults to
-  \`FALSE\`.
+  `FALSE`.
 
 ## Value
 
@@ -34,7 +34,7 @@ file name.
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpAlS3ps/gtfsio:
+#> Unzipped the following files to /tmp/RtmpNavyfO/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt

@@ -4,22 +4,22 @@ Some GTFS.zip data have issues related to arrival and departure time on
 stops. This function makes sure the GTFS has dis/embarking times at each
 stop. For each stop time row, this function applies the following steps:
 
-1\. If there is \`arrival_time\` but no \`departure_time\`, it creates a
-departure_time column by summing the arrival plus a pre-defined
-\`min_lag\`.
+1.  If there is `arrival_time` but no `departure_time`, it creates a
+    departure_time column by summing the arrival plus a pre-defined
+    `min_lag`.
 
-2\. If there is \`departure_time\` but no \`arrival_time\`, it creates
-an arrival_time column by subtracting a pre-defined \`min_lag\` from the
-departure.
+2.  If there is `departure_time` but no `arrival_time`, it creates an
+    arrival_time column by subtracting a pre-defined `min_lag` from the
+    departure.
 
-3\. If there is an \`arrival_time\` and a \`departure_time\` but their
-difference is smaller than \`min_lag\`, it reduces the \`arrival_time\`
-and increases \`departure_time\` so that the difference will be exactly
-\`min_lag\`. Odd differences give the extra second to the departure.
+3.  If there is an `arrival_time` and a `departure_time` but their
+    difference is smaller than `min_lag`, it reduces the `arrival_time`
+    and increases `departure_time` so that the difference will be
+    exactly `min_lag`. Odd differences give the extra second to the
+    departure.
 
 Arrivals before 00:00:00 are set to 00:00:00 and the departure moved to
-keep \`min_lag\`. Times are not kept increasing across consecutive
-stops.
+keep `min_lag`. Times are not kept increasing across consecutive stops.
 
 The input GTFS data is not modified.
 
@@ -44,14 +44,14 @@ adjust_arrival_departure(gtfs_data, min_lag = 20)
 
 ## Value
 
-A GTFS with adjusted \`arrival_time\` and \`departure_time\` on
-data.table \`stop_times\`.
+A GTFS with adjusted `arrival_time` and `departure_time` on data.table
+`stop_times`.
 
 ## Examples
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpAlS3ps/gtfsio:
+#> Unzipped the following files to /tmp/RtmpNavyfO/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
