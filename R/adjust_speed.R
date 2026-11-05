@@ -70,8 +70,7 @@ adjust_speed <- function(
       "i" = paste(
         "We strongly recommend using {.pkg gtfstools} to fix and edit GTFS data",
         "before processing them with gtfs2gps, e.g. with",
-        "{.fn gtfstools::set_max_speed} and {.code gtfstools::set_min_speed()}",
-        "(in the development version of gtfstools)."
+        "{.fn gtfstools::set_max_speed} and {.code gtfstools::set_min_speed()}."
       )
     ),
     class = "deprecated_adjust_speed",
@@ -79,7 +78,13 @@ adjust_speed <- function(
     .frequency_id = "gtfs2gps_deprecated_adjust_speed"
   )
 
-  return(adjust_speed_internal(gps_data, min_speed, max_speed, new_speed, clone))
+  return(adjust_speed_internal(
+    gps_data,
+    min_speed,
+    max_speed,
+    new_speed,
+    clone
+  ))
 }
 
 #' The body of adjust_speed(), kept for the tests (see its docs)
