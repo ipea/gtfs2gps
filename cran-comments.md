@@ -58,6 +58,22 @@ release affects it:
 * The outputs of `gtfs2gps()` and `gps_as_sflinestring()` changed, as listed
   above.
 
-TODO: run `R CMD check` on gtfs2emis against this version, and report the
-result here. If anything breaks, contact the gtfs2emis maintainers (the same
-team at Ipea) before submitting.
+We ran `R CMD check --as-cran` on gtfs2emis 0.1.2 (2026-11-05, Windows 11,
+R 4.5.1), against gtfs2gps 2.1-4 from CRAN and against this version:
+
+* With gtfs2gps 2.1-4: 0 errors | 0 warnings | 1 note. The note was "unable
+  to verify current time", from the machine's clock.
+* With this version: 1 error, when re-building the vignette
+  `gtfs2emis_non_exhaust_ef.Rmd` ("could not find function `setDT`"). Its
+  tests and examples pass.
+
+The cause is in that vignette. It calls `data.table::setDT()` and `melt()`
+without `library(data.table)` or `data.table::`. It only worked because
+gtfs2gps 2.1-4 attached {data.table} to the search path when `gtfs2gps()` ran.
+This version deliberately no longer changes the search path.
+
+This error is intended: gtfs2gps functions should not attach other packages
+to the user's search path. The fix belongs in gtfs2emis's vignette: load
+{data.table} or use `data.table::`. gtfs2emis is maintained by the same team
+at Ipea, and we will submit an updated gtfs2emis to CRAN as soon as this
+version of gtfs2gps is published.
