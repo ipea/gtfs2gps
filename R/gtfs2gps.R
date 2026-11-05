@@ -70,8 +70,8 @@
 #' data point of each trip, at its first stop, represents a stationary vehicle,
 #' with `dist`, `cumdist` and `cumtime` equal to zero: `cumdist` is the distance
 #' travelled from the first stop. Unrealistic speeds are best fixed in the GTFS
-#' before converting it, with `gtfstools::set_max_speed()` (and
-#' `gtfstools::set_min_speed()`, in the development version of gtfstools). Two stops at the same place and time give an
+#' before converting it, with `gtfstools::set_max_speed()` and
+#' `gtfstools::set_min_speed()`. Two stops at the same place and time give an
 #' `NA` speed.
 #'
 #' Each stop is presented as two data points for each trip in the output. The

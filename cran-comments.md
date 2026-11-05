@@ -17,7 +17,7 @@ gtfs2gps 3.0-0 is a major release. Summary (details in NEWS.md):
   threads.
 * Stops are located along the shapes with
   `gtfstools::interpolate_shape_dist_traveled()`; gtfs2gps now requires
-  gtfstools >= 2.0.0, which is on CRAN.
+  gtfstools >= 2.0.1, which is on CRAN.
 * Breaking output changes:
   * each trip runs from its first to its last timed stop;
   * `speed`, `dist`, `cumdist` and `cumtime` are rounded to 3 decimals;

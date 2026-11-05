@@ -12,7 +12,7 @@
 * Major changes
   * `gtfs2gps()` is much faster and uses less memory: compared with v2.1-4, about 9× faster on the poa feed, 500× on São Paulo, and 1,000× on a full Fortaleza feed (13M points: 95 min → 6 s). All shapes are converted in one pass in C++ ({cpp11} replaces {Rcpp}).
   * Fixed shapes shared by several routes or stop patterns: all their trips are converted, with times attached to the right stops (e.g. 348 instead of 170 trips in the Berlin feed).
-  * Requires gtfstools >= 2.0.0
+  * Requires gtfstools >= 2.0.1
 
 * Minor changes
   * `gtfs2gps()` drops duplicated rows and unused ids, ignores trips with an `NA` `trip_id`, and converts a `trip_id` listed under two shapes once.

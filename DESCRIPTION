@@ -20,7 +20,7 @@ Imports:
       checkmate,
       cli (>= 3.4.0),
       data.table,
-      gtfstools (>= 2.0.0),
+      gtfstools (>= 2.0.1),
       lwgeom,
       rlang (>= 1.1.0),
       sf,

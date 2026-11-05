@@ -46,8 +46,8 @@ This function is deprecated and will be removed in a future
 version; it warns once per session. It edits the GPS-like output of
 \code{gtfs2gps()}. We strongly recommend using our sister package gtfstools
 to fix and edit GTFS data before processing them with gtfs2gps, for example
-with \code{gtfstools::set_max_speed()} and \code{gtfstools::set_min_speed()}
-(the latter in the development version of gtfstools). Unlike this function,
+with \code{gtfstools::set_max_speed()} and \code{gtfstools::set_min_speed()}.
+Unlike this function,
 they work on the GTFS before conversion, and do not replace missing speeds in
 the GPS output.
 

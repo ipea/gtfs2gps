@@ -4,8 +4,8 @@
 #' version; it warns once per session. It edits the GPS-like output of
 #' \code{gtfs2gps()}. We strongly recommend using our sister package gtfstools
 #' to fix and edit GTFS data before processing them with gtfs2gps, for example
-#' with \code{gtfstools::set_max_speed()} and \code{gtfstools::set_min_speed()}
-#' (the latter in the development version of gtfstools). Unlike this function,
+#' with \code{gtfstools::set_max_speed()} and \code{gtfstools::set_min_speed()}.
+#' Unlike this function,
 #' they work on the GTFS before conversion, and do not replace missing speeds in
 #' the GPS output.
 #'
@@ -70,7 +70,7 @@ adjust_speed <- function(
       "i" = paste(
         "We strongly recommend using {.pkg gtfstools} to fix and edit GTFS data",
         "before processing them with gtfs2gps, e.g. with",
-        "{.fn gtfstools::set_max_speed} and {.code gtfstools::set_min_speed()}."
+        "{.fn gtfstools::set_max_speed} and {.fn gtfstools::set_min_speed}."
       )
     ),
     class = "deprecated_adjust_speed",
