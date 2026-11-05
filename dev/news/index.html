@@ -51,13 +51,14 @@
 <li>Stops are located along the shapes with <code><a href="https://ipea.github.io/gtfstools/reference/interpolate_shape_dist_traveled.html" class="external-link">gtfstools::interpolate_shape_dist_traveled()</a></code>, which keeps them in <code>stop_sequence</code> order. Stop patterns are no longer dropped because a stop is far from the shape, loops are handled, and the result no longer depends on <code>spatial_resolution</code>. Distances use the sphere of {s2}/{sf}, so <code>dist</code>, <code>cumdist</code> and <code>speed</code> are about 0.11% smaller. <code>snap_method</code> is deprecated and ignored.</li>
 <li>Fixed two bugs with shapes used by several trips: the trips of every route sharing a shape are now converted (only the first route’s were, e.g. 170 of the 348 trips in the Berlin feed), and trips with a different stop pattern no longer get their times attached to the wrong stops. <code>trip_number</code> now counts all trips of a shape.</li>
 <li>Output changes: <code>speed</code>, <code>dist</code>, <code>cumdist</code> and <code>cumtime</code> are rounded to 3 decimals (stops keep their speed of 1e-12 km/h), and timestamps wrap at midnight (use <code>cumtime</code> for elapsed time).</li>
-<li>Each trip now starts and ends at its first and last timed stop, so the <code>NA</code> speeds and times that the points before and after them had are gone, and <code>cumdist</code> is measured from the first stop. Shape points and untimed stops outside that span are no longer returned (nor the <code>"-"</code> segments of <code><a href="../reference/gps_as_sflinestring.html">gps_as_sflinestring()</a></code> before the first and after the last stop), so the output no longer covers the whole shape (use <code><a href="https://ipea.github.io/gtfstools/reference/get_shapes_geometry.html" class="external-link">gtfstools::get_shapes_geometry()</a></code> for that) and shouldn’t be mixed with files written by older versions when using <code>continue = TRUE</code>. The message “Some speed values are NA” now only appears when the data give an <code>NA</code> speed. Closes <a href="https://github.com/ipea/gtfs2gps/issues/260" class="external-link">#260</a>.</li>
+<li>Each trip now runs from its first to its last timed stop: shape points outside them (which had <code>NA</code> speeds and times) are dropped, and <code>cumdist</code> starts at 0 at the first stop. The “Some speed values are NA” message now only appears for <code>NA</code> speeds in the data. Closes <a href="https://github.com/ipea/gtfs2gps/issues/260" class="external-link">#260</a>.</li>
 <li>
 <code><a href="../reference/gtfs2gps.html">gtfs2gps()</a></code> first drops duplicated rows and unused ids (<code><a href="https://ipea.github.io/gtfstools/reference/remove_duplicates.html" class="external-link">gtfstools::remove_duplicates()</a></code> and <code>remove_unused_ids()</code>) and ignores trips with an <code>NA</code> <code>trip_id</code>. It raises classed errors when <code>routes.txt</code> is missing or incomplete (<code>gtfs2gps_missing_routes_error</code>), when nothing can be converted (<code>gtfs2gps_nothing_converted_error</code>; it used to return <code>NULL</code>), and when the output would exceed R’s row limit (<code>gtfs2gps_too_many_points_error</code>).</li>
 <li>Deprecated, to be removed in a future version, each with a warning of class <code>deprecated_&lt;name&gt;</code>: <code><a href="../reference/gtfs_shapes_as_sf.html">gtfs_shapes_as_sf()</a></code> and <code><a href="../reference/gtfs_stops_as_sf.html">gtfs_stops_as_sf()</a></code> (use <code><a href="https://ipea.github.io/gtfstools/reference/get_shapes_geometry.html" class="external-link">gtfstools::get_shapes_geometry()</a></code>, <code>get_shape_length()</code> and <code>get_stops_geometry()</code>); <code><a href="../reference/remove_invalid.html">remove_invalid()</a></code> (use <code><a href="https://ipea.github.io/gtfstools/reference/remove_duplicates.html" class="external-link">gtfstools::remove_duplicates()</a></code> and <code>remove_unused_ids()</code>, which keep trips whose shape or route is missing); and <code><a href="../reference/filter_valid_stop_times.html">filter_valid_stop_times()</a></code>.</li>
+<li>Fixed <code><a href="../reference/gtfs2gps.html">gtfs2gps()</a></code> giving <code>NaN</code> <code>cumtime</code> and <code>NA</code> timestamps for the rest of a trip after a stop with a departure time but no arrival time, when the next stop was on the next shape point.</li>
 <li>Fixed <code><a href="../reference/adjust_speed.html">adjust_speed()</a></code>, which shifted timestamps even when no speed was replaced, made them run backwards before the first stop, and dropped dwell times. It no longer adds a <code>time</code> column and raises classed errors for invalid speeds.</li>
 <li>Fixed <code><a href="../reference/gps_as_sflinestring.html">gps_as_sflinestring()</a></code>, which split trips only at timed stops (2 segments instead of 89 in its example). It now returns one segment per interval between consecutive stops.</li>
-<li>Requires R &gt;= 4.1.0 and gtfstools &gt;= 2.0.0. With gtfstools 2.0.0, no departure is created at a frequency’s <code>end_time</code> (exclusive in GTFS), and malformed times (e.g. <code>"05:21"</code>, or minutes of 60 or more) are treated as missing, with a warning of class <code>gtfstools_malformed_time</code>.</li>
+<li>Requires gtfstools &gt;= 2.0.0. With gtfstools 2.0.0, no departure is created at a frequency’s <code>end_time</code> (exclusive in GTFS), and malformed times (e.g. <code>"05:21"</code>, or minutes of 60 or more) are treated as missing, with a warning of class <code>gtfstools_malformed_time</code>.</li>
 </ul></li>
 <li>Minor changes
 <ul><li>
@@ -78,7 +79,21 @@
 <code>spatial_resolution</code> can be a <code>units</code> length and must be at least 1 metre. <code>compress</code>, <code>continue</code> and <code>quiet</code> must be a single <code>TRUE</code> or <code>FALSE</code>, <code>filepath</code> a writable directory, and <code><a href="../reference/append_height.html">append_height()</a></code>’s <code>heightfile</code> an existing file; <code><a href="../reference/gps_as_sfpoints.html">gps_as_sfpoints()</a></code> and <code><a href="../reference/gps_as_sflinestring.html">gps_as_sflinestring()</a></code> reject empty input.</li>
 <li>Messages, warnings and errors use {cli}, many with a class. Shapes that fail are reported in a warning of class <code>gtfs2gps_shape_error</code>, also when running in several threads. {cli} and {rlang} are new dependencies; {furrr}, {future}, {parallelly}, {progressr} and {Rcpp} are no longer used.</li>
 <li>Loading the package no longer changes data.table’s options and number of threads.</li>
+<li>
+<code><a href="../reference/adjust_speed.html">adjust_speed()</a></code> and <code><a href="../reference/gps_as_sflinestring.html">gps_as_sflinestring()</a></code> round <code>speed</code>, <code>dist</code>, <code>cumdist</code> and <code>cumtime</code> to 3 decimals, as <code><a href="../reference/gtfs2gps.html">gtfs2gps()</a></code> does, so calling <code><a href="../reference/adjust_speed.html">adjust_speed()</a></code> twice gives the same result. <code><a href="../reference/adjust_speed.html">adjust_speed()</a></code> also rounds <code>new_speed</code>, replaces speeds outside stops that round to 0 km/h (with <code>min_speed = 0</code> they made <code>cumtime</code> reach about 1e15 s), gives the stop speed of 1e-12 km/h to stop rows whose speed is missing while keeping their dwell time (it used to recompute it), and raises an error when <code>min_speed</code> is negative or not a single number.</li>
+<li>The lines of code in the <code>gtfs2gps_shape_error</code> warning are no longer wrapped at the console width, so they can be copied as they are.</li>
+<li>With <code>quiet = TRUE</code>, <code><a href="../reference/gtfs2gps.html">gtfs2gps()</a></code> errors name the user’s call and the code in the <code>gtfs2gps_shape_error</code> warning names the user’s object; reading a zip file no longer prints the gtfstools messages.</li>
 <li>A <code>trip_id</code> listed under two shapes (invalid GTFS) is converted once, with its first shape.</li>
+</ul></li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2.1-4" id="gtfs2gps-v21-4">gtfs2gps v2.1-4<a class="anchor" aria-label="anchor" href="#gtfs2gps-v21-4"></a></h2><p class="text-muted">CRAN release: 2026-02-02</p>
+<ul><li>Minor changes
+<ul><li>
+<code>ncores = NULL</code> uses <code>parallelly::availableCores(omit = 1)</code>, and {parallelly} was added to Imports.</li>
+<li>Requires R &gt;= 4.1.0.</li>
+<li>The startup message no longer mentions the removed filter functions.</li>
+<li>Test fix for testthat 3.3.0.</li>
 </ul></li>
 </ul></div>
     <div class="section level2">
@@ -103,25 +118,25 @@
 </ul></li>
 </ul></div>
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2.1-0" id="gtfs2gps-v21-0">gtfs2gps v2.1-0<a class="anchor" aria-label="anchor" href="#gtfs2gps-v21-0"></a></h2><p class="text-muted">CRAN release: 2022-08-16</p>
+<ul><li>Major changes
+<ul><li>Imports <code>gtfstools</code> package.</li>
+</ul></li>
+<li>Minor changes
+<ul><li>The function <code><a href="../reference/adjust_speed.html">adjust_speed()</a></code> now does not change very low speed (1.000000e-12 [km/h]) because these values indicate a situation of a stopped vehicle. Closed <a href="https://github.com/ipea/gtfs2gps/issues/249" class="external-link">249</a>.</li>
+</ul></li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2.0-3" id="gtfs2gps-v20-3">gtfs2gps v2.0-3<a class="anchor" aria-label="anchor" href="#gtfs2gps-v20-3"></a></h2>
 <ul><li>Minor changes
 <ul><li>Saving units when using argument <code>filepath</code> in <code><a href="../reference/gtfs2gps.html">gtfs2gps()</a></code>.</li>
 </ul></li>
 </ul></div>
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="2.0-1" id="gtfs2gps-v20-1">gtfs2gps v2.0-1<a class="anchor" aria-label="anchor" href="#gtfs2gps-v20-1"></a></h2><p class="text-muted">CRAN release: 2022-03-05</p>
-<ul><li>Major changes
-<ul><li>Imports <code>gtfstools</code> package.</li>
-</ul></li>
-<li>Minor changes
-<ul><li>Fixing CRAN error and warning related to the vignette.</li>
-<li>The function <code><a href="../reference/adjust_speed.html">adjust_speed()</a></code> now does not change very low speed (1.000000e-12 [km/h]) because these values indicate a situation of a stopped vehicle. Closed <a href="https://github.com/ipea/gtfs2gps/issues/249" class="external-link">249</a>.</li>
-</ul></li>
-</ul></div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="2.0-1" id="gtfs2gps-v20-1-1">gtfs2gps v2.0-1<a class="anchor" aria-label="anchor" href="#gtfs2gps-v20-1-1"></a></h2><p class="text-muted">CRAN release: 2022-03-05</p>
+<h2 class="pkg-version" data-toc-text="2.0-2" id="gtfs2gps-v20-2">gtfs2gps v2.0-2<a class="anchor" aria-label="anchor" href="#gtfs2gps-v20-2"></a></h2><p class="text-muted">CRAN release: 2022-03-10</p>
 <ul><li>Minor changes
-<ul><li>
+<ul><li>Fixing CRAN error and warning related to the vignette.</li>
+<li>
 <code><a href="../reference/gtfs2gps.html">gtfs2gps()</a></code> now prints a message alerting if there are any trips with negative speed values in the output. <a href="https://github.com/ipea/gtfs2gps/issues/172" class="external-link">Closes </a><a href="https://github.com/ipea/gtfs2gps/issues/172" class="external-link">#172</a>.</li>
 <li>Fixing small bugs in the output of gtfs2gps().</li>
 </ul></li>

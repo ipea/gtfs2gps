@@ -40,10 +40,10 @@ gtfs2gps(
 
   The spatial resolution in meters: a number of at least 1, or a `units`
   length. Default is 100m. This function only creates points in order to
-  guarantee that the minimum distance between two consecutive points
-  will be at most the spatial_resolution. If a given shape has two
-  consecutive points with a distance lower than the spatial resolution,
-  the algorithm will not remove such points.
+  guarantee that consecutive points are at most `spatial_resolution`
+  metres apart. If a given shape has two consecutive points with a
+  distance lower than the spatial resolution, the algorithm will not
+  remove such points.
 
 - parallel:
 
@@ -105,12 +105,24 @@ gtfs2gps(
 A `data.table`, where each row represents a GPS point. The following
 columns are returned (units of measurement in parenthesis): dist and
 cumdist (meters), cumtime (seconds), shape_pt_lon and shape_pt_lat
-(degrees), speed (km/h), timestamp (hh:mm:ss). Speed, dist, cumdist and
-cumtime are rounded to 3 decimal places (also when written to filepath),
-except speeds closer to zero than that, which keep their value (such as
-the 1e-12 km/h of stops).
+(degrees), speed (km/h), timestamp
+([`data.table::ITime`](https://rdrr.io/pkg/data.table/man/IDateTime.html),
+wrapped at midnight). Speed, dist, cumdist and cumtime are rounded to 3
+decimal places (also when written to filepath), except speeds closer to
+zero than that, which keep their value (such as the 1e-12 km/h of
+stops). With `filepath`, each shape is written to a file and `NULL` is
+returned.
 
 ## Details
+
+Before converting, the feed is cleaned with
+[`gtfstools::remove_duplicates()`](https://ipea.github.io/gtfstools/reference/remove_duplicates.html)
+and
+[`gtfstools::remove_unused_ids()`](https://ipea.github.io/gtfstools/reference/remove_unused_ids.html),
+and trips with an `NA` `trip_id` are dropped. Errors and warnings raised
+by the package have classes starting with `gtfs2gps_` (e.g.
+`gtfs2gps_nothing_converted_error`), and deprecation warnings with
+`deprecated_`, so they can be caught.
 
 After creating geometry points for a given shape id, the `gtfs2gps()`
 function snaps the stops to the route geometry. The stops of each trip
@@ -155,7 +167,7 @@ function to set the minimum time each vehicle will spend at stops to
 embark/disembark passengers.
 
 To avoid division by zero, the minimum speed of vehicles in the output
-is 1e-12 Km/h, so that vehicles are never completely stopped.
+is 1e-12 km/h, so that vehicles are never completely stopped.
 
 ## Examples
 
@@ -165,7 +177,7 @@ library(gtfs2gps)
 gtfs <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/RtmpTQEwxy/gtfsio:
+#> Unzipped the following files to /tmp/Rtmpynnshe/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt

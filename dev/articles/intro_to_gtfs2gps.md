@@ -2,9 +2,9 @@
 
 Abstract
 
-Package `gtfs2gps` has a set of functions to convert public transport
-GTFS data to GPS-like format using `data.table`. It also has some
-functions to convert both representations to simple feature format.
+Package `gtfs2gps` converts public transport GTFS data to GPS-like
+records using `data.table`. It also has functions to post-process these
+records, for example converting them to simple feature format.
 
 ## Introduction
 

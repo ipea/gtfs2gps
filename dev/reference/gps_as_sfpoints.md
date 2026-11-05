@@ -31,7 +31,7 @@ A simple feature (sf) object with point data.
 library(gtfs2gps)
 
 fortaleza <- read_gtfs(system.file("extdata/fortaleza.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpTQEwxy/gtfsio:
+#> Unzipped the following files to /tmp/Rtmpynnshe/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -56,10 +56,10 @@ subset <- fortaleza |>
 for_gps <- gtfs2gps(subset)
 #> ℹ Converting shapes to sf objects
 #> Using 2 threads
-#> ✔ Converting shapes to sf objects [19ms]
+#> ✔ Converting shapes to sf objects [25ms]
 #> 
 #> ℹ Processing the data
-#> ✔ Processing the data [211ms]
+#> ✔ Processing the data [208ms]
 #> 
 for_gps_sf_points <- gps_as_sfpoints(for_gps)
 ```

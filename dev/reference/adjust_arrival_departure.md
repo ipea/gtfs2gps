@@ -45,13 +45,14 @@ adjust_arrival_departure(gtfs_data, min_lag = 20)
 ## Value
 
 A GTFS with adjusted `arrival_time` and `departure_time` on data.table
-`stop_times`.
+`stop_times`. Stops with neither time come back with empty strings
+(`""`), which GTFS allows for stops that are not timepoints.
 
 ## Examples
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpTQEwxy/gtfsio:
+#> Unzipped the following files to /tmp/Rtmpynnshe/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt

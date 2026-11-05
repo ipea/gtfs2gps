@@ -2,14 +2,14 @@
 
 Some GTFS.zip data sets might have quality issues, for example by
 assuming that a trip speed is unreasonably high (e.g. an urban bus
-running over 100 Km/h), or in other cases the `timestamp` information
+running over 100 km/h), or in other cases the `timestamp` information
 might be missing for some route segments. This can lead a gps-like table
 to have `NA` or unrealistic `speed` and `timestamp` values. This
 function allows the user to adjust the speed of trips and updates
 `timestamp` values accordingly. The user can adjust the problematic
 speeds by either setting a custom constant value, or by considering the
-average of all valid trips speed (Default). The columns `timestamp` and
-`cumtime` are updated accordingly.
+distance-weighted mean of the valid speeds (Default). The columns
+`timestamp` and `cumtime` are updated accordingly.
 
 Each trip keeps the timestamp of its first timed point, and dwell times
 at stops are kept, so stop timestamps don't change when every speed is
@@ -43,7 +43,9 @@ adjust_speed(
 
   Minimum speed to be considered as valid. It can be a numeric (in km/h)
   or a units value able to be converted to km/h. Values below minimum
-  speed will be adjusted. Defaults to 2 km/h.
+  speed will be adjusted. Defaults to 2 km/h; must be a single number,
+  not negative. Outside stops, speeds that round to 0 km/h at 3 decimals
+  are also adjusted, as they would take too long to cover any distance.
 
 - max_speed:
 
@@ -56,11 +58,14 @@ adjust_speed(
   Speed to replace missing values as well as values outside min_speed
   and max_speed range. It can be a numeric (in km/h) or a units value
   able to be converted to km/h. By default, `new_speed = NULL` and the
-  function considers the average speed of the entire gps data.
+  function uses the distance-weighted mean of the valid speeds of points
+  that are not at stops. It is rounded to 3 decimals in km/h, as the
+  output speeds are.
 
 - clone:
 
-  Use a copy of the gps_data? Defaults to TRUE.
+  Use a copy of the gps_data? Defaults to TRUE. With `FALSE`, `gps_data`
+  is updated in place.
 
 ## Value
 
@@ -76,7 +81,7 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   gtfstools::filter_by_weekday(c("monday", "wednesday")) |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/RtmpTQEwxy/gtfsio:
+#> Unzipped the following files to /tmp/Rtmpynnshe/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -95,10 +100,10 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>
 poa_gps <- gtfs2gps(poa)
 #> ℹ Converting shapes to sf objects
 #> Using 2 threads
-#> ✔ Converting shapes to sf objects [35ms]
+#> ✔ Converting shapes to sf objects [53ms]
 #> 
 #> ℹ Processing the data
-#> ✔ Processing the data [34ms]
+#> ✔ Processing the data [56ms]
 #> 
 poa_gps_new <- adjust_speed(poa_gps)
 ```

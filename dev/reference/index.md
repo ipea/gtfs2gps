@@ -35,7 +35,7 @@
 - [`append_height()`](https://ipea.github.io/gtfs2gps/dev/reference/append_height.md)
   : Add a column with height to GPS data
 
-## Deprecated and defunct
+## Deprecated
 
 - [`filter_valid_stop_times()`](https://ipea.github.io/gtfs2gps/dev/reference/filter_valid_stop_times.md)
   : Filter GTFS data using valid stop times (deprecated)

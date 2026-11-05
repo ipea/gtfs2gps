@@ -82,12 +82,12 @@ gates are in
     ├── .github/workflows/            # R-CMD-check matrix, test-coverage, pkgdown
     └── prep_data/, tests_joao/, tests_rafa/   # maintainer scratch; Rbuildignored, don't edit unless asked
 
-Exports: `gtfs2gps` · `read_gtfs`/`write_gtfs` · `filter_single_trip`,
-`filter_valid_stop_times`, `remove_invalid` · `adjust_speed`,
-`adjust_arrival_departure`, `append_height` · `gps_as_sfpoints`,
-`gps_as_sflinestring` · deprecated (`@keywords internal`, warn on call):
-`gtfs_shapes_as_sf`, `gtfs_stops_as_sf` (internal body:
-`shapes_as_sf()`).
+Exports: `gtfs2gps` · `read_gtfs`/`write_gtfs` · `filter_single_trip` ·
+`adjust_speed`, `adjust_arrival_departure`, `append_height` ·
+`gps_as_sfpoints`, `gps_as_sflinestring` · deprecated (warn on call;
+listed under “Deprecated” in pkgdown): `filter_valid_stop_times`,
+`remove_invalid`, `gtfs_shapes_as_sf`, `gtfs_stops_as_sf` (internal
+body: `shapes_as_sf()`).
 
 Local-only workflow files (gitignored and Rbuildignored): `MEMORY.md`,
 `quality_reports/`, `templates/`, and everything in `.claude/` except

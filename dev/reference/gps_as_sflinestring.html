@@ -62,12 +62,20 @@ between consecutive stops.</p>
 
 
 <dl><dt id="arg-gps">gps<a class="anchor" aria-label="anchor" href="#arg-gps"></a></dt>
-<dd><p>A data.table with timestamp data.</p></dd>
+<dd><p>A GPS data.table created with <code><a href="gtfs2gps.html">gtfs2gps</a></code>, or the path
+of a .txt file written by <code>gtfs2gps(filepath = , compress = FALSE)</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A simple feature (sf) object with LineString data.</p>
+    <p>A simple feature (sf) object in CRS 4326 with one LineString per
+interval between consecutive stops of each trip. Besides columns of <code>gps</code>
+taken from the segment's first point (such as <code>shape_id</code>,
+<code>trip_id</code> and <code>trip_number</code>), it has <code>from_stop_id</code> and
+<code>to_stop_id</code> ("-" before the first and after the last stop),
+<code>from_timestamp</code> and <code>to_timestamp</code> (<code>ITime</code>), and the
+<code>speed</code> (km/h), <code>dist</code> and <code>cumdist</code> (m) and <code>cumtime</code>
+(s) of each segment.</p>
     </div>
 
     <div class="section level2">
@@ -75,7 +83,7 @@ between consecutive stops.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ipea/gtfs2gps" class="external-link">gtfs2gps</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">poa</span> <span class="op">&lt;-</span> <span class="fu"><a href="read_gtfs.html">read_gtfs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata/poa.zip"</span>, package <span class="op">=</span> <span class="st">"gtfs2gps"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Unzipped the following files to /tmp/RtmpTQEwxy/gtfsio:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Unzipped the following files to /tmp/Rtmpynnshe/gtfsio:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * agency.txt</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * calendar.txt</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * routes.txt</span>
@@ -96,10 +104,10 @@ between consecutive stops.</p>
 <span class="r-in"><span><span class="va">poa_gps</span> <span class="op">&lt;-</span> <span class="fu"><a href="gtfs2gps.html">gtfs2gps</a></span><span class="op">(</span><span class="va">poa_subset</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Converting shapes to sf objects</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Using 2 threads</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Converting shapes to sf objects <span style="color: #B2B2B2;">[17ms]</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Converting shapes to sf objects <span style="color: #B2B2B2;">[26ms]</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Processing the data</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Processing the data <span style="color: #B2B2B2;">[30ms]</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Processing the data <span style="color: #B2B2B2;">[51ms]</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">poa_gps_sf</span> <span class="op">&lt;-</span> <span class="fu">gps_as_sflinestring</span><span class="op">(</span><span class="va">poa_gps</span><span class="op">)</span></span></span>

@@ -16,11 +16,14 @@ append_height(gps, heightfile)
 
 - heightfile:
 
-  The pathname of a tif file with height data.
+  The pathname of a tif file with height data. The raster must be in
+  geographic coordinates (WGS84 longitude and latitude), as the GPS
+  points are used as they are.
 
 ## Value
 
-The GPS data with a new column named height.
+The GPS data with a new column named height, a plain number in the units
+of the raster (metres for SRTM data).
 
 ## Examples
 
@@ -32,7 +35,7 @@ srtmfile <- system.file("extdata/fortaleza-srtm.tif", package = "gtfs2gps")
 gtfs <- read_gtfs(fortaleza) |>
   gtfstools::filter_by_shape_id("shape836-I") |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/RtmpTQEwxy/gtfsio:
+#> Unzipped the following files to /tmp/Rtmpynnshe/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
