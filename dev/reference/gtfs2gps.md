@@ -18,8 +18,8 @@ speeds here.
 gtfs2gps(
   gtfs_data,
   spatial_resolution = 100,
-  parallel = FALSE,
-  ncores = NULL,
+  parallel = NULL,
+  ncores = 2,
   strategy = NULL,
   filepath = NULL,
   compress = FALSE,
@@ -47,22 +47,19 @@ gtfs2gps(
 
 - parallel:
 
-  Decides whether the function should run in parallel. Defaults to
-  FALSE. When TRUE, the points of the trips are computed in several
-  threads of the current R session (when the package was compiled with
-  OpenMP). The result is the same either way.
+  This argument is deprecated and ignored. Please use argument ncores
+  instead.
 
 - ncores:
 
-  Number of threads to be used in parallel execution. When
-  `parallel = FALSE`, this argument is ignored. When `parallel = TRUE`,
-  then by default the function uses as many threads as
+  Number of threads used. Defaults to 2. If `Inf`, it uses all threads
+  available, as given by
   [`data.table::getDTthreads()`](https://rdrr.io/pkg/data.table/man/openmp-utils.html).
 
 - strategy:
 
-  This argument is deprecated and ignored. Please use arguments parallel
-  and ncores instead.
+  This argument is deprecated and ignored. Please use argument ncores
+  instead.
 
 - filepath:
 
@@ -77,13 +74,13 @@ gtfs2gps(
 
 - compress:
 
-  Argument that can be used only with filepath. When TRUE, it compresses
-  the output files by saving them using rds format. Default value is
-  FALSE. Note that compress guarantees that the data saved will be read
-  in the same way as it was created in R. If not compress, the txt
-  extension requires the data to be converted from ITime to string, and
-  therefore they need to be manually converted back to ITime to be
-  properly handled by gtfs2gps.
+  Argument that can be used only with filepath. When `TRUE`, it
+  compresses the output files by saving them using `.rds` format.
+  Default value is `FALSE`. Note that compress guarantees that the data
+  saved will be read in the same way as it was created in R. If not
+  compress, the txt extension requires the data to be converted from
+  ITime to string, and therefore they need to be manually converted back
+  to ITime to be properly handled by gtfs2gps.
 
 - snap_method:
 
@@ -97,11 +94,11 @@ gtfs2gps(
   Argument that can be used only with filepath. When TRUE, it skips
   processing the shape identifiers that were already saved into files.
   It is useful to continue processing a GTFS file that was stopped for
-  some reason. Default value is FALSE.
+  some reason. Default value is `FALSE`.
 
 - quiet:
 
-  Hide messages while processing the data? Defaults to FALSE.
+  Hide messages while processing the data. Defaults to `FALSE`.
 
 ## Value
 
@@ -127,13 +124,19 @@ so that each stop has a point of its own. Distances are great-circle
 distances on the sphere used by the s2 and sf packages, with a radius of
 6,371,010 m.
 
+Each trip runs from its first to its last stop with a departure time:
+shape points (and stops without times) before the first one and after
+the last one have no time to be interpolated from, and are not returned.
 The `speed`, `cumdist`, and `cumtime` are based on the difference of
 distance and time between the current and previous row of the same trip.
-It means that the first data point at the first stop of each trip
-represents a stationary vehicle. The
+It means that the first data point of each trip, at its first stop,
+represents a stationary vehicle, with `dist`, `cumdist` and `cumtime`
+equal to zero: `cumdist` is the distance travelled from the first stop.
+The
 [`adjust_speed()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_speed.md)
-function can be used to post-process the output to replace eventual `NA`
-values in the `speed` column.
+function can be used to post-process the output to replace speeds
+outside a valid range, or eventual `NA` values (such as two stops at the
+same place and time).
 
 Each stop is presented as two data points for each trip in the output.
 The `timestamp` value in the first data point represents the time when
@@ -162,7 +165,7 @@ library(gtfs2gps)
 gtfs <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/Rtmpt4vnV3/gtfsio:
+#> Unzipped the following files to /tmp/RtmpTQEwxy/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt

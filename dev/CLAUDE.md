@@ -27,8 +27,8 @@ H. M. Pereira and Joao Bazzo. License MIT. Docs:
   or an explicit `clone` argument).
 - **Parallel = sequential.**
   [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
-  must give the same result with `parallel = TRUE` and
-  `parallel = FALSE`.
+  must give the same result with `ncores = 1` and `ncores = 2` (or any
+  number of threads).
 - **CRAN-ready at all times.** `R CMD check --as-cran`: 0 errors, 0
   warnings. Tests run on CRAN: ≤ 2 cores, write only to
   [`tempdir()`](https://rdrr.io/r/base/tempfile.html).
@@ -101,7 +101,7 @@ Local-only workflow files (gitignored and Rbuildignored): `MEMORY.md`,
 
 devtools::load_all()
 devtools::document()                         # regenerate man/, NAMESPACE, cpp11 registration
-devtools::test()                             # full suite (slow: parallel gtfs2gps)
+devtools::test()                             # full suite (slow)
 devtools::test(filter = "adjust_speed")      # matches tests/testthat/test_adjust_speed.R
 devtools::check(args = "--as-cran")          # ~5 min; run in background
 pkgdown::build_site()
@@ -112,11 +112,10 @@ covr::package_coverage()
   `core.autocrlf=true` here, so regenerated files can show
   line-ending-only diffs: check drift with `git diff`, not `git status`.
 - [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
-  defaults to `parallel = FALSE`; `parallel = TRUE` runs the C++
-  expansion in `ncores` threads (default
-  [`data.table::getDTthreads()`](https://rdrr.io/pkg/data.table/man/openmp-utils.html)).
-  The furrr/future worker sessions were removed on 2026-10-29: they were
-  slower than sequential.
+  runs the C++ expansion in `ncores` threads (default 2; `Inf` =
+  [`data.table::getDTthreads()`](https://rdrr.io/pkg/data.table/man/openmp-utils.html));
+  `parallel` and `strategy` are deprecated. The furrr/future worker
+  sessions were removed on 2026-10-29: they were slower than sequential.
 
 ------------------------------------------------------------------------
 

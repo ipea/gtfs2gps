@@ -76,7 +76,7 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   gtfstools::filter_by_weekday(c("monday", "wednesday")) |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/Rtmpt4vnV3/gtfsio:
+#> Unzipped the following files to /tmp/RtmpTQEwxy/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -94,11 +94,11 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>
 
 poa_gps <- gtfs2gps(poa)
 #> ℹ Converting shapes to sf objects
-#> ✔ Converting shapes to sf objects [46ms]
+#> Using 2 threads
+#> ✔ Converting shapes to sf objects [35ms]
 #> 
 #> ℹ Processing the data
-#> Some speed values are NA in the returned data.
-#> ✔ Processing the data [65ms]
+#> ✔ Processing the data [34ms]
 #> 
 poa_gps_new <- adjust_speed(poa_gps)
 ```

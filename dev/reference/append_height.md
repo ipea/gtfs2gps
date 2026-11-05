@@ -32,7 +32,7 @@ srtmfile <- system.file("extdata/fortaleza-srtm.tif", package = "gtfs2gps")
 gtfs <- read_gtfs(fortaleza) |>
   gtfstools::filter_by_shape_id("shape836-I") |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/Rtmpt4vnV3/gtfsio:
+#> Unzipped the following files to /tmp/RtmpTQEwxy/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -48,7 +48,7 @@ gtfs <- read_gtfs(fortaleza) |>
 #> Reading stops
 #> Reading trips
 
-fortaleza_gps <- gtfs2gps(gtfs, spatial_resolution = 500, parallel = FALSE, quiet = TRUE) |>
+fortaleza_gps <- gtfs2gps(gtfs, spatial_resolution = 500, quiet = TRUE) |>
   append_height(srtmfile)
 # }
 ```

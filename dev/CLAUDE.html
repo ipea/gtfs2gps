@@ -53,7 +53,7 @@
 <li>
 <strong>Never surprise the caller.</strong> Functions don’t modify the input GTFS or GPS data (<code><a href="https://rdrr.io/pkg/data.table/man/copy.html" class="external-link">data.table::copy()</a></code>, or an explicit <code>clone</code> argument).</li>
 <li>
-<strong>Parallel = sequential.</strong> <code><a href="reference/gtfs2gps.html">gtfs2gps()</a></code> must give the same result with <code>parallel = TRUE</code> and <code>parallel = FALSE</code>.</li>
+<strong>Parallel = sequential.</strong> <code><a href="reference/gtfs2gps.html">gtfs2gps()</a></code> must give the same result with <code>ncores = 1</code> and <code>ncores = 2</code> (or any number of threads).</li>
 <li>
 <strong>CRAN-ready at all times.</strong> <code>R CMD check --as-cran</code>: 0 errors, 0 warnings. Tests run on CRAN: ≤ 2 cores, write only to <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code>.</li>
 <li>
@@ -99,14 +99,14 @@
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">load_all</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">document</span><span class="op">(</span><span class="op">)</span>                         <span class="co"># regenerate man/, NAMESPACE, cpp11 registration</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span>                             <span class="co"># full suite (slow: parallel gtfs2gps)</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span>                             <span class="co"># full suite (slow)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span>filter <span class="op">=</span> <span class="st">"adjust_speed"</span><span class="op">)</span>      <span class="co"># matches tests/testthat/test_adjust_speed.R</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span>args <span class="op">=</span> <span class="st">"--as-cran"</span><span class="op">)</span>          <span class="co"># ~5 min; run in background</span></span>
 <span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">covr</span><span class="fu">::</span><span class="fu">package_coverage</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <ul><li>Compiled code needs a toolchain (Rtools on Windows). <code>core.autocrlf=true</code> here, so regenerated files can show line-ending-only diffs: check drift with <code>git diff</code>, not <code>git status</code>.</li>
 <li>
-<code><a href="reference/gtfs2gps.html">gtfs2gps()</a></code> defaults to <code>parallel = FALSE</code>; <code>parallel = TRUE</code> runs the C++ expansion in <code>ncores</code> threads (default <code><a href="https://rdrr.io/pkg/data.table/man/openmp-utils.html" class="external-link">data.table::getDTthreads()</a></code>). The furrr/future worker sessions were removed on 2026-10-29: they were slower than sequential.</li>
+<code><a href="reference/gtfs2gps.html">gtfs2gps()</a></code> runs the C++ expansion in <code>ncores</code> threads (default 2; <code>Inf</code> = <code><a href="https://rdrr.io/pkg/data.table/man/openmp-utils.html" class="external-link">data.table::getDTthreads()</a></code>); <code>parallel</code> and <code>strategy</code> are deprecated. The furrr/future worker sessions were removed on 2026-10-29: they were slower than sequential.</li>
 </ul><hr></div>
 <div class="section level2">
 <h2 id="quality-gates-summary">Quality gates (summary)<a class="anchor" aria-label="anchor" href="#quality-gates-summary"></a></h2>

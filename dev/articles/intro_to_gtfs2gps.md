@@ -125,12 +125,13 @@ poa_gps <- gtfs2gps(
 
 ### Tip 1: Parallelization
 
-You can use the arguments `parallel = TRUE` and `ncores` to set how many
-threads the function can use to parallelize operations. Setting `ncores`
-to run in parallel can lead to reductions in computation time in large
-GTFS feeds. You can check the number of threads available in your
-machine with
+You can use the argument `ncores` to set how many threads the function
+uses to parallelize operations. The default is 2, `ncores = 1` runs
+sequentially, and `ncores = Inf` uses all the threads available, as
+given by
 [`data.table::getDTthreads()`](https://rdrr.io/pkg/data.table/man/openmp-utils.html).
+Using more threads can reduce computation time in large GTFS feeds, and
+the result is the same for any number of threads.
 
 ### Tip 2: Coping with RAM memory limits
 
@@ -236,17 +237,17 @@ time the vehicle arrives at the stop (`arrival_time` in
 `stop_times.txt`), and the second the time it departs
 (`departure_time`), with the vehicle stationary between them. The
 `speed`, `dist` and `cumtime` columns are computed from the difference
-between each row and the previous row of the same trip, and `cumtime`
-starts at zero when the vehicle departs from the first stop.
+between each row and the previous row of the same trip, and `cumdist`
+and `cumtime` start at zero at the first stop with a departure time (at
+its arrival, when it has one).
 
-A trip covers its whole shape, which often begins before the first stop
-or ends after the last one (in the poa feed, about half of the trips
-start before their first stop). The points of the shape before the first
-stop and after the last stop have no time to be interpolated from, so
-their `timestamp`, `speed` and `cumtime` are `NA`, while `dist` and
-`cumdist` are still given.
+A shape often begins before the first stop of its trips or ends after
+the last one (in the poa feed, about half of the trips start before
+their first stop). Those points have no time to be interpolated from, so
+each trip only runs from its first to its last stop with a departure
+time: the points of the shape outside them are not returned.
 [`adjust_speed()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_speed.md)
-fills these values, as well as speeds outside a valid range.
+can replace speeds outside a valid range.
 
 ## Final remarks
 

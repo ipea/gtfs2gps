@@ -12,13 +12,14 @@
   - [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
     no longer uses {future} workers, which were slower than a sequential
     run; this also removes the “globals exceed the maximum allowed size”
-    failure ([\#277](https://github.com/ipea/gtfs2gps/issues/277)).
-    `parallel = TRUE` now runs the compiled step in `ncores` threads
-    (default
-    [`data.table::getDTthreads()`](https://rdrr.io/pkg/data.table/man/openmp-utils.html))
-    when the package is built with OpenMP. The default is now
-    `parallel = FALSE`, a `future::plan()` is no longer used, and
-    `strategy` is deprecated.
+    failure ([\#277](https://github.com/ipea/gtfs2gps/issues/277)). The
+    compiled step now runs in `ncores` threads when the package is built
+    with OpenMP: the default is 2, and `ncores = Inf` uses all threads
+    ([`data.table::getDTthreads()`](https://rdrr.io/pkg/data.table/man/openmp-utils.html)).
+    A `future::plan()` is no longer used. Arguments `parallel` and
+    `strategy` are deprecated and ignored, with a warning: use
+    `ncores = 1` to run sequentially and `ncores = Inf` instead of
+    `parallel = TRUE`.
   - Stops are located along the shapes with
     [`gtfstools::interpolate_shape_dist_traveled()`](https://ipea.github.io/gtfstools/reference/interpolate_shape_dist_traveled.html),
     which keeps them in `stop_sequence` order. Stop patterns are no
@@ -35,6 +36,19 @@
   - Output changes: `speed`, `dist`, `cumdist` and `cumtime` are rounded
     to 3 decimals (stops keep their speed of 1e-12 km/h), and timestamps
     wrap at midnight (use `cumtime` for elapsed time).
+  - Each trip now starts and ends at its first and last timed stop, so
+    the `NA` speeds and times that the points before and after them had
+    are gone, and `cumdist` is measured from the first stop. Shape
+    points and untimed stops outside that span are no longer returned
+    (nor the `"-"` segments of
+    [`gps_as_sflinestring()`](https://ipea.github.io/gtfs2gps/dev/reference/gps_as_sflinestring.md)
+    before the first and after the last stop), so the output no longer
+    covers the whole shape (use
+    [`gtfstools::get_shapes_geometry()`](https://ipea.github.io/gtfstools/reference/get_shapes_geometry.html)
+    for that) and shouldn’t be mixed with files written by older
+    versions when using `continue = TRUE`. The message “Some speed
+    values are NA” now only appears when the data give an `NA` speed.
+    Closes [\#260](https://github.com/ipea/gtfs2gps/issues/260).
   - [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
     first drops duplicated rows and unused ids
     ([`gtfstools::remove_duplicates()`](https://ipea.github.io/gtfstools/reference/remove_duplicates.html)
@@ -114,9 +128,9 @@
     reject empty input.
   - Messages, warnings and errors use {cli}, many with a class. Shapes
     that fail are reported in a warning of class `gtfs2gps_shape_error`,
-    also with `parallel = TRUE`. {cli} and {rlang} are new dependencies;
-    {furrr}, {future}, {parallelly}, {progressr} and {Rcpp} are no
-    longer used.
+    also when running in several threads. {cli} and {rlang} are new
+    dependencies; {furrr}, {future}, {parallelly}, {progressr} and
+    {Rcpp} are no longer used.
   - Loading the package no longer changes data.table’s options and
     number of threads.
   - A `trip_id` listed under two shapes (invalid GTFS) is converted

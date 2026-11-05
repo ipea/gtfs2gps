@@ -187,12 +187,13 @@ by default, but the user can set a different value in the
 <div class="section level3">
 <h3 id="tip-1-parallelization">Tip 1: Parallelization<a class="anchor" aria-label="anchor" href="#tip-1-parallelization"></a>
 </h3>
-<p>You can use the arguments <code>parallel = TRUE</code> and
-<code>ncores</code> to set how many threads the function can use to
-parallelize operations. Setting <code>ncores</code> to run in parallel
-can lead to reductions in computation time in large GTFS feeds. You can
-check the number of threads available in your machine with
-<code><a href="https://rdrr.io/pkg/data.table/man/openmp-utils.html" class="external-link">data.table::getDTthreads()</a></code>.</p>
+<p>You can use the argument <code>ncores</code> to set how many threads
+the function uses to parallelize operations. The default is 2,
+<code>ncores = 1</code> runs sequentially, and <code>ncores = Inf</code>
+uses all the threads available, as given by
+<code><a href="https://rdrr.io/pkg/data.table/man/openmp-utils.html" class="external-link">data.table::getDTthreads()</a></code>. Using more threads can reduce
+computation time in large GTFS feeds, and the result is the same for any
+number of threads.</p>
 </div>
 <div class="section level3">
 <h3 id="tip-2-coping-with-ram-memory-limits">Tip 2: Coping with RAM memory limits<a class="anchor" aria-label="anchor" href="#tip-2-coping-with-ram-memory-limits"></a>
@@ -286,16 +287,16 @@ time the vehicle arrives at the stop (<code>arrival_time</code> in
 (<code>departure_time</code>), with the vehicle stationary between them.
 The <code>speed</code>, <code>dist</code> and <code>cumtime</code>
 columns are computed from the difference between each row and the
-previous row of the same trip, and <code>cumtime</code> starts at zero
-when the vehicle departs from the first stop.</p>
-<p>A trip covers its whole shape, which often begins before the first
-stop or ends after the last one (in the poa feed, about half of the
-trips start before their first stop). The points of the shape before the
-first stop and after the last stop have no time to be interpolated from,
-so their <code>timestamp</code>, <code>speed</code> and
-<code>cumtime</code> are <code>NA</code>, while <code>dist</code> and
-<code>cumdist</code> are still given. <code><a href="../reference/adjust_speed.html">adjust_speed()</a></code> fills
-these values, as well as speeds outside a valid range.</p>
+previous row of the same trip, and <code>cumdist</code> and
+<code>cumtime</code> start at zero at the first stop with a departure
+time (at its arrival, when it has one).</p>
+<p>A shape often begins before the first stop of its trips or ends after
+the last one (in the poa feed, about half of the trips start before
+their first stop). Those points have no time to be interpolated from, so
+each trip only runs from its first to its last stop with a departure
+time: the points of the shape outside them are not returned.
+<code><a href="../reference/adjust_speed.html">adjust_speed()</a></code> can replace speeds outside a valid
+range.</p>
 </div>
 <div class="section level2">
 <h2 id="final-remarks">Final remarks<a class="anchor" aria-label="anchor" href="#final-remarks"></a>
