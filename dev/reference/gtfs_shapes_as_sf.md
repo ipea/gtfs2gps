@@ -48,7 +48,7 @@ shape, whatever `crs` is.
 
 ``` r
 sp <- read_gtfs(system.file("extdata/saopaulo.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpK6nZCu/gtfsio:
+#> Unzipped the following files to /tmp/Rtmp7N1hWT/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * frequencies.txt

@@ -29,7 +29,7 @@ A filtered GTFS data.
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmpK6nZCu/gtfsio:
+#> Unzipped the following files to /tmp/Rtmp7N1hWT/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
