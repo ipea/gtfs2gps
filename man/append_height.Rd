@@ -9,10 +9,13 @@ append_height(gps, heightfile)
 \arguments{
 \item{gps}{A GPS data created from gtfs2gps().}
 
-\item{heightfile}{The pathname of a tif file with height data.}
+\item{heightfile}{The pathname of a tif file with height data. The raster
+must be in geographic coordinates (WGS84 longitude and latitude), as the
+GPS points are used as they are.}
 }
 \value{
-The GPS data with a new column named height.
+The GPS data with a new column named height, a plain number in the
+units of the raster (metres for SRTM data).
 }
 \description{
 Add a column named height to GPS data using a tif data as reference.

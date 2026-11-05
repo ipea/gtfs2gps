@@ -484,6 +484,8 @@ feed_to_gps <- function(slice, routes, spatial_resolution, n_threads) {
   ## the messages of each shape, in the order they used to be shown
   # kept trips per shape (each has rows), rather than rows per shape
   n_out <- tabulate(ktk$shape_rank, nbins = n_shapes)
+  # n_neg counts zero-or-negative speeds per shape (the trip-level n_neg column
+  # counts negative ones only)
   n_inf <- n_neg <- integer(n_shapes)
   by_shape <- ktk[,
     .(inf = sum(n_inf), nonpos = sum(n_nonpos)),
@@ -503,12 +505,8 @@ feed_to_gps <- function(slice, routes, spatial_resolution, n_threads) {
 
   messages <- lapply(seq_len(n_shapes), function(s) {
     shapeid <- shape_ids[s]
-    if (!has_trips[s]) {
-      return(list(inform(
-        "Shape {.val {shapeid}} is not used by any trip. Ignoring it.",
-        shapeid = shapeid
-      )))
-    }
+    # every shape has a trip here: gtfs2gps() drops unused ones with
+    # gtfstools::remove_unused_ids() before converting
     if (!has_route[s]) {
       return(list(inform(
         "Shape {.val {shapeid}} has no route_id. Ignoring it.",
@@ -684,5 +682,15 @@ set_gps_units <- function(gps) {
 round3 <- function(x) {
   r <- round(x * 1000) / 1000
   r[is.na(x)] <- x[is.na(x)]
+  return(r)
+}
+
+#' speeds rounded as src/expand_pattern.cpp does: a speed that would round to 0
+#' keeps its value (the 1e-12 km/h of stops, and the sign of a negative speed)
+#' @noRd
+round3_speed <- function(x) {
+  r <- round3(x)
+  tiny <- which(r == 0 & x != 0)
+  r[tiny] <- x[tiny]
   return(r)
 }

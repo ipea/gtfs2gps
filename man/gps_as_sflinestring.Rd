@@ -7,10 +7,18 @@
 gps_as_sflinestring(gps)
 }
 \arguments{
-\item{gps}{A data.table with timestamp data.}
+\item{gps}{A GPS data.table created with \code{\link{gtfs2gps}}, or the path
+of a .txt file written by \code{gtfs2gps(filepath = , compress = FALSE)}.}
 }
 \value{
-A simple feature (sf) object with LineString data.
+A simple feature (sf) object in CRS 4326 with one LineString per
+interval between consecutive stops of each trip. Besides columns of \code{gps}
+taken from the segment's first point (such as \code{shape_id},
+\code{trip_id} and \code{trip_number}), it has \code{from_stop_id} and
+\code{to_stop_id} ("-" before the first and after the last stop),
+\code{from_timestamp} and \code{to_timestamp} (\code{ITime}), and the
+\code{speed} (km/h), \code{dist} and \code{cumdist} (m) and \code{cumtime}
+(s) of each segment.
 }
 \description{
 Every interval of GPS data points between stops for each trip_id is

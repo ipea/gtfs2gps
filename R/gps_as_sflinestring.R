@@ -4,8 +4,16 @@
 #'  converted into a linestring segment. The output assumes constant average speed 
 #'  between consecutive stops.
 #'
-#' @param gps A data.table with timestamp data.
-#' @return A simple feature (sf) object with LineString data.
+#' @param gps A GPS data.table created with \code{\link{gtfs2gps}}, or the path
+#' of a .txt file written by \code{gtfs2gps(filepath = , compress = FALSE)}.
+#' @return A simple feature (sf) object in CRS 4326 with one LineString per
+#' interval between consecutive stops of each trip. Besides columns of \code{gps}
+#' taken from the segment's first point (such as \code{shape_id},
+#' \code{trip_id} and \code{trip_number}), it has \code{from_stop_id} and
+#' \code{to_stop_id} ("-" before the first and after the last stop),
+#' \code{from_timestamp} and \code{to_timestamp} (\code{ITime}), and the
+#' \code{speed} (km/h), \code{dist} and \code{cumdist} (m) and \code{cumtime}
+#' (s) of each segment.
 #' @export
 #' @examples
 #' library(gtfs2gps)
@@ -159,17 +167,18 @@ gps_as_sflinestring  <- function(gps){
   gps_sf[, from_timestamp := from_timestamp %% 86400]
   gps_sf[, to_timestamp := to_timestamp %% 86400]
   
-  # final units
-  gps_sf[,speed := units::set_units(3.6 * speed,"km/h")] # m/s to km/h
+  # final units; outputs rounded to 3 decimals, as gtfs2gps() does
+  gps_sf[,speed := units::set_units(round3_speed(3.6 * speed),"km/h")] # m/s to km/h
   gps_sf[,from_timestamp := data.table::as.ITime(from_timestamp)]
   gps_sf[,to_timestamp := data.table::as.ITime(to_timestamp)]
-  gps_sf[,dist := units::set_units(dist,"m")]
+  gps_sf[,dist := units::set_units(round3(dist),"m")]
   
   # edit columns
-  gps_sf[, cumdist := cumsum(dist), by = c("shape_id","trip_id","trip_number")]
+  gps_sf[, cumdist := round3(cumsum(dist)), by = c("shape_id","trip_id","trip_number")]
   # the first and last segments of a trip ("-" stops) may have no time; missing
   # times elsewhere stay NA
-  gps_sf[, cumtime := cumsum(data.table::fifelse(is.na(time) & (from_stop_id == "-" | to_stop_id == "-"), 0, time))
+  gps_sf[, cumtime := round3(cumsum(data.table::fifelse(is.na(time) & (from_stop_id == "-" | to_stop_id == "-")
+                                                        , 0, time)))
          , by = c("shape_id","trip_id","trip_number")]
   gps_sf[, time := NULL]
   gps_sf[, stop_id := NULL]

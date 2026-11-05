@@ -25,7 +25,8 @@
 #' at a stop. It can be a numeric or a units value that can be converted
 #' to seconds, rounded to whole seconds. Default is 20s.
 #' @return A GTFS with adjusted `arrival_time` and `departure_time` on
-#' data.table `stop_times`.
+#' data.table `stop_times`. Stops with neither time come back with empty
+#' strings (`""`), which GTFS allows for stops that are not timepoints.
 #' @export
 #' @examples
 #' poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps"))

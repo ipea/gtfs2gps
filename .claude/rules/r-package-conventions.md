@@ -31,7 +31,7 @@ CRAN standard. When they conflict, Part A wins; flag the conflict in the plan.
 
 - **Call dependencies as `package::function()`**: `data.table::`, `sf::`,
   `sfheaders::`, `units::`, `gtfstools::`, `terra::`, `checkmate::`.
-- **Existing `@importFrom`** (in `R/utils.R`): data.table `:=`, `%between%`,
+- **Existing `@importFrom`** (in `R/zzz.R`): data.table `:=`, `%between%`,
   `fifelse`, `%chin%`; `utils` `head`, `tail`,
   `object.size`; `lwgeom::st_geod_length`; plus
   `@useDynLib gtfs2gps, .registration = TRUE`. Don't add new `@importFrom`
@@ -167,12 +167,13 @@ user-facing conditions. `cli` goes in `Imports`.
   columns.
 - Remove dead commented-out code only in lines you are already changing.
 
-## A6. Documentation (roxygen2, markdown off)
+## A6. Documentation (roxygen2, markdown on)
 
 - Roxygen blocks use explicit `@title` and `@description`, then `@param`,
-  `@return`, `@export`, `@examples`. Link with `\code{\link{fun}}` (Markdown
-  mode is not enabled in DESCRIPTION; backticks render literally in older
-  blocks).
+  `@return`, `@export`, `@examples`. Markdown is enabled in DESCRIPTION
+  (`Config/roxygen2/markdown: TRUE`), so backticks render as code; older blocks
+  use `\code{}` and `\code{\link{fun}}`, which also work. Match the block you
+  are editing.
 - **Examples** use the bundled fixtures and stay small and fast: read
   `poa.zip`, subset to one shape and one trip.
   ```r
@@ -181,7 +182,7 @@ user-facing conditions. `cli` goes in `Imports`.
   #'   filter_single_trip()
   ```
   Examples longer than ~5 s use `\donttest{}`, never `\dontrun{}`
-  (`append_height()` currently uses `\dontrun{}`; backlog).
+  (`append_height()` uses `\donttest{}`).
 - Internal functions: `@noRd` (see `R/utils.R`). `test_gtfs_freq()` has
   roxygen without `@export`; match that only if a helper should be documented.
 - Every new export is added to `pkgdown/_pkgdown.yml` if it gains a

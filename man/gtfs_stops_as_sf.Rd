@@ -33,4 +33,3 @@ Convert the stops of a GTFS data loaded using
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
 poa_stops <- suppressWarnings(gtfs_stops_as_sf(poa))
 }
-\keyword{internal}

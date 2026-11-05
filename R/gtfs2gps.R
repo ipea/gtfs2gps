@@ -14,8 +14,8 @@
 #'        data represented as a list of data.tables.
 #' @param spatial_resolution The spatial resolution in meters: a number of at
 #'        least 1, or a \code{units} length. Default is 100m. This function only
-#'        creates points in order to guarantee that the minimum distance between two
-#'        consecutive points will be at most the spatial_resolution. If a given shape
+#'        creates points in order to guarantee that consecutive points are at most
+#'        \code{spatial_resolution} metres apart. If a given shape
 #'        has two consecutive points with a distance lower than the spatial resolution,
 #'        the algorithm will not remove such points.
 #' @param parallel This argument is deprecated and ignored. Please use argument
@@ -46,7 +46,13 @@
 #'        (see details).
 #' @param quiet Hide messages while processing the data. Defaults to `FALSE`.
 #'
-#' @details After creating geometry points for a given shape id, the `gtfs2gps()`
+#' @details Before converting, the feed is cleaned with
+#' `gtfstools::remove_duplicates()` and `gtfstools::remove_unused_ids()`, and trips
+#' with an `NA` `trip_id` are dropped. Errors and warnings raised by the package
+#' have classes starting with `gtfs2gps_` (e.g. `gtfs2gps_nothing_converted_error`),
+#' and deprecation warnings with `deprecated_`, so they can be caught.
+#'
+#' After creating geometry points for a given shape id, the `gtfs2gps()`
 #' function snaps the stops to the route geometry. The stops of each trip are
 #' located along the shape with `gtfstools::interpolate_shape_dist_traveled()`,
 #' which projects each stop onto the shape keeping the stops in their
@@ -82,14 +88,16 @@
 #' vehicle will spend at stops to embark/disembark passengers.
 #'
 #' To avoid division by zero, the minimum speed of vehicles in the output is
-#' 1e-12 Km/h, so that vehicles are never completely stopped.
+#' 1e-12 km/h, so that vehicles are never completely stopped.
 #'
 #' @return A `data.table`, where each row represents a GPS point. The following
 #' columns are returned (units of measurement in parenthesis): dist and cumdist
 #' (meters), cumtime (seconds), shape_pt_lon and shape_pt_lat (degrees), speed
-#' (km/h), timestamp (hh:mm:ss). Speed, dist, cumdist and cumtime are rounded to
-#' 3 decimal places (also when written to filepath), except speeds closer to zero
-#' than that, which keep their value (such as the 1e-12 km/h of stops).
+#' (km/h), timestamp (`data.table::ITime`, wrapped at midnight). Speed, dist,
+#' cumdist and cumtime are rounded to 3 decimal places (also when written to
+#' filepath), except speeds closer to zero than that, which keep their value (such
+#' as the 1e-12 km/h of stops). With `filepath`, each shape is written to a file
+#' and `NULL` is returned.
 #'
 #' @export
 #' @examples
@@ -115,17 +123,12 @@ gtfs2gps <- function(
 ) {
   checkmate::assert_flag(quiet)
   if (quiet) {
-    return(suppressMessages(gtfs2gps(
-      gtfs_data,
-      spatial_resolution,
-      parallel,
-      ncores,
-      strategy,
-      filepath,
-      compress,
-      snap_method,
-      continue
-    )))
+    # the user's call again, without quiet, so that errors name it and
+    # substitute(gtfs_data) sees the user's object. Nothing above this line may
+    # evaluate gtfs_data, or it would be evaluated twice
+    cl <- match.call()
+    cl$quiet <- NULL
+    return(suppressMessages(eval(cl, parent.frame())))
   }
 
   if (!is.null(strategy)) {
@@ -195,17 +198,16 @@ gtfs2gps <- function(
   }
   checkmate::assert_number(spatial_resolution, lower = 1, finite = TRUE)
 
-  original_gtfs_data_arg <- paste(
-    deparse(substitute(gtfs_data)),
-    collapse = " "
-  )
+  # deparsed only if a shape fails, and only when it names an object: under
+  # do.call() it is the whole feed
+  gtfs_data_expr <- substitute(gtfs_data)
 
   # Unzipping and reading GTFS.zip file
   if (is.character(gtfs_data)) {
     # the step's text is interpolated again when it ends, after gtfs_data is replaced
     gtfs_file <- basename(gtfs_data)
     cli::cli_progress_step("Unzipping and reading {.file {gtfs_file}}")
-    gtfs_data <- read_gtfs(gtfszip = gtfs_data)
+    gtfs_data <- read_gtfs(gtfszip = gtfs_data, quiet = TRUE)
   }
 
   # route_type is looked up for every trip; without it, every shape would fail
@@ -467,19 +469,24 @@ gtfs2gps <- function(
   msgs <- bad_errors[o]
 
   if (length(badShapes) > 0) {
-    # "gtfs_data" is what the quiet = TRUE recursion sees instead of the user's name
-    if (original_gtfs_data_arg %in% c(".", "gtfs_data")) {
-      original_gtfs_data_arg <- "<your gtfs data>"
+    # the user's object when the call names one (not "." of a magrittr pipe, .x of a
+    # purrr lambda, nor ..1 or X[[i]] from lapply() and friends)
+    original_gtfs_data_arg <- "<your gtfs data>"
+    if (is.name(gtfs_data_expr) &&
+        !grepl("^([.]|[.]x|[.][.][0-9]+)$", as.character(gtfs_data_expr))) {
+      original_gtfs_data_arg <- as.character(gtfs_data_expr)
     }
 
-    # ids and error texts are interpolated by index, never parsed as cli markup
+    # ids and error texts are values interpolated by cli, never parsed as markup
     errs <- vapply(msgs, conditionMessage, character(1))
-    shape_bullets <- paste0(
-      "{.val {badShapes[",
+    shape_bullets <- vapply(
       seq_along(badShapes),
-      "]}}: {errs[",
-      seq_along(badShapes),
-      "]}"
+      function(i) {
+        id <- badShapes[i]
+        err <- errs[i]
+        cli::format_inline("{.val {id}}: {err}")
+      },
+      character(1)
     )
     names(shape_bullets) <- rep("x", length(badShapes))
     code <- c(
@@ -492,17 +499,22 @@ gtfs2gps <- function(
       "gtfs2gps::write_gtfs(data, 'shapes_with_error.zip')"
     )
 
-    cli::cli_warn(
+    names(code) <- rep(" ", length(code))
+
+    # rlang::warn() rather than cli::cli_warn(): cli wraps every line at the console
+    # width, which would break the lines of code users copy. cli still formats the
+    # other parts
+    rlang::warn(
       c(
-        "Some internal bug occurred while converting {length(badShapes)} shape{?s}.",
+        cli::format_inline(
+          "Some internal bug occurred while converting {length(badShapes)} shape{?s}."
+        ),
         shape_bullets,
-        "i" = paste(
-          "Please open an issue at {.url https://github.com/ipea/gtfs2gps/issues/new}",
+        "i" = cli::format_inline(
+          "Please open an issue at {.url https://github.com/ipea/gtfs2gps/issues/new} ",
           "and attach a subset of your data created with:"
         ),
-        " " = "{.code {code[1]}}",
-        " " = "{.code {code[2]}}",
-        " " = "{.code {code[3]}}"
+        code
       ),
       class = "gtfs2gps_shape_error"
     )

@@ -98,3 +98,41 @@ test_that("adjust_speed errors when no speed is within range", {
     expect_error(adjust_speed(gps, new_speed = 0), class = "gtfs2gps_invalid_speed_error")
     expect_error(adjust_speed(gps, new_speed = NA_real_), class = "gtfs2gps_invalid_speed_error")
 })
+
+test_that("adjust_speed fills stop speeds, replaces tiny speeds and is stable", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+        gtfstools::filter_by_shape_id("T2-1") |>
+        filter_single_trip() |>
+        adjust_arrival_departure()  # 20 s dwell at the timed stops
+    gps <- gtfs2gps(poa, ncores = 1, quiet = TRUE)
+
+    # bad speeds on points that are not stops, and missing speeds at the departure
+    # rows of the timed stops (the first one is the trip's start)
+    moving <- which(is.na(gps$stop_id))
+    stop_rows <- which(!is.na(gps$stop_id) & units::drop_units(gps$dist) == 0)[-1]
+    spd <- units::drop_units(gps$speed)
+    spd[moving[1:20]] <- NA
+    spd[moving[21:40]] <- 200
+    spd[moving[41:60]] <- 1e-12
+    spd[stop_rows] <- NA
+    gps[, speed := units::set_units(spd, "km/h")]
+    dwell <- function(x) as.integer(x$timestamp[stop_rows]) - as.integer(x$timestamp[stop_rows - 1])
+
+    res <- adjust_speed(gps)
+
+    # stops with a missing speed get the speed of stops and keep their dwell
+    expect_identical(units::drop_units(res$speed[stop_rows]), rep(1e-12, length(stop_rows)))
+    expect_identical(dwell(res), dwell(gps))
+    # no speed left that would take ages to cover a metre
+    expect_false(any(units::drop_units(res$speed[moving]) < 2))
+    # outputs at 3 decimals, and a second call changes nothing
+    for(col in c("dist", "cumdist", "cumtime"))
+        expect_equal(units::drop_units(res[[col]]), round(units::drop_units(res[[col]]), 3), info = col)
+    expect_identical(adjust_speed(res), res)
+
+    # min_speed = 0: the tiny speeds are still replaced, so cumtime stays within the trip
+    res0 <- adjust_speed(gps, min_speed = 0)
+    expect_lt(max(units::drop_units(res0$cumtime)), 2 * max(units::drop_units(gps$cumtime), na.rm = TRUE))
+
+    expect_error(adjust_speed(gps, min_speed = -1))
+})

@@ -4,7 +4,7 @@
 #' @param gtfs A GTFS data set stored in memory as a list of data.tables/data.frames.
 #' 
 #' @return A string "frequency" or "simple".
-#' @keywords internal
+#' @noRd
 #' 
 test_gtfs_freq <- function(gtfs){
   # Does the GTFS feed has a frequencies.txt file?

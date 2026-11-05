@@ -209,8 +209,8 @@ int expand_trip(const inputs& in, int tpl_from, int n, int st_from, int size,
     double dt = ts[b] - ts[a];
     if (dt < 0) dt += 86400; // one day in seconds
 
-    if (a + 1 == b && !last_point_was_stop) {
-      // two consecutive points with arrival_time don't need to be interpolated
+    if (src[a] == src[b] && !last_point_was_stop) {
+      // the arrival and departure rows of one stop are a dwell: no interpolation
       last_point_was_stop = true;
       ctm[b] = ctm[a] + dt;
       spd[b] = 1e-12;

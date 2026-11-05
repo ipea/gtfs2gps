@@ -1,8 +1,11 @@
 #' @title Add a column with height to GPS data
 #' @description Add a column named height to GPS data using a tif data as reference.
 #' @param gps A GPS data created from gtfs2gps().
-#' @param heightfile The pathname of a tif file with height data.
-#' @return The GPS data with a new column named height.
+#' @param heightfile The pathname of a tif file with height data. The raster
+#' must be in geographic coordinates (WGS84 longitude and latitude), as the
+#' GPS points are used as they are.
+#' @return The GPS data with a new column named height, a plain number in the
+#' units of the raster (metres for SRTM data).
 #' @export
 #' @examples
 #' \donttest{

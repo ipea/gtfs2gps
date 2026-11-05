@@ -16,6 +16,9 @@ test_that("gps_as_sflinestring", {
   expect_equal(dim(for_gps_sf_lines)[1], 39)
   expect_equal(for_gps_sf_lines$from_stop_id[1], "2649")
   expect_equal(length(names(for_gps_sf_lines)), 15)
+  # outputs at 3 decimals, as gtfs2gps() gives them
+  for(col in c("dist", "cumdist", "cumtime"))
+    expect_equal(units::drop_units(for_gps_sf_lines[[col]]), round(units::drop_units(for_gps_sf_lines[[col]]), 3), info = col)
 
   # -----
   # test to fix NA values
@@ -61,17 +64,6 @@ test_that("gps_as_sflinestring splits at every stop and keeps times", {
   gps[(i - 3):(i + 3), `:=`(timestamp = NA, speed = NA)]
   expect_true(anyNA(gps_as_sflinestring(gps)$cumtime))
 })
-
-test_gtfs_midnight <- function(){
-  poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
-    gtfstools::filter_by_shape_id("T2-1") |>
-    filter_single_trip()
-  poa$stop_times[stop_sequence == min(stop_sequence),
-                 `:=`(arrival_time = "23:40:00", departure_time = "23:40:00")]
-  poa$stop_times[stop_sequence == max(stop_sequence),
-                 `:=`(arrival_time = "24:20:00", departure_time = "24:20:00")]
-  return(poa)
-}
 
 test_that("gps_as_sflinestring timestamps wrap at midnight", {
   lines <- gtfs2gps(test_gtfs_midnight(), ncores = 1, quiet = TRUE) |>

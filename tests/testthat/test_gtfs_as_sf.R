@@ -117,9 +117,11 @@ test_that("gtfs_shapes_as_sf length does not depend on crs", {
 test_that("gtfs_shapes_as_sf and gtfs_stops_as_sf are deprecated", {
   poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE)
 
-  expect_warning(gtfs_shapes_as_sf(poa), class = "deprecated_gtfs_shapes_as_sf")
+  # testthat edition 2 ignores the class in expect_warning(), so it is checked here
+  expect_s3_class(tryCatch(gtfs_shapes_as_sf(poa), warning = identity),
+                  "deprecated_gtfs_shapes_as_sf")
   expect_identical(suppressWarnings(gtfs_shapes_as_sf(poa, crs = 31982)), shapes_as_sf(poa, crs = 31982))
-  expect_warning(gtfs_stops_as_sf(poa), class = "deprecated_gtfs_stops_as_sf")
+  expect_s3_class(tryCatch(gtfs_stops_as_sf(poa), warning = identity), "deprecated_gtfs_stops_as_sf")
 
   # an invalid crs error names the exported function, not the internal one
   err <- tryCatch(suppressWarnings(gtfs_shapes_as_sf(poa, crs = "garbage")),

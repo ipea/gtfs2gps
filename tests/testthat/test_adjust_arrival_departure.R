@@ -58,7 +58,10 @@ test_that("adjust_arrival_departure treats malformed times as missing", {
 
     poa$stop_times[1, `:=`(arrival_time = "abc", departure_time = "05:21")]
 
-    expect_warning(poa_adj <- adjust_arrival_departure(poa), class = "gtfstools_malformed_time")
+    # testthat edition 2 ignores the class in expect_warning(), so it is checked here
+    w <- tryCatch(adjust_arrival_departure(poa), warning = identity)
+    expect_s3_class(w, "gtfstools_malformed_time")
+    poa_adj <- suppressWarnings(adjust_arrival_departure(poa))
 
     expect_equal(poa_adj$stop_times$arrival_time[1], "")
     expect_equal(poa_adj$stop_times$departure_time[1], "")

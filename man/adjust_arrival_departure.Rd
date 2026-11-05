@@ -15,7 +15,8 @@ to seconds, rounded to whole seconds. Default is 20s.}
 }
 \value{
 A GTFS with adjusted \code{arrival_time} and \code{departure_time} on
-data.table \code{stop_times}.
+data.table \code{stop_times}. Stops with neither time come back with empty
+strings (\code{""}), which GTFS allows for stops that are not timepoints.
 }
 \description{
 Some GTFS.zip data have issues related to arrival and departure

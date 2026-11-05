@@ -42,6 +42,9 @@ test_that("cpp_expand_pattern gives the same result as the R reference", {
     , untimed_ends = trip(1:9, replace(dep0, c(1, 9), NA_integer_), replace(dep0 - 10L, c(1, 9), NA_integer_))
     # the first timed stop without an arrival time starts at its departure row
     , no_first_arrival = trip(1:9, dep0, replace(dep0 - 10L, 1, NA_integer_))
+    # a stop with a departure but no arrival, followed by a stop on the next shape point
+    # (rows 5 and 6): the segment between them is travel, not a dwell
+    , departure_only_adjacent = trip(1:9, dep0, replace(dep0 - 10L, 2, NA_integer_))
   )
   # the template holds the times of the pattern's first trip
   tpl$departure_time <- replace(rep(NA_integer_, n), stop_rows, trips[[1]]$dep)
@@ -87,6 +90,14 @@ test_that("cpp_expand_pattern gives the same result as the R reference", {
   # the trimmed trips start and end where their timed stops are
   expect_identical(res$src[starts[names(trips)[done] == "untimed_ends"]], 5L)
   expect_identical(res$src[starts[names(trips)[done] == "no_first_arrival"]], 1L)
+  # after a departure-only stop, the next stop's arrival row is reached at the travel
+  # speed (12.5 m in 20 s), and cumtime is defined. Only rows before 10 are checked:
+  # the stops in rows 10 and 11 are 0 m apart, which still gives NaN cumtime
+  by_trip_src <- split(res$src, rep(names(trips)[done], res$n_rows[done]))
+  by_trip_cumtime <- split(res$cumtime, rep(names(trips)[done], res$n_rows[done]))
+  doa <- by_trip_src$departure_only_adjacent
+  expect_identical(by_trip_speed$departure_only_adjacent[match(6L, doa)], 2.25)
+  expect_false(anyNA(by_trip_cumtime$departure_only_adjacent[doa <= 9L]))
   # the midnight trip has times on both sides of 00:00
   by_trip <- split(res$timestamp, rep(names(trips)[done], res$n_rows[done]))
   expect_true(any(by_trip$midnight >= 86000L, na.rm = TRUE))

@@ -23,8 +23,8 @@ data represented as a list of data.tables.}
 
 \item{spatial_resolution}{The spatial resolution in meters: a number of at
 least 1, or a \code{units} length. Default is 100m. This function only
-creates points in order to guarantee that the minimum distance between two
-consecutive points will be at most the spatial_resolution. If a given shape
+creates points in order to guarantee that consecutive points are at most
+\code{spatial_resolution} metres apart. If a given shape
 has two consecutive points with a distance lower than the spatial resolution,
 the algorithm will not remove such points.}
 
@@ -67,9 +67,11 @@ for some reason. Default value is \code{FALSE}.}
 A \code{data.table}, where each row represents a GPS point. The following
 columns are returned (units of measurement in parenthesis): dist and cumdist
 (meters), cumtime (seconds), shape_pt_lon and shape_pt_lat (degrees), speed
-(km/h), timestamp (hh:mm:ss). Speed, dist, cumdist and cumtime are rounded to
-3 decimal places (also when written to filepath), except speeds closer to zero
-than that, which keep their value (such as the 1e-12 km/h of stops).
+(km/h), timestamp (\code{data.table::ITime}, wrapped at midnight). Speed, dist,
+cumdist and cumtime are rounded to 3 decimal places (also when written to
+filepath), except speeds closer to zero than that, which keep their value (such
+as the 1e-12 km/h of stops). With \code{filepath}, each shape is written to a file
+and \code{NULL} is returned.
 }
 \description{
 Convert GTFS data to GPS format by sampling points using a
@@ -83,6 +85,12 @@ converting it (e.g. duplicated rows and unused ids), but the stop times it
 interpolates may give spiky or infinite speeds here.
 }
 \details{
+Before converting, the feed is cleaned with
+\code{gtfstools::remove_duplicates()} and \code{gtfstools::remove_unused_ids()}, and trips
+with an \code{NA} \code{trip_id} are dropped. Errors and warnings raised by the package
+have classes starting with \code{gtfs2gps_} (e.g. \code{gtfs2gps_nothing_converted_error}),
+and deprecation warnings with \code{deprecated_}, so they can be caught.
+
 After creating geometry points for a given shape id, the \code{gtfs2gps()}
 function snaps the stops to the route geometry. The stops of each trip are
 located along the shape with \code{gtfstools::interpolate_shape_dist_traveled()},
@@ -119,7 +127,7 @@ call the \code{adjust_arrival_departure()} function to set the minimum time each
 vehicle will spend at stops to embark/disembark passengers.
 
 To avoid division by zero, the minimum speed of vehicles in the output is
-1e-12 Km/h, so that vehicles are never completely stopped.
+1e-12 km/h, so that vehicles are never completely stopped.
 }
 \examples{
 library(gtfs2gps)

@@ -11,7 +11,7 @@ Authors@R: c(person(given="Rafael H. M.", family="Pereira", email="rafa.pereira.
             person("Ipea - Institute for Applied Economic Research", role = c("cph", "fnd")))
 URL: https://github.com/ipea/gtfs2gps, https://ipea.github.io/gtfs2gps/
 BugReports: https://github.com/ipea/gtfs2gps/issues
-Description: Convert general transit feed specification (GTFS) data to global positioning system (GPS) records in 'data.table' format. It also has some functions to subset GTFS data in time and space and to convert both representations to simple feature format.
+Description: Convert general transit feed specification (GTFS) data to global positioning system (GPS) records in 'data.table' format. It also has functions to post-process these GPS records, for example converting them to simple feature format.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends:
@@ -29,11 +29,8 @@ Imports:
       units
 Suggests:
     rmarkdown,
-    markdown,
     knitr,
     testthat (>= 3.1.7),
-    dplyr,
-    bit64,
     ggplot2
 VignetteBuilder: knitr
 LinkingTo: cpp11 (>= 0.4.0)

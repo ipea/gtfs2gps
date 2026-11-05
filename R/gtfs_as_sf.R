@@ -20,7 +20,6 @@
 #' @return A simple feature (sf) object with columns \code{shape_id},
 #' \code{geometry} and \code{length} (km). The length is computed from the
 #' WGS84 points of each shape, whatever \code{crs} is.
-#' @keywords internal
 #' @export
 #' @examples
 #' sp <- read_gtfs(system.file("extdata/saopaulo.zip", package = "gtfs2gps"))
@@ -78,7 +77,6 @@ shapes_as_sf <- function(gtfs, crs = 4326){
 #' error, and an empty or unknown CRS raises an error of class
 #' \code{gtfs2gps_crs_error}.
 #' @return A simple feature (sf) object.
-#' @keywords internal
 #' @export
 #' @examples
 #' poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))

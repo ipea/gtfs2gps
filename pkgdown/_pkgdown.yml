@@ -25,7 +25,7 @@ reference:
   - gps_as_sfpoints
   - gps_as_sflinestring
   - append_height
-- title: "Deprecated and defunct"
+- title: "Deprecated"
 - contents:
   - filter_valid_stop_times
   - gtfs_shapes_as_sf

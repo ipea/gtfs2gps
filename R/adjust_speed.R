@@ -2,13 +2,13 @@
 #'
 #' @description Some GTFS.zip data sets might have quality issues, for example 
 #' by assuming that a trip speed is unreasonably high (e.g. an urban bus running
-#' over 100 Km/h), or in other cases the `timestamp` information might be
+#' over 100 km/h), or in other cases the `timestamp` information might be
 #' missing for some route segments. This can lead a gps-like table to have `NA`
 #' or unrealistic `speed` and `timestamp` values. This function allows the
 #' user to adjust the speed of trips and updates `timestamp` values 
 #' accordingly. The user can adjust the problematic speeds by either setting a
-#' custom constant value, or by considering the average of all valid trips speed
-#' (Default). The columns `timestamp` and `cumtime` are updated accordingly.
+#' custom constant value, or by considering the distance-weighted mean of the valid
+#' speeds (Default). The columns `timestamp` and `cumtime` are updated accordingly.
 #'
 #' Each trip keeps the timestamp of its first timed point, and dwell times at
 #' stops are kept, so stop timestamps don't change when every speed is within
@@ -21,16 +21,20 @@
 #' @param gps_data A GPS-like data.table created with \code{\link{gtfs2gps}}.
 #' @param min_speed Minimum speed to be considered as valid. It can
 #' be a numeric (in km/h) or a units value able to be converted to km/h. Values 
-#' below minimum speed will be adjusted. Defaults to 2 km/h.
+#' below minimum speed will be adjusted. Defaults to 2 km/h; must be a single
+#' number, not negative. Outside stops, speeds that round to 0 km/h at 3 decimals are also
+#' adjusted, as they would take too long to cover any distance.
 #' @param max_speed Maximum speed to be considered as valid. It can
 #' be a numeric (in km/h) or a units value able to be converted to km/h. Values
 #' above maximum speed will be adjusted. Defaults to 80 km/h.
 #' @param new_speed Speed to replace missing values as well as values
 #' outside min_speed and max_speed range. It can
 #' be a numeric (in km/h) or a units value able to be converted to km/h.
-#' By default, `new_speed = NULL` and the
-#' function considers the average speed of the entire gps data.
-#' @param clone Use a copy of the gps_data? Defaults to TRUE.
+#' By default, `new_speed = NULL` and the function uses the distance-weighted
+#' mean of the valid speeds of points that are not at stops. It is rounded to 3
+#' decimals in km/h, as the output speeds are.
+#' @param clone Use a copy of the gps_data? Defaults to TRUE. With `FALSE`,
+#' `gps_data` is updated in place.
 #' @return A GPS-like data with adjusted \code{speed} values and the same
 #' columns as \code{gps_data}. The columns \code{timestamp} and \code{cumtime}
 #' are also updated accordingly. An error is raised if no speed is within range
@@ -54,16 +58,24 @@ adjust_speed <- function(gps_data, min_speed = 2, max_speed = 80, new_speed = NU
   min_speed <- units::set_units(min_speed, "km/h") |>
     units::set_units("m/s") |>
     units::drop_units()
-  
+  checkmate::assert_number(min_speed, lower = 0)
+
   checkmate::assert_names(names(gps_data), must.include = c("shape_id", "trip_id", "trip_number"
                                                             , "stop_sequence", "timestamp", "speed"
                                                             , "dist", "cumdist", "cumtime"))
 
   # work on vectors first, so that an error leaves gps_data untouched (clone = FALSE)
+  # stop rows get their output speed from kmh, so it doesn't go through m/s and back
+  kmh <- as.numeric(units::set_units(gps_data$speed, "km/h"))
   spd <- units::drop_units(units::set_units(gps_data$speed, "m/s"))
   spd[!is.finite(spd)] <- NA
-  stopped <- !is.na(gps_data$stop_sequence) & round(as.numeric(gps_data$dist)) == 0 & !is.na(spd)
-  spd[which(!stopped & !data.table::between(spd, min_speed, max_speed))] <- NA
+  # a row at a stop that doesn't move, whatever its speed (NA included). A dist in
+  # (0.5, 0.5005) is output as 0.5, which round() takes to 0 on a second call
+  stopped <- !is.na(gps_data$stop_sequence) & round(as.numeric(gps_data$dist)) %in% 0
+  # out of range, or too slow to show in km/h at 3 decimals (such as the 1e-12 km/h
+  # of stops, which would take about 1e15 s to cover a metre)
+  spd[which(!stopped & (!data.table::between(spd, min_speed, max_speed)
+                        | round3(spd * 3.6) == 0))] <- NA
 
   if(is.null(new_speed)){
     new_speed <- stats::weighted.mean(x = spd[!stopped]
@@ -77,10 +89,12 @@ adjust_speed <- function(gps_data, min_speed = 2, max_speed = 80, new_speed = NU
     new_speed <- units::set_units(new_speed, "km/h") |>
       units::set_units("m/s") |>
       units::drop_units()
-    if(length(new_speed) != 1 || !is.finite(new_speed) || new_speed <= 0)
-      cli::cli_abort("{.arg new_speed} must be a single positive speed.",
-                     class = "gtfs2gps_invalid_speed_error")
   }
+  # rows are timed with the speed they are given in the output (rounded in km/h)
+  if(length(new_speed) == 1) new_speed <- round3(new_speed * 3.6) / 3.6
+  if(length(new_speed) != 1 || !is.finite(new_speed) || new_speed <= 0)
+    cli::cli_abort("{.arg new_speed} must be a single positive speed.",
+                   class = "gtfs2gps_invalid_speed_error")
 
   data.table::set(gps_data, j = c("speed", "stopped_bus"), value = list(spd, stopped))
 
@@ -100,7 +114,8 @@ adjust_speed <- function(gps_data, min_speed = 2, max_speed = 80, new_speed = NU
   }, by = .(shape_id, trip_id, trip_number)]
 
   gps_data[is.na(speed) & stopped_bus == FALSE, speed := new_speed]
-  gps_data[, cumtime := cumsum(time), by = .(shape_id, trip_id, trip_number)]
+  # rounded before the timestamps are derived from it, so that the two agree
+  gps_data[, cumtime := round3(cumsum(time)), by = .(shape_id, trip_id, trip_number)]
   
   # anchor each trip on its own first valid timestamp
   gps_data[, timestamp := {
@@ -109,9 +124,14 @@ adjust_speed <- function(gps_data, min_speed = 2, max_speed = 80, new_speed = NU
     else data.table::as.ITime(round(as.numeric(timestamp[k]) + cumtime - cumtime[k]) %% 86400)
   }, by = .(shape_id, trip_id, trip_number)]
   
-  gps_data[, speed := units::set_units(units::set_units(speed, "m/s"), "km/h")]
-  gps_data[, dist := units::set_units(dist, "m")]
-  gps_data[, cumdist := units::set_units(cumdist, "m")]
+  # outputs rounded to 3 decimals, as gtfs2gps() does; stop rows keep their speed in
+  # km/h, or get the 1e-12 km/h of stops when it is missing
+  gps_data[, speed := round3_speed(data.table::fifelse(stopped_bus
+                                                       , data.table::fifelse(is.finite(kmh), kmh, 1e-12)
+                                                       , speed * 3.6))]
+  gps_data[, speed := units::set_units(speed, "km/h")]
+  gps_data[, dist := units::set_units(round3(dist), "m")]
+  gps_data[, cumdist := units::set_units(round3(cumdist), "m")]
   gps_data[, cumtime := units::set_units(cumtime, "s")]
   
   gps_data[, c("stopped_bus", "time") := NULL]

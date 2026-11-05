@@ -37,4 +37,3 @@ input data is not modified.
 sp <- read_gtfs(system.file("extdata/saopaulo.zip", package = "gtfs2gps"))
 sp_sf <- suppressWarnings(gtfs_shapes_as_sf(sp))
 }
-\keyword{internal}
