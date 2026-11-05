@@ -6,9 +6,10 @@ warns once per session. It edits the GPS-like output of
 We strongly recommend using our sister package gtfstools to fix and edit
 GTFS data before processing them with gtfs2gps, for example with
 [`gtfstools::set_max_speed()`](https://ipea.github.io/gtfstools/reference/set_max_speed.html)
-and `gtfstools::set_min_speed()` (the latter in the development version
-of gtfstools). Unlike this function, they work on the GTFS before
-conversion, and do not replace missing speeds in the GPS output.
+and
+[`gtfstools::set_min_speed()`](https://ipea.github.io/gtfstools/reference/set_min_speed.html).
+Unlike this function, they work on the GTFS before conversion, and do
+not replace missing speeds in the GPS output.
 
 Some GTFS.zip data sets might have quality issues, for example by
 assuming that a trip speed is unreasonably high (e.g. an urban bus
@@ -91,7 +92,7 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   gtfstools::filter_by_weekday(c("monday", "wednesday")) |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/Rtmp7N1hWT/gtfsio:
+#> Unzipped the following files to /tmp/RtmphjGwSa/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -110,10 +111,10 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>
 poa_gps <- gtfs2gps(poa)
 #> ℹ Converting shapes to sf objects
 #> Using 2 threads
-#> ✔ Converting shapes to sf objects [57ms]
+#> ✔ Converting shapes to sf objects [54ms]
 #> 
 #> ℹ Processing the data
-#> ✔ Processing the data [60ms]
+#> ✔ Processing the data [56ms]
 #> 
 poa_gps_new <- adjust_speed(poa_gps)
 #> Warning: `adjust_speed()` is deprecated and will be removed in a future version.

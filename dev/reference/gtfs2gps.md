@@ -146,8 +146,9 @@ represents a stationary vehicle, with `dist`, `cumdist` and `cumtime`
 equal to zero: `cumdist` is the distance travelled from the first stop.
 Unrealistic speeds are best fixed in the GTFS before converting it, with
 [`gtfstools::set_max_speed()`](https://ipea.github.io/gtfstools/reference/set_max_speed.html)
-(and `gtfstools::set_min_speed()`, in the development version of
-gtfstools). Two stops at the same place and time give an `NA` speed.
+and
+[`gtfstools::set_min_speed()`](https://ipea.github.io/gtfstools/reference/set_min_speed.html).
+Two stops at the same place and time give an `NA` speed.
 
 Each stop is presented as two data points for each trip in the output.
 The `timestamp` value in the first data point represents the time when
@@ -176,7 +177,7 @@ library(gtfs2gps)
 gtfs <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/Rtmp7N1hWT/gtfsio:
+#> Unzipped the following files to /tmp/RtmphjGwSa/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt

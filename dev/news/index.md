@@ -52,7 +52,7 @@
   - Fixed shapes shared by several routes or stop patterns: all their
     trips are converted, with times attached to the right stops
     (e.g. 348 instead of 170 trips in the Berlin feed).
-  - Requires gtfstools \>= 2.0.0
+  - Requires gtfstools \>= 2.0.1
 - Minor changes
   - [`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
     drops duplicated rows and unused ids, ignores trips with an `NA`

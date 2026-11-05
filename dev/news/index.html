@@ -55,7 +55,7 @@
 <ul><li>
 <code><a href="../reference/gtfs2gps.html">gtfs2gps()</a></code> is much faster and uses less memory: compared with v2.1-4, about 9× faster on the poa feed, 500× on São Paulo, and 1,000× on a full Fortaleza feed (13M points: 95 min → 6 s). All shapes are converted in one pass in C++ ({cpp11} replaces {Rcpp}).</li>
 <li>Fixed shapes shared by several routes or stop patterns: all their trips are converted, with times attached to the right stops (e.g. 348 instead of 170 trips in the Berlin feed).</li>
-<li>Requires gtfstools &gt;= 2.0.0</li>
+<li>Requires gtfstools &gt;= 2.0.1</li>
 </ul></li>
 <li>Minor changes
 <ul><li>

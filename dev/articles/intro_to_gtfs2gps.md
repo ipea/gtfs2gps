@@ -248,8 +248,8 @@ each trip only runs from its first to its last stop with a departure
 time: the points of the shape outside them are not returned. Unrealistic
 speeds are best fixed in the GTFS before converting it, with
 [`gtfstools::set_max_speed()`](https://ipea.github.io/gtfstools/reference/set_max_speed.html)
-(and `gtfstools::set_min_speed()`, in the development version of
-gtfstools).
+and
+[`gtfstools::set_min_speed()`](https://ipea.github.io/gtfstools/reference/set_min_speed.html).
 
 ## Final remarks
 

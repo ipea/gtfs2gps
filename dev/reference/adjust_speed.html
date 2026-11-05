@@ -3,8 +3,8 @@
 version; it warns once per session. It edits the GPS-like output of
 gtfs2gps(). We strongly recommend using our sister package gtfstools
 to fix and edit GTFS data before processing them with gtfs2gps, for example
-with gtfstools::set_max_speed() and gtfstools::set_min_speed()
-(the latter in the development version of gtfstools). Unlike this function,
+with gtfstools::set_max_speed() and gtfstools::set_min_speed().
+Unlike this function,
 they work on the GTFS before conversion, and do not replace missing speeds in
 the GPS output.
 Some GTFS.zip data sets might have quality issues, for example
@@ -25,8 +25,8 @@ gps_data must be ordered as gtfs2gps returns it."><meta property="og:description
 version; it warns once per session. It edits the GPS-like output of
 gtfs2gps(). We strongly recommend using our sister package gtfstools
 to fix and edit GTFS data before processing them with gtfs2gps, for example
-with gtfstools::set_max_speed() and gtfstools::set_min_speed()
-(the latter in the development version of gtfstools). Unlike this function,
+with gtfstools::set_max_speed() and gtfstools::set_min_speed().
+Unlike this function,
 they work on the GTFS before conversion, and do not replace missing speeds in
 the GPS output.
 Some GTFS.zip data sets might have quality issues, for example
@@ -91,8 +91,8 @@ gps_data must be ordered as gtfs2gps returns it."><meta property="og:image" cont
 version; it warns once per session. It edits the GPS-like output of
 <code><a href="gtfs2gps.html">gtfs2gps()</a></code>. We strongly recommend using our sister package gtfstools
 to fix and edit GTFS data before processing them with gtfs2gps, for example
-with <code><a href="https://ipea.github.io/gtfstools/reference/set_max_speed.html" class="external-link">gtfstools::set_max_speed()</a></code> and <code>gtfstools::set_min_speed()</code>
-(the latter in the development version of gtfstools). Unlike this function,
+with <code><a href="https://ipea.github.io/gtfstools/reference/set_max_speed.html" class="external-link">gtfstools::set_max_speed()</a></code> and <code><a href="https://ipea.github.io/gtfstools/reference/set_min_speed.html" class="external-link">gtfstools::set_min_speed()</a></code>.
+Unlike this function,
 they work on the GTFS before conversion, and do not replace missing speeds in
 the GPS output.</p>
 <p>Some GTFS.zip data sets might have quality issues, for example
@@ -173,7 +173,7 @@ and <code>new_speed</code> is not given.</p>
 <span class="r-in"><span>  <span class="fu">gtfstools</span><span class="fu">::</span><span class="fu"><a href="https://ipea.github.io/gtfstools/reference/filter_by_shape_id.html" class="external-link">filter_by_shape_id</a></span><span class="op">(</span><span class="st">"T2-1"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">gtfstools</span><span class="fu">::</span><span class="fu"><a href="https://ipea.github.io/gtfstools/reference/filter_by_weekday.html" class="external-link">filter_by_weekday</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"monday"</span>, <span class="st">"wednesday"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="filter_single_trip.html">filter_single_trip</a></span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Unzipped the following files to /tmp/Rtmp7N1hWT/gtfsio:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Unzipped the following files to /tmp/RtmphjGwSa/gtfsio:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * agency.txt</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * calendar.txt</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * routes.txt</span>
@@ -192,10 +192,10 @@ and <code>new_speed</code> is not given.</p>
 <span class="r-in"><span><span class="va">poa_gps</span> <span class="op">&lt;-</span> <span class="fu"><a href="gtfs2gps.html">gtfs2gps</a></span><span class="op">(</span><span class="va">poa</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Converting shapes to sf objects</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Using 2 threads</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Converting shapes to sf objects <span style="color: #B2B2B2;">[57ms]</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Converting shapes to sf objects <span style="color: #B2B2B2;">[54ms]</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Processing the data</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Processing the data <span style="color: #B2B2B2;">[60ms]</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Processing the data <span style="color: #B2B2B2;">[56ms]</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="va">poa_gps_new</span> <span class="op">&lt;-</span> <span class="fu">adjust_speed</span><span class="op">(</span><span class="va">poa_gps</span><span class="op">)</span></span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`adjust_speed()` is deprecated and will be removed in a future version.</span>

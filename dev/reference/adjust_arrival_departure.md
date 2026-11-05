@@ -63,7 +63,7 @@ A GTFS with adjusted `arrival_time` and `departure_time` on data.table
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps"))
-#> Unzipped the following files to /tmp/Rtmp7N1hWT/gtfsio:
+#> Unzipped the following files to /tmp/RtmphjGwSa/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
