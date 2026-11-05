@@ -108,9 +108,10 @@ have no time to be interpolated from, and are not returned. The \code{speed},
 between the current and previous row of the same trip. It means that the first
 data point of each trip, at its first stop, represents a stationary vehicle,
 with \code{dist}, \code{cumdist} and \code{cumtime} equal to zero: \code{cumdist} is the distance
-travelled from the first stop. The \code{adjust_speed()} function can be used to
-post-process the output to replace speeds outside a valid range, or eventual
-\code{NA} values (such as two stops at the same place and time).
+travelled from the first stop. Unrealistic speeds are best fixed in the GTFS
+before converting it, with \code{gtfstools::set_max_speed()} (and
+\code{gtfstools::set_min_speed()}, in the development version of gtfstools). Two stops at the same place and time give an
+\code{NA} speed.
 
 Each stop is presented as two data points for each trip in the output. The
 \code{timestamp} value in the first data point represents the time when the
@@ -122,9 +123,9 @@ considers that the vehicle is stationary at the stop, immediately before
 departing.
 
 Some GTFS feeds do not report embark/disembark times (so \code{arrival_time} and
-\code{departure_time} are identical at the same stop). In this case, the user can
-call the \code{adjust_arrival_departure()} function to set the minimum time each
-vehicle will spend at stops to embark/disembark passengers.
+\code{departure_time} are identical at the same stop). In this case,
+\code{gtfstools::set_dwell_time()} or \code{gtfstools::set_min_dwell_time()} can set the
+time vehicles spend at stops to embark/disembark passengers.
 
 To avoid division by zero, the minimum speed of vehicles in the output is
 1e-12 km/h, so that vehicles are never completely stopped.

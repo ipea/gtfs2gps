@@ -7,7 +7,7 @@ test_that("adjust_arrival_departure", {
                    departure_time := data.table::as.ITime("05:22:00", format = "%H:%M:%OS")]
 
     before <- data.table::copy(poa)
-    poa_adj <- adjust_arrival_departure(poa)
+    poa_adj <- adjust_arrival_departure_internal(poa)
 
     # input data is not modified
     expect_identical(poa, before)
@@ -26,7 +26,7 @@ test_that("adjust_arrival_departure works when a time column is absent", {
     poa_no_arr$stop_times[, arrival_time := NULL]
     before <- data.table::copy(poa_no_arr)
 
-    poa_adj <- adjust_arrival_departure(poa_no_arr)
+    poa_adj <- adjust_arrival_departure_internal(poa_no_arr)
 
     expect_identical(poa_no_arr, before)
     expect_true("arrival_time" %in% names(poa_adj$stop_times))
@@ -42,7 +42,7 @@ test_that("adjust_arrival_departure works when a time column is absent", {
     poa_no_dep$stop_times[, departure_time := NULL]
     before <- data.table::copy(poa_no_dep)
 
-    poa_adj <- adjust_arrival_departure(poa_no_dep)
+    poa_adj <- adjust_arrival_departure_internal(poa_no_dep)
 
     expect_identical(poa_no_dep, before)
     expect_true("departure_time" %in% names(poa_adj$stop_times))
@@ -59,14 +59,14 @@ test_that("adjust_arrival_departure treats malformed times as missing", {
     poa$stop_times[1, `:=`(arrival_time = "abc", departure_time = "05:21")]
 
     # testthat edition 2 ignores the class in expect_warning(), so it is checked here
-    w <- tryCatch(adjust_arrival_departure(poa), warning = identity)
+    w <- tryCatch(adjust_arrival_departure_internal(poa), warning = identity)
     expect_s3_class(w, "gtfstools_malformed_time")
-    poa_adj <- suppressWarnings(adjust_arrival_departure(poa))
+    poa_adj <- suppressWarnings(adjust_arrival_departure_internal(poa))
 
     expect_equal(poa_adj$stop_times$arrival_time[1], "")
     expect_equal(poa_adj$stop_times$departure_time[1], "")
 
-    expect_error(adjust_arrival_departure(poa, min_lag = -1))
+    expect_error(adjust_arrival_departure_internal(poa, min_lag = -1))
 })
 
 test_that("adjust_arrival_departure keeps times non-negative and whole seconds", {
@@ -75,7 +75,7 @@ test_that("adjust_arrival_departure keeps times non-negative and whole seconds",
     poa$stop_times[1:4, `:=`(arrival_time = c("00:00:05", NA, NA, "05:20:00"),
                              departure_time = c("00:00:05", "00:00:10", "00:00:00", "05:20:05"))]
 
-    expect_warning(poa_adj <- adjust_arrival_departure(poa), NA)
+    expect_warning(poa_adj <- adjust_arrival_departure_internal(poa), NA)
 
     expect_equal(poa_adj$stop_times$arrival_time[1:4],
                  c("00:00:00", "00:00:00", "00:00:00", "05:19:53"))
@@ -83,7 +83,7 @@ test_that("adjust_arrival_departure keeps times non-negative and whole seconds",
                  c("00:00:20", "00:00:20", "00:00:20", "05:20:13"))
 
     # min_lag is rounded to whole seconds
-    expect_identical(adjust_arrival_departure(poa, min_lag = 20.4), poa_adj)
+    expect_identical(adjust_arrival_departure_internal(poa, min_lag = 20.4), poa_adj)
 })
 
 test_that("adjust_arrival_departure accepts a plain list and returns a dt_gtfs", {
@@ -92,8 +92,22 @@ test_that("adjust_arrival_departure accepts a plain list and returns a dt_gtfs",
     poa_list <- unclass(poa)
     before <- data.table::copy(poa_list)
 
-    poa_adj <- adjust_arrival_departure(poa_list)
+    poa_adj <- adjust_arrival_departure_internal(poa_list)
 
     expect_s3_class(poa_adj, "dt_gtfs")
     expect_identical(poa_list, before)
+})
+
+test_that("adjust_arrival_departure is deprecated, warning once per session", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE)
+
+    # the first call in a session warns (testthat edition 2 ignores the class in
+    # expect_warning(), so it is checked here) and later ones don't
+    rlang::reset_warning_verbosity("gtfs2gps_deprecated_adjust_arrival_departure")
+    w <- tryCatch(adjust_arrival_departure(poa), warning = identity)
+    expect_s3_class(w, "deprecated_adjust_arrival_departure")
+    expect_warning(res <- adjust_arrival_departure(poa), NA)
+
+    # the result is the internal function's
+    expect_identical(res, adjust_arrival_departure_internal(poa))
 })

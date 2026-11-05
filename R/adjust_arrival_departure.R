@@ -1,15 +1,23 @@
-#' @title Adjust the arrival and departure times of a GTFS data
+#' @title Adjust the arrival and departure times of a GTFS data (deprecated)
 #'
-#' @description Some GTFS.zip data have issues related to arrival and departure
+#' @description This function is deprecated and will be removed in a future
+#' version; it warns once per session. Its job has moved to \pkg{gtfstools}: use
+#' \code{gtfstools::set_dwell_time()} or \code{gtfstools::set_min_dwell_time()}
+#' to edit and fix GTFS feeds before converting them. Unlike this function,
+#' \code{set_min_dwell_time()} keeps arrivals, delays the departure and the later
+#' times of the trip, and leaves each trip's first and last timed stops unchanged
+#' (\code{set_dwell_time()} sets them too); neither fills blank times.
+#'
+#' Some GTFS.zip data have issues related to arrival and departure
 #' time on stops. This function makes sure the GTFS has dis/embarking times at
 #' each stop. For each stop time row, this function applies the following steps:
-#' 
-#' 1. If there is `arrival_time` but no `departure_time`, it creates a departure_time 
+#'
+#' 1. If there is `arrival_time` but no `departure_time`, it creates a departure_time
 #' column by summing the arrival plus a pre-defined `min_lag`.
-#' 
-#' 2. If there is `departure_time` but no `arrival_time`, it creates an arrival_time 
+#'
+#' 2. If there is `departure_time` but no `arrival_time`, it creates an arrival_time
 #' column by subtracting a pre-defined `min_lag` from the departure.
-#' 
+#'
 #' 3. If there is an `arrival_time` and a `departure_time` but their difference
 #' is smaller than `min_lag`, it reduces the `arrival_time` and increases
 #' `departure_time` so that the difference will be exactly `min_lag`. Odd
@@ -21,7 +29,7 @@
 #' The input GTFS data is not modified.
 #'
 #' @param gtfs_data A GTFS data created with \code{\link{read_gtfs}}.
-#' @param min_lag Numeric. Minimum waiting time when a vehicle arrives 
+#' @param min_lag Numeric. Minimum waiting time when a vehicle arrives
 #' at a stop. It can be a numeric or a units value that can be converted
 #' to seconds, rounded to whole seconds. Default is 20s.
 #' @return A GTFS with adjusted `arrival_time` and `departure_time` on
@@ -33,6 +41,18 @@
 #'
 #' poa <- adjust_arrival_departure(poa)
 adjust_arrival_departure <- function(gtfs_data, min_lag = 20){
+  cli::cli_warn(c("{.fn adjust_arrival_departure} is deprecated and will be removed in a future version.",
+                  "i" = paste("Its job has moved to {.pkg gtfstools}: use {.fn gtfstools::set_dwell_time}",
+                              "or {.fn gtfstools::set_min_dwell_time} to edit and fix GTFS feeds.")),
+                class = "deprecated_adjust_arrival_departure",
+                .frequency = "once", .frequency_id = "gtfs2gps_deprecated_adjust_arrival_departure")
+
+  return(adjust_arrival_departure_internal(gtfs_data, min_lag))
+}
+
+#' The body of adjust_arrival_departure(), kept for the tests (see its docs)
+#' @noRd
+adjust_arrival_departure_internal <- function(gtfs_data, min_lag = 20){
   # do not change input data by reference
   gtfs_data$stop_times <- data.table::copy(gtfs_data$stop_times)
 

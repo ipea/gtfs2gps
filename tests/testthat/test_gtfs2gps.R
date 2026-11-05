@@ -2,7 +2,7 @@ test_that("gtfs2gps", {
     poa <- system.file("extdata/poa.zip", package="gtfs2gps")
 
     poa_gps_0 <- read_gtfs(poa) |>
-      adjust_arrival_departure() |>
+      adjust_arrival_departure_internal() |>
       gtfstools::filter_by_weekday(c("monday", "tuesday", "wednesday", "thursday", "friday")) |>
       gtfs2gps(ncores = 1, spatial_resolution = 50)
 

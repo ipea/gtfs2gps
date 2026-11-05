@@ -2,7 +2,7 @@
 % Please edit documentation in R/adjust_speed.R
 \name{adjust_speed}
 \alias{adjust_speed}
-\title{Adjust the speeds of a gps-like table created with \code{\link{gtfs2gps}}}
+\title{Adjust the speeds of a gps-like table created with \code{\link{gtfs2gps}} (deprecated)}
 \usage{
 adjust_speed(
   gps_data,
@@ -42,11 +42,22 @@ are also updated accordingly. An error is raised if no speed is within range
 and \code{new_speed} is not given.
 }
 \description{
+This function is deprecated and will be removed in a future
+version; it warns once per session. It edits the GPS-like output of
+\code{gtfs2gps()}. We strongly recommend using our sister package gtfstools
+to fix and edit GTFS data before processing them with gtfs2gps, for example
+with \code{gtfstools::set_max_speed()} and \code{gtfstools::set_min_speed()}
+(the latter in the development version of gtfstools). Unlike this function,
+they work on the GTFS before conversion, and do not replace missing speeds in
+the GPS output.
+
 Some GTFS.zip data sets might have quality issues, for example
 by assuming that a trip speed is unreasonably high (e.g. an urban bus running
 over 100 km/h), or in other cases the \code{timestamp} information might be
 missing for some route segments. This can lead a gps-like table to have \code{NA}
-or unrealistic \code{speed} and \code{timestamp} values. This function allows the
+or unrealistic \code{speed} and \code{timestamp} values.
+
+This function allows the
 user to adjust the speed of trips and updates \code{timestamp} values
 accordingly. The user can adjust the problematic speeds by either setting a
 custom constant value, or by considering the distance-weighted mean of the valid
@@ -57,8 +68,6 @@ stops are kept, so stop timestamps don't change when every speed is within
 range; segments whose speeds are replaced are re-timed. Trips without any
 timestamp keep \code{NA} timestamps. Timestamps wrap at 24:00:00.
 \code{gps_data} must be ordered as \code{\link{gtfs2gps}} returns it.
-To cap speeds in the GTFS data before converting it, see
-\code{\link[gtfstools]{set_max_speed}}.
 }
 \examples{
 poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>

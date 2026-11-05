@@ -2,35 +2,27 @@
 
 # gtfs2gps (development version)
 
+* Breaking changes
+  * Parallelization: `gtfs2gps()` no longer uses {future} workers or `future::plan()`. The compiled step runs in `ncores` threads (OpenMP): the default is 2 and `ncores = Inf` uses all threads (`data.table::getDTthreads()`). `parallel` and `strategy` are deprecated and ignored: use `ncores = 1` to run sequentially. This also fixes the "globals exceed the maximum allowed size" error (#277).
+  * Stops are located with `gtfstools::interpolate_shape_dist_traveled()`, in `stop_sequence` order. Results no longer depend on `spatial_resolution`, and `dist`, `cumdist` and `speed` are about 0.11% smaller (spherical distances). `snap_method` is deprecated and ignored.
+  * Output of `gtfs2gps()`: each trip runs from its first to its last timed stop (`cumdist` starts at 0; #260); `speed`, `dist`, `cumdist` and `cumtime` are rounded to 3 decimals; timestamps wrap at midnight (use `cumtime` for elapsed time); `trip_number` counts all trips of a shape.
+  * `gtfs2gps()` raises classed errors instead of returning `NULL` when nothing can be converted, and when `routes.txt` is missing or the output exceeds R's row limit.
+  * `adjust_speed()` no longer adds a `time` column. `gps_as_sflinestring()` returns one segment per interval between consecutive stops.
+  * `filter_single_trip()` requires a GTFS object and also filters the other tables; `gps_as_sfpoints()` no longer accepts `crs = NA`; `write_gtfs()` errors when `overwrite = FALSE` and the file exists; `spatial_resolution` must be at least 1 metre.
+  * Requires gtfstools >= 2.0.0: no departure is created at a frequency's `end_time`, and malformed times become `NA` with a warning.
+  * Deprecated: `gtfs_shapes_as_sf()`, `gtfs_stops_as_sf()`, `remove_invalid()` and `filter_valid_stop_times()`, which warn on every call, and `adjust_arrival_departure()` and `adjust_speed()`, which warn once per session. Use the {gtfstools} equivalents named in their warnings: we strongly recommend fixing and editing GTFS data with {gtfstools} (e.g. `set_dwell_time()`, `set_max_speed()`, and `set_min_speed()` in its development version) before processing them with gtfs2gps.
+
 * Major changes
-  * `gtfs2gps()` is much faster and uses less memory. Compared with v2.1-4 (sequential runs), it is about 9× faster on the bundled poa feed, 500× on the São Paulo feed, and 1,000× on a full Fortaleza feed (13M points: 95 min → 6 s). All shapes are converted in one pass, and the GPS points are computed in compiled code ({cpp11} replaces {Rcpp}).
-  * `gtfs2gps()` no longer uses {future} workers, which were slower than a sequential run; this also removes the "globals exceed the maximum allowed size" failure (#277). The compiled step now runs in `ncores` threads when the package is built with OpenMP: the default is 2, and `ncores = Inf` uses all threads (`data.table::getDTthreads()`). A `future::plan()` is no longer used. Arguments `parallel` and `strategy` are deprecated and ignored, with a warning: use `ncores = 1` to run sequentially and `ncores = Inf` instead of `parallel = TRUE`.
-  * Stops are located along the shapes with `gtfstools::interpolate_shape_dist_traveled()`, which keeps them in `stop_sequence` order. Stop patterns are no longer dropped because a stop is far from the shape, loops are handled, and the result no longer depends on `spatial_resolution`. Distances use the sphere of {s2}/{sf}, so `dist`, `cumdist` and `speed` are about 0.11% smaller. `snap_method` is deprecated and ignored.
-  * Fixed two bugs with shapes used by several trips: the trips of every route sharing a shape are now converted (only the first route's were, e.g. 170 of the 348 trips in the Berlin feed), and trips with a different stop pattern no longer get their times attached to the wrong stops. `trip_number` now counts all trips of a shape.
-  * Output changes: `speed`, `dist`, `cumdist` and `cumtime` are rounded to 3 decimals (stops keep their speed of 1e-12 km/h), and timestamps wrap at midnight (use `cumtime` for elapsed time).
-  * Each trip now runs from its first to its last timed stop: shape points outside them (which had `NA` speeds and times) are dropped, and `cumdist` starts at 0 at the first stop. The "Some speed values are NA" message now only appears for `NA` speeds in the data. Closes #260.
-  * `gtfs2gps()` first drops duplicated rows and unused ids (`gtfstools::remove_duplicates()` and `remove_unused_ids()`) and ignores trips with an `NA` `trip_id`. It raises classed errors when `routes.txt` is missing or incomplete (`gtfs2gps_missing_routes_error`), when nothing can be converted (`gtfs2gps_nothing_converted_error`; it used to return `NULL`), and when the output would exceed R's row limit (`gtfs2gps_too_many_points_error`).
-  * Deprecated, to be removed in a future version, each with a warning of class `deprecated_<name>`: `gtfs_shapes_as_sf()` and `gtfs_stops_as_sf()` (use `gtfstools::get_shapes_geometry()`, `get_shape_length()` and `get_stops_geometry()`); `remove_invalid()` (use `gtfstools::remove_duplicates()` and `remove_unused_ids()`, which keep trips whose shape or route is missing); and `filter_valid_stop_times()`.
-  * Fixed `gtfs2gps()` giving `NaN` `cumtime` and `NA` timestamps for the rest of a trip after a stop with a departure time but no arrival time, when the next stop was on the next shape point.
-  * Fixed `adjust_speed()`, which shifted timestamps even when no speed was replaced, made them run backwards before the first stop, and dropped dwell times. It no longer adds a `time` column and raises classed errors for invalid speeds.
-  * Fixed `gps_as_sflinestring()`, which split trips only at timed stops (2 segments instead of 89 in its example). It now returns one segment per interval between consecutive stops.
-  * Requires gtfstools >= 2.0.0. With gtfstools 2.0.0, no departure is created at a frequency's `end_time` (exclusive in GTFS), and malformed times (e.g. `"05:21"`, or minutes of 60 or more) are treated as missing, with a warning of class `gtfstools_malformed_time`.
+  * `gtfs2gps()` is much faster and uses less memory: compared with v2.1-4, about 9× faster on the poa feed, 500× on São Paulo, and 1,000× on a full Fortaleza feed (13M points: 95 min → 6 s). All shapes are converted in one pass in C++ ({cpp11} replaces {Rcpp}).
+  * Fixed shapes shared by several routes or stop patterns: all their trips are converted, with times attached to the right stops (e.g. 348 instead of 170 trips in the Berlin feed).
+  * Fixed `adjust_speed()`, which shifted timestamps when no speed was replaced and dropped dwell times.
 
 * Minor changes
-  * `filter_single_trip()` uses `gtfstools::filter_by_trip_id()`: the other tables keep only the rows used by the kept trips, and the input must be a GTFS object, as returned by `read_gtfs()`.
-  * `gps_as_sfpoints()` transforms the points to `crs` instead of relabelling them, so `crs = NA` is no longer accepted.
-  * `read_gtfs()` keeps all columns of `routes.txt`, reads feeds without `agency_id` or `route_short_name`, drops a header-only `frequencies.txt`, and raises `gtfs2gps_empty_file_error` for empty mandatory files.
-  * `write_gtfs()` respects `overwrite = FALSE` (error `gtfs2gps_file_exists_error`), gains `compression_level`, and documents the default of `quiet` correctly.
-  * `adjust_arrival_departure()` no longer modifies its input or writes negative times near midnight, rejects a negative `min_lag`, and rounds it to whole seconds.
-  * `gtfs2gps(filepath)` writes shapes whose `shape_id` can't be a file name (e.g. `"a/b"`, which pointed into a folder that does not exist): `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|` and `%` are written as `%XX` (`a%2Fb.txt`), and `utils::URLdecode()` gives the id back.
-  * `gtfs2gps(continue = TRUE, compress = TRUE)` now skips shapes already saved (it looked for `.rda` files instead of `.rds`).
-  * `spatial_resolution` can be a `units` length and must be at least 1 metre. `compress`, `continue` and `quiet` must be a single `TRUE` or `FALSE`, `filepath` a writable directory, and `append_height()`'s `heightfile` an existing file; `gps_as_sfpoints()` and `gps_as_sflinestring()` reject empty input.
-  * Messages, warnings and errors use {cli}, many with a class. Shapes that fail are reported in a warning of class `gtfs2gps_shape_error`, also when running in several threads. {cli} and {rlang} are new dependencies; {furrr}, {future}, {parallelly}, {progressr} and {Rcpp} are no longer used.
-  * Loading the package no longer changes data.table's options and number of threads.
-  * `adjust_speed()` and `gps_as_sflinestring()` round `speed`, `dist`, `cumdist` and `cumtime` to 3 decimals, as `gtfs2gps()` does, so calling `adjust_speed()` twice gives the same result. `adjust_speed()` also rounds `new_speed`, replaces speeds outside stops that round to 0 km/h (with `min_speed = 0` they made `cumtime` reach about 1e15 s), gives the stop speed of 1e-12 km/h to stop rows whose speed is missing while keeping their dwell time (it used to recompute it), and raises an error when `min_speed` is negative or not a single number.
-  * The lines of code in the `gtfs2gps_shape_error` warning are no longer wrapped at the console width, so they can be copied as they are.
-  * With `quiet = TRUE`, `gtfs2gps()` errors name the user's call and the code in the `gtfs2gps_shape_error` warning names the user's object; reading a zip file no longer prints the gtfstools messages.
-  * A `trip_id` listed under two shapes (invalid GTFS) is converted once, with its first shape.
+  * `gtfs2gps()` drops duplicated rows and unused ids, ignores trips with an `NA` `trip_id`, and converts a `trip_id` listed under two shapes once.
+  * Fixed `NaN` `cumtime` after a stop with a departure but no arrival time; `continue = TRUE, compress = TRUE` not skipping shapes already saved; and `filepath` output for `shape_id`s that aren't valid file names (now `%XX`-encoded).
+  * `read_gtfs()` keeps all `routes.txt` columns and reads feeds without `agency_id` or `route_short_name`; `write_gtfs()` gains `compression_level`; `adjust_arrival_departure()` no longer modifies its input or writes negative times.
+  * Messages, warnings and errors use {cli}, most with a class; failed shapes are reported in a `gtfs2gps_shape_error` warning. Loading the package no longer changes data.table's options or threads.
+  * Dependencies: adds {cli} and {rlang}; drops {furrr}, {future}, {parallelly}, {progressr} and {Rcpp}.
 
 # gtfs2gps v2.1-4
 

@@ -19,7 +19,7 @@ test_that("adjust_speed", {
     expect_equal(mean(units::drop_units(poa_gps$speed), na.rm = TRUE), 25.36674, 0.0001)
     expect_equal(mean(units::drop_units(poa_gps$cumtime), na.rm = TRUE), 1504.733, 0.001)
 
-    poa_gps_new <- adjust_speed(poa_gps)
+    poa_gps_new <- adjust_speed_internal(poa_gps)
     expect_identical(poa_gps, poa_gps_old)  # input not modified
 
     expect_true(!any(is.na(poa_gps_new$speed)))
@@ -28,7 +28,7 @@ test_that("adjust_speed", {
     expect_equal(mean(units::drop_units(poa_gps_new$speed)), 25.37248, 0.0001)
     expect_equal(mean(units::drop_units(poa_gps_new$cumtime)), 1507.461, 0.001)
 
-    poa_gps_new <- adjust_speed(poa_gps, min_speed = 25, max_speed = 50)
+    poa_gps_new <- adjust_speed_internal(poa_gps, min_speed = 25, max_speed = 50)
 
     expect_false(all(poa_gps_new$speed >= units::set_units(25, "km/h"), na.rm = TRUE))
     expect_true(all(poa_gps_new$speed <= units::set_units(50, "km/h"), na.rm = TRUE))
@@ -41,14 +41,14 @@ test_that("adjust_speed keeps stop timestamps and dwell times", {
     poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
         gtfstools::filter_by_shape_id("T2-1") |>
         filter_single_trip() |>
-        adjust_arrival_departure()  # 20 s dwell at the timed stops
+        adjust_arrival_departure_internal()  # 20 s dwell at the timed stops
 
     sp <- read_gtfs(system.file("extdata/saopaulo.zip", package = "gtfs2gps"), quiet = TRUE)
     sp <- gtfstools::filter_by_shape_id(sp, sp$shapes$shape_id[1])
 
     for(gtfs in list(poa, sp)){
         gps <- gtfs2gps(gtfs, ncores = 1, quiet = TRUE)
-        adj <- adjust_speed(gps, min_speed = 0, max_speed = 1e6)
+        adj <- adjust_speed_internal(gps, min_speed = 0, max_speed = 1e6)
 
         timed_stops <- !is.na(gps$stop_id) & !is.na(gps$timestamp)
         expect_true(any(timed_stops))
@@ -57,7 +57,7 @@ test_that("adjust_speed keeps stop timestamps and dwell times", {
         # speeds changed without updating cumtime: the times follow dist / speed
         fast <- data.table::copy(gps)
         fast[, speed := speed * 2]
-        adj_fast <- adjust_speed(fast, min_speed = 0, max_speed = 1e6)
+        adj_fast <- adjust_speed_internal(fast, min_speed = 0, max_speed = 1e6)
         expect_lt(max(units::drop_units(adj_fast$cumtime)), max(units::drop_units(adj$cumtime)))
     }
 })
@@ -70,7 +70,7 @@ test_that("adjust_speed with clone = FALSE returns the updated input and adds no
     gps <- gtfs2gps(poa, ncores = 1, quiet = TRUE)
     cols <- names(gps)
 
-    res <- adjust_speed(gps, clone = FALSE)
+    res <- adjust_speed_internal(gps, clone = FALSE)
 
     expect_identical(res, gps)
     expect_identical(names(res), cols)
@@ -90,20 +90,20 @@ test_that("adjust_speed errors when no speed is within range", {
     gps <- gtfs2gps(poa, ncores = 1, quiet = TRUE)
     before <- data.table::copy(gps)
 
-    expect_error(adjust_speed(gps), class = "gtfs2gps_no_valid_speed_error")
+    expect_error(adjust_speed_internal(gps), class = "gtfs2gps_no_valid_speed_error")
     # the input is untouched also when it is not cloned
-    expect_error(adjust_speed(gps, clone = FALSE), class = "gtfs2gps_no_valid_speed_error")
+    expect_error(adjust_speed_internal(gps, clone = FALSE), class = "gtfs2gps_no_valid_speed_error")
     expect_identical(gps, before)
 
-    expect_error(adjust_speed(gps, new_speed = 0), class = "gtfs2gps_invalid_speed_error")
-    expect_error(adjust_speed(gps, new_speed = NA_real_), class = "gtfs2gps_invalid_speed_error")
+    expect_error(adjust_speed_internal(gps, new_speed = 0), class = "gtfs2gps_invalid_speed_error")
+    expect_error(adjust_speed_internal(gps, new_speed = NA_real_), class = "gtfs2gps_invalid_speed_error")
 })
 
 test_that("adjust_speed fills stop speeds, replaces tiny speeds and is stable", {
     poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
         gtfstools::filter_by_shape_id("T2-1") |>
         filter_single_trip() |>
-        adjust_arrival_departure()  # 20 s dwell at the timed stops
+        adjust_arrival_departure_internal()  # 20 s dwell at the timed stops
     gps <- gtfs2gps(poa, ncores = 1, quiet = TRUE)
 
     # bad speeds on points that are not stops, and missing speeds at the departure
@@ -118,7 +118,7 @@ test_that("adjust_speed fills stop speeds, replaces tiny speeds and is stable", 
     gps[, speed := units::set_units(spd, "km/h")]
     dwell <- function(x) as.integer(x$timestamp[stop_rows]) - as.integer(x$timestamp[stop_rows - 1])
 
-    res <- adjust_speed(gps)
+    res <- adjust_speed_internal(gps)
 
     # stops with a missing speed get the speed of stops and keep their dwell
     expect_identical(units::drop_units(res$speed[stop_rows]), rep(1e-12, length(stop_rows)))
@@ -128,11 +128,28 @@ test_that("adjust_speed fills stop speeds, replaces tiny speeds and is stable", 
     # outputs at 3 decimals, and a second call changes nothing
     for(col in c("dist", "cumdist", "cumtime"))
         expect_equal(units::drop_units(res[[col]]), round(units::drop_units(res[[col]]), 3), info = col)
-    expect_identical(adjust_speed(res), res)
+    expect_identical(adjust_speed_internal(res), res)
 
     # min_speed = 0: the tiny speeds are still replaced, so cumtime stays within the trip
-    res0 <- adjust_speed(gps, min_speed = 0)
+    res0 <- adjust_speed_internal(gps, min_speed = 0)
     expect_lt(max(units::drop_units(res0$cumtime)), 2 * max(units::drop_units(gps$cumtime), na.rm = TRUE))
 
-    expect_error(adjust_speed(gps, min_speed = -1))
+    expect_error(adjust_speed_internal(gps, min_speed = -1))
+})
+
+test_that("adjust_speed is deprecated, warning once per session", {
+    poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE) |>
+        gtfstools::filter_by_shape_id("T2-1") |>
+        filter_single_trip()
+    gps <- gtfs2gps(poa, ncores = 1, quiet = TRUE)
+
+    # the first call in a session warns (testthat edition 2 ignores the class in
+    # expect_warning(), so it is checked here) and later ones don't
+    rlang::reset_warning_verbosity("gtfs2gps_deprecated_adjust_speed")
+    w <- tryCatch(adjust_speed(gps), warning = identity)
+    expect_s3_class(w, "deprecated_adjust_speed")
+    expect_warning(res <- adjust_speed(gps), NA)
+
+    # the result is the internal function's
+    expect_identical(res, adjust_speed_internal(gps))
 })

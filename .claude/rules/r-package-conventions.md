@@ -147,8 +147,11 @@ user-facing conditions. `cli` goes in `Imports`.
   requires for startup messages. Id lists in messages use
   `cli::cli_vec(x, list("vec-trunc" = Inf))` so cli doesn't cut them after 20.
 - Deprecations: `cli::cli_warn(class = "deprecated_<thing>", ...)` naming the
-  replacement, tested with `expect_warning(..., class = "deprecated_<thing>")`,
-  kept for at least one CRAN release (see `strategy` in `gtfs2gps()`).
+  replacement, tested with
+  `expect_s3_class(tryCatch(expr, warning = identity), "deprecated_<thing>")`
+  (testthat edition 2 ignores `class` in `expect_warning()`; `expect_error()`
+  does check it), kept for at least one CRAN release (see `strategy` in
+  `gtfs2gps()`).
   `lifecycle` is not a dependency.
 
 ## A5. Style
@@ -183,8 +186,9 @@ user-facing conditions. `cli` goes in `Imports`.
   ```
   Examples longer than ~5 s use `\donttest{}`, never `\dontrun{}`
   (`append_height()` uses `\donttest{}`).
-- Internal functions: `@noRd` (see `R/utils.R`). `test_gtfs_freq()` has
-  roxygen without `@export`; match that only if a helper should be documented.
+- Internal functions: `@noRd` (see `R/utils.R` and `test_gtfs_freq()`).
+  `simplify_shapes()` is the one internal function with a help page
+  (`@keywords internal`), kept while its export is undecided.
 - Every new export is added to `pkgdown/_pkgdown.yml` if it gains a
   `reference:` index (today it has none; check with
   `pkgdown::check_pkgdown()`).

@@ -7,7 +7,7 @@ test_that("gps_as_sflinestring", {
     filter_single_trip() |>
     gtfstools::filter_by_shape_id(c("shape804-I", "shape806-I"))
   
-  for_gps <- gtfs2gps(subset) |> adjust_speed()
+  for_gps <- gtfs2gps(subset) |> adjust_speed_internal()
 
   for_gps_sf_lines <- gps_as_sflinestring(for_gps)
   for_gps_sf_lines
@@ -26,7 +26,7 @@ test_that("gps_as_sflinestring", {
     gtfstools::filter_by_shape_id("176-1") |>
     filter_single_trip() |>
     gtfs2gps() |>
-    adjust_speed() |>
+    adjust_speed_internal() |>
     gps_as_sflinestring()
   expect_equal(max(units::drop_units(gps$cumtime)), 3120, tolerance = 0.001)
 
@@ -49,7 +49,7 @@ test_that("gps_as_sflinestring splits at every stop and keeps times", {
   gps <- gtfstools::filter_by_shape_id(poa, "176-1") |>
     filter_single_trip() |>
     gtfs2gps(ncores = 1, quiet = TRUE)
-  gps_adj <- adjust_speed(gps)
+  gps_adj <- adjust_speed_internal(gps)
   f <- tempfile(fileext = ".csv")
   on.exit(unlink(f), add = TRUE)
   data.table::fwrite(gps_adj, f)

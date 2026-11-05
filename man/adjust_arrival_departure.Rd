@@ -2,7 +2,7 @@
 % Please edit documentation in R/adjust_arrival_departure.R
 \name{adjust_arrival_departure}
 \alias{adjust_arrival_departure}
-\title{Adjust the arrival and departure times of a GTFS data}
+\title{Adjust the arrival and departure times of a GTFS data (deprecated)}
 \usage{
 adjust_arrival_departure(gtfs_data, min_lag = 20)
 }
@@ -19,6 +19,14 @@ data.table \code{stop_times}. Stops with neither time come back with empty
 strings (\code{""}), which GTFS allows for stops that are not timepoints.
 }
 \description{
+This function is deprecated and will be removed in a future
+version; it warns once per session. Its job has moved to \pkg{gtfstools}: use
+\code{gtfstools::set_dwell_time()} or \code{gtfstools::set_min_dwell_time()}
+to edit and fix GTFS feeds before converting them. Unlike this function,
+\code{set_min_dwell_time()} keeps arrivals, delays the departure and the later
+times of the trip, and leaves each trip's first and last timed stops unchanged
+(\code{set_dwell_time()} sets them too); neither fills blank times.
+
 Some GTFS.zip data have issues related to arrival and departure
 time on stops. This function makes sure the GTFS has dis/embarking times at
 each stop. For each stop time row, this function applies the following steps:
