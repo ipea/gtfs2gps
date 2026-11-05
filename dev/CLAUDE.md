@@ -63,14 +63,14 @@ gates are in
     gtfs2gps/
     ├── DESCRIPTION, NAMESPACE        # NAMESPACE is roxygen-generated; never hand-edit
     ├── R/
-    │   ├── gtfs2gps.R                # core: feed_to_gps() converts all shapes in one pass
+    │   ├── gtfs2gps.R                # gtfs2gps(): checks, feed clean-up, files, messages
     │   ├── read_gtfs.R, write_gtfs.R # thin wrappers around gtfstools
     │   ├── filter_gtfs.R             # filter_single_trip, filter_valid_stop_times, remove_invalid
     │   ├── adjust_speed.R, adjust_arrival_departure.R, append_height.R
     │   ├── gps_as_sfpoints.R, gps_as_sflinestring.R, gtfs_as_sf.R, simplify_shapes.R
     │   ├── test_gtfs_freq.R          # "frequency" vs "simple" feed
-    │   ├── utils.R                   # @importFrom, globalVariables, time helpers
-    │   ├── zzz.R                     # .onLoad / .onAttach
+    │   ├── utils.R                   # feed_to_gps() (all shapes in one pass), time and rounding helpers
+    │   ├── zzz.R                     # .onAttach, @importFrom, globalVariables
     │   └── cpp11.R                   # generated; never hand-edit
     ├── src/                          # cpp11: expand_pattern.cpp (trips → GPS points; R reference in tests/testthat/helper-update-dt.R) (+ generated cpp11.cpp)
     ├── tests/testthat/               # test_<function>.R (underscore); suite also runs on CRAN
@@ -83,11 +83,11 @@ gates are in
     └── prep_data/, tests_joao/, tests_rafa/   # maintainer scratch; Rbuildignored, don't edit unless asked
 
 Exports: `gtfs2gps` · `read_gtfs`/`write_gtfs` · `filter_single_trip` ·
-`adjust_speed`, `adjust_arrival_departure`, `append_height` ·
-`gps_as_sfpoints`, `gps_as_sflinestring` · deprecated (warn on call;
-listed under “Deprecated” in pkgdown): `filter_valid_stop_times`,
-`remove_invalid`, `gtfs_shapes_as_sf`, `gtfs_stops_as_sf` (internal
-body: `shapes_as_sf()`).
+`append_height` · `gps_as_sfpoints`, `gps_as_sflinestring` · deprecated
+(listed under “Deprecated” in pkgdown): `filter_valid_stop_times`,
+`remove_invalid`, `gtfs_shapes_as_sf`, `gtfs_stops_as_sf` (warn on every
+call; internal body: `shapes_as_sf()`), and `adjust_arrival_departure`,
+`adjust_speed` (warn once per session; internal bodies `*_internal()`).
 
 Local-only workflow files (gitignored and Rbuildignored): `MEMORY.md`,
 `quality_reports/`, `templates/`, and everything in `.claude/` except

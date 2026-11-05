@@ -73,14 +73,14 @@
 <pre><code>gtfs2gps/
 ├── DESCRIPTION, NAMESPACE        # NAMESPACE is roxygen-generated; never hand-edit
 ├── R/
-│   ├── gtfs2gps.R                # core: feed_to_gps() converts all shapes in one pass
+│   ├── gtfs2gps.R                # gtfs2gps(): checks, feed clean-up, files, messages
 │   ├── read_gtfs.R, write_gtfs.R # thin wrappers around gtfstools
 │   ├── filter_gtfs.R             # filter_single_trip, filter_valid_stop_times, remove_invalid
 │   ├── adjust_speed.R, adjust_arrival_departure.R, append_height.R
 │   ├── gps_as_sfpoints.R, gps_as_sflinestring.R, gtfs_as_sf.R, simplify_shapes.R
 │   ├── test_gtfs_freq.R          # "frequency" vs "simple" feed
-│   ├── utils.R                   # @importFrom, globalVariables, time helpers
-│   ├── zzz.R                     # .onLoad / .onAttach
+│   ├── utils.R                   # feed_to_gps() (all shapes in one pass), time and rounding helpers
+│   ├── zzz.R                     # .onAttach, @importFrom, globalVariables
 │   └── cpp11.R                   # generated; never hand-edit
 ├── src/                          # cpp11: expand_pattern.cpp (trips → GPS points; R reference in tests/testthat/helper-update-dt.R) (+ generated cpp11.cpp)
 ├── tests/testthat/               # test_&lt;function&gt;.R (underscore); suite also runs on CRAN
@@ -91,7 +91,7 @@
 ├── pkgdown/_pkgdown.yml
 ├── .github/workflows/            # R-CMD-check matrix, test-coverage, pkgdown
 └── prep_data/, tests_joao/, tests_rafa/   # maintainer scratch; Rbuildignored, don't edit unless asked</code></pre>
-<p>Exports: <code>gtfs2gps</code> · <code>read_gtfs</code>/<code>write_gtfs</code> · <code>filter_single_trip</code> · <code>adjust_speed</code>, <code>adjust_arrival_departure</code>, <code>append_height</code> · <code>gps_as_sfpoints</code>, <code>gps_as_sflinestring</code> · deprecated (warn on call; listed under “Deprecated” in pkgdown): <code>filter_valid_stop_times</code>, <code>remove_invalid</code>, <code>gtfs_shapes_as_sf</code>, <code>gtfs_stops_as_sf</code> (internal body: <code>shapes_as_sf()</code>).</p>
+<p>Exports: <code>gtfs2gps</code> · <code>read_gtfs</code>/<code>write_gtfs</code> · <code>filter_single_trip</code> · <code>append_height</code> · <code>gps_as_sfpoints</code>, <code>gps_as_sflinestring</code> · deprecated (listed under “Deprecated” in pkgdown): <code>filter_valid_stop_times</code>, <code>remove_invalid</code>, <code>gtfs_shapes_as_sf</code>, <code>gtfs_stops_as_sf</code> (warn on every call; internal body: <code>shapes_as_sf()</code>), and <code>adjust_arrival_departure</code>, <code>adjust_speed</code> (warn once per session; internal bodies <code>*_internal()</code>).</p>
 <p>Local-only workflow files (gitignored and Rbuildignored): <code>MEMORY.md</code>, <code>quality_reports/</code>, <code>templates/</code>, and everything in <code>.claude/</code> except <code>rules/</code>.</p>
 <hr></div>
 <div class="section level2">

@@ -245,9 +245,11 @@ A shape often begins before the first stop of its trips or ends after
 the last one (in the poa feed, about half of the trips start before
 their first stop). Those points have no time to be interpolated from, so
 each trip only runs from its first to its last stop with a departure
-time: the points of the shape outside them are not returned.
-[`adjust_speed()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_speed.md)
-can replace speeds outside a valid range.
+time: the points of the shape outside them are not returned. Unrealistic
+speeds are best fixed in the GTFS before converting it, with
+[`gtfstools::set_max_speed()`](https://ipea.github.io/gtfstools/reference/set_max_speed.html)
+(and `gtfstools::set_min_speed()`, in the development version of
+gtfstools).
 
 ## Final remarks
 

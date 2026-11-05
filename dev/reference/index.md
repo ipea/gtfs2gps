@@ -14,14 +14,6 @@
 
 ## Support functions to edit GTFS input
 
-- [`adjust_arrival_departure()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_arrival_departure.md)
-  : Adjust the arrival and departure times of a GTFS data
-
-- [`adjust_speed()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_speed.md)
-  :
-
-  Adjust the speeds of a gps-like table created with `gtfs2gps`
-
 - [`filter_single_trip()`](https://ipea.github.io/gtfs2gps/dev/reference/filter_single_trip.md)
   : Filter GTFS trips in order to have one trip per shape_id
 
@@ -37,11 +29,23 @@
 
 ## Deprecated
 
+- [`adjust_arrival_departure()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_arrival_departure.md)
+  : Adjust the arrival and departure times of a GTFS data (deprecated)
+
+- [`adjust_speed()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_speed.md)
+  :
+
+  Adjust the speeds of a gps-like table created with `gtfs2gps`
+  (deprecated)
+
 - [`filter_valid_stop_times()`](https://ipea.github.io/gtfs2gps/dev/reference/filter_valid_stop_times.md)
   : Filter GTFS data using valid stop times (deprecated)
+
 - [`gtfs_shapes_as_sf()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs_shapes_as_sf.md)
   : Convert GTFS shapes to simple feature object (deprecated)
+
 - [`gtfs_stops_as_sf()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs_stops_as_sf.md)
   : Convert GTFS stops to simple feature object (deprecated)
+
 - [`remove_invalid()`](https://ipea.github.io/gtfs2gps/dev/reference/remove_invalid.md)
   : Remove invalid objects from GTFS data (deprecated)

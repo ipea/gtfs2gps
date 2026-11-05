@@ -1,11 +1,22 @@
-# Adjust the speeds of a gps-like table created with [`gtfs2gps`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
+# Adjust the speeds of a gps-like table created with [`gtfs2gps`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md) (deprecated)
+
+This function is deprecated and will be removed in a future version; it
+warns once per session. It edits the GPS-like output of
+[`gtfs2gps()`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md).
+We strongly recommend using our sister package gtfstools to fix and edit
+GTFS data before processing them with gtfs2gps, for example with
+[`gtfstools::set_max_speed()`](https://ipea.github.io/gtfstools/reference/set_max_speed.html)
+and `gtfstools::set_min_speed()` (the latter in the development version
+of gtfstools). Unlike this function, they work on the GTFS before
+conversion, and do not replace missing speeds in the GPS output.
 
 Some GTFS.zip data sets might have quality issues, for example by
 assuming that a trip speed is unreasonably high (e.g. an urban bus
 running over 100 km/h), or in other cases the `timestamp` information
 might be missing for some route segments. This can lead a gps-like table
-to have `NA` or unrealistic `speed` and `timestamp` values. This
-function allows the user to adjust the speed of trips and updates
+to have `NA` or unrealistic `speed` and `timestamp` values.
+
+This function allows the user to adjust the speed of trips and updates
 `timestamp` values accordingly. The user can adjust the problematic
 speeds by either setting a custom constant value, or by considering the
 distance-weighted mean of the valid speeds (Default). The columns
@@ -17,8 +28,7 @@ within range; segments whose speeds are replaced are re-timed. Trips
 without any timestamp keep `NA` timestamps. Timestamps wrap at 24:00:00.
 `gps_data` must be ordered as
 [`gtfs2gps`](https://ipea.github.io/gtfs2gps/dev/reference/gtfs2gps.md)
-returns it. To cap speeds in the GTFS data before converting it, see
-[`set_max_speed`](https://ipea.github.io/gtfstools/reference/set_max_speed.html).
+returns it.
 
 ## Usage
 
@@ -81,7 +91,7 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   gtfstools::filter_by_weekday(c("monday", "wednesday")) |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/Rtmpynnshe/gtfsio:
+#> Unzipped the following files to /tmp/RtmpK6nZCu/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -100,10 +110,15 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps")) |>
 poa_gps <- gtfs2gps(poa)
 #> ℹ Converting shapes to sf objects
 #> Using 2 threads
-#> ✔ Converting shapes to sf objects [53ms]
+#> ✔ Converting shapes to sf objects [35ms]
 #> 
 #> ℹ Processing the data
-#> ✔ Processing the data [56ms]
+#> ✔ Processing the data [35ms]
 #> 
 poa_gps_new <- adjust_speed(poa_gps)
+#> Warning: `adjust_speed()` is deprecated and will be removed in a future version.
+#> ℹ We strongly recommend using gtfstools to fix and edit GTFS data before
+#>   processing them with gtfs2gps, e.g. with `gtfstools::set_max_speed()` and
+#>   `gtfstools::set_min_speed()`.
+#> This warning is displayed once per session.
 ```

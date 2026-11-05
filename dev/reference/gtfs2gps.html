@@ -186,9 +186,10 @@ have no time to be interpolated from, and are not returned. The <code>speed</cod
 between the current and previous row of the same trip. It means that the first
 data point of each trip, at its first stop, represents a stationary vehicle,
 with <code>dist</code>, <code>cumdist</code> and <code>cumtime</code> equal to zero: <code>cumdist</code> is the distance
-travelled from the first stop. The <code><a href="adjust_speed.html">adjust_speed()</a></code> function can be used to
-post-process the output to replace speeds outside a valid range, or eventual
-<code>NA</code> values (such as two stops at the same place and time).</p>
+travelled from the first stop. Unrealistic speeds are best fixed in the GTFS
+before converting it, with <code><a href="https://ipea.github.io/gtfstools/reference/set_max_speed.html" class="external-link">gtfstools::set_max_speed()</a></code> (and
+<code>gtfstools::set_min_speed()</code>, in the development version of gtfstools). Two stops at the same place and time give an
+<code>NA</code> speed.</p>
 <p>Each stop is presented as two data points for each trip in the output. The
 <code>timestamp</code> value in the first data point represents the time when the
 vehicle arrived at that stop (corresponding the <code>arrival_time</code> column in the
@@ -198,9 +199,9 @@ the <code>departure_time</code> column in the <code>stop_times.txt</code> file).
 considers that the vehicle is stationary at the stop, immediately before
 departing.</p>
 <p>Some GTFS feeds do not report embark/disembark times (so <code>arrival_time</code> and
-<code>departure_time</code> are identical at the same stop). In this case, the user can
-call the <code><a href="adjust_arrival_departure.html">adjust_arrival_departure()</a></code> function to set the minimum time each
-vehicle will spend at stops to embark/disembark passengers.</p>
+<code>departure_time</code> are identical at the same stop). In this case,
+<code><a href="https://ipea.github.io/gtfstools/reference/set_dwell_time.html" class="external-link">gtfstools::set_dwell_time()</a></code> or <code><a href="https://ipea.github.io/gtfstools/reference/set_min_dwell_time.html" class="external-link">gtfstools::set_min_dwell_time()</a></code> can set the
+time vehicles spend at stops to embark/disembark passengers.</p>
 <p>To avoid division by zero, the minimum speed of vehicles in the output is
 1e-12 km/h, so that vehicles are never completely stopped.</p>
     </div>
@@ -212,7 +213,7 @@ vehicle will spend at stops to embark/disembark passengers.</p>
 <span class="r-in"><span><span class="va">gtfs</span> <span class="op">&lt;-</span> <span class="fu"><a href="read_gtfs.html">read_gtfs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata/poa.zip"</span>, package <span class="op">=</span> <span class="st">"gtfs2gps"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">gtfstools</span><span class="fu">::</span><span class="fu"><a href="https://ipea.github.io/gtfstools/reference/filter_by_shape_id.html" class="external-link">filter_by_shape_id</a></span><span class="op">(</span><span class="st">"T2-1"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="filter_single_trip.html">filter_single_trip</a></span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Unzipped the following files to /tmp/Rtmpynnshe/gtfsio:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Unzipped the following files to /tmp/RtmpK6nZCu/gtfsio:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * agency.txt</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * calendar.txt</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   * routes.txt</span>

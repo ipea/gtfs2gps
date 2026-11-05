@@ -1,4 +1,15 @@
-# Adjust the arrival and departure times of a GTFS data
+# Adjust the arrival and departure times of a GTFS data (deprecated)
+
+This function is deprecated and will be removed in a future version; it
+warns once per session. Its job has moved to gtfstools: use
+[`gtfstools::set_dwell_time()`](https://ipea.github.io/gtfstools/reference/set_dwell_time.html)
+or
+[`gtfstools::set_min_dwell_time()`](https://ipea.github.io/gtfstools/reference/set_min_dwell_time.html)
+to edit and fix GTFS feeds before converting them. Unlike this function,
+`set_min_dwell_time()` keeps arrivals, delays the departure and the
+later times of the trip, and leaves each trip's first and last timed
+stops unchanged (`set_dwell_time()` sets them too); neither fills blank
+times.
 
 Some GTFS.zip data have issues related to arrival and departure time on
 stops. This function makes sure the GTFS has dis/embarking times at each
@@ -52,7 +63,7 @@ A GTFS with adjusted `arrival_time` and `departure_time` on data.table
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps"))
-#> Unzipped the following files to /tmp/Rtmpynnshe/gtfsio:
+#> Unzipped the following files to /tmp/RtmpK6nZCu/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -69,4 +80,9 @@ poa <- read_gtfs(system.file("extdata/poa.zip", package="gtfs2gps"))
 #> Reading trips
 
 poa <- adjust_arrival_departure(poa)
+#> Warning: `adjust_arrival_departure()` is deprecated and will be removed in a future
+#> version.
+#> ℹ Its job has moved to gtfstools: use `gtfstools::set_dwell_time()` or
+#>   `gtfstools::set_min_dwell_time()` to edit and fix GTFS feeds.
+#> This warning is displayed once per session.
 ```

@@ -144,11 +144,10 @@ distance and time between the current and previous row of the same trip.
 It means that the first data point of each trip, at its first stop,
 represents a stationary vehicle, with `dist`, `cumdist` and `cumtime`
 equal to zero: `cumdist` is the distance travelled from the first stop.
-The
-[`adjust_speed()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_speed.md)
-function can be used to post-process the output to replace speeds
-outside a valid range, or eventual `NA` values (such as two stops at the
-same place and time).
+Unrealistic speeds are best fixed in the GTFS before converting it, with
+[`gtfstools::set_max_speed()`](https://ipea.github.io/gtfstools/reference/set_max_speed.html)
+(and `gtfstools::set_min_speed()`, in the development version of
+gtfstools). Two stops at the same place and time give an `NA` speed.
 
 Each stop is presented as two data points for each trip in the output.
 The `timestamp` value in the first data point represents the time when
@@ -160,11 +159,11 @@ that stop (corresponding the `departure_time` column in the
 stationary at the stop, immediately before departing.
 
 Some GTFS feeds do not report embark/disembark times (so `arrival_time`
-and `departure_time` are identical at the same stop). In this case, the
-user can call the
-[`adjust_arrival_departure()`](https://ipea.github.io/gtfs2gps/dev/reference/adjust_arrival_departure.md)
-function to set the minimum time each vehicle will spend at stops to
-embark/disembark passengers.
+and `departure_time` are identical at the same stop). In this case,
+[`gtfstools::set_dwell_time()`](https://ipea.github.io/gtfstools/reference/set_dwell_time.html)
+or
+[`gtfstools::set_min_dwell_time()`](https://ipea.github.io/gtfstools/reference/set_min_dwell_time.html)
+can set the time vehicles spend at stops to embark/disembark passengers.
 
 To avoid division by zero, the minimum speed of vehicles in the output
 is 1e-12 km/h, so that vehicles are never completely stopped.
@@ -177,7 +176,7 @@ library(gtfs2gps)
 gtfs <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/Rtmpynnshe/gtfsio:
+#> Unzipped the following files to /tmp/RtmpK6nZCu/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
