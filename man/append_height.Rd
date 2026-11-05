@@ -26,7 +26,7 @@ gtfs <- read_gtfs(fortaleza) |>
   gtfstools::filter_by_shape_id("shape836-I") |>
   filter_single_trip()
 
-fortaleza_gps <- gtfs2gps(gtfs, spatial_resolution = 500, parallel = FALSE, quiet = TRUE) |>
+fortaleza_gps <- gtfs2gps(gtfs, spatial_resolution = 500, quiet = TRUE) |>
   append_height(srtmfile)
 }
 }

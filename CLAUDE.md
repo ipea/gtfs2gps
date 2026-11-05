@@ -23,7 +23,7 @@ include Rafael H. M. Pereira and Joao Bazzo. License MIT. Docs:
 - **Never surprise the caller.** Functions don't modify the input GTFS or GPS
   data (`data.table::copy()`, or an explicit `clone` argument).
 - **Parallel = sequential.** `gtfs2gps()` must give the same result with
-  `parallel = TRUE` and `parallel = FALSE`.
+  `ncores = 1` and `ncores = 2` (or any number of threads).
 - **CRAN-ready at all times.** `R CMD check --as-cran`: 0 errors, 0 warnings.
   Tests run on CRAN: ≤ 2 cores, write only to `tempdir()`.
 - **Plan first.** Enter plan mode before non-trivial tasks. Every plan must be
@@ -88,7 +88,7 @@ Local-only workflow files (gitignored and Rbuildignored): `MEMORY.md`,
 ```r
 devtools::load_all()
 devtools::document()                         # regenerate man/, NAMESPACE, cpp11 registration
-devtools::test()                             # full suite (slow: parallel gtfs2gps)
+devtools::test()                             # full suite (slow)
 devtools::test(filter = "adjust_speed")      # matches tests/testthat/test_adjust_speed.R
 devtools::check(args = "--as-cran")          # ~5 min; run in background
 pkgdown::build_site()
@@ -98,8 +98,8 @@ covr::package_coverage()
 - Compiled code needs a toolchain (Rtools on Windows). `core.autocrlf=true`
   here, so regenerated files can show line-ending-only diffs: check drift with
   `git diff`, not `git status`.
-- `gtfs2gps()` defaults to `parallel = FALSE`; `parallel = TRUE` runs the C++
-  expansion in `ncores` threads (default `data.table::getDTthreads()`). The
+- `gtfs2gps()` runs the C++ expansion in `ncores` threads (default 2; `Inf` =
+  `data.table::getDTthreads()`); `parallel` and `strategy` are deprecated. The
   furrr/future worker sessions were removed on 2026-10-29: they were slower than
   sequential.
 

@@ -106,15 +106,16 @@ gtfs2gps handles two kinds of objects:
   objects built with other flags.
 - **Parallelism (since 2026-10-29; formerly furrr/future worker sessions):**
   `gtfs2gps()` converts all shapes in one pass (`feed_to_gps()`), and
-  `parallel = TRUE` runs the C++ expansion (`cpp_expand_pattern()`) in
-  `ncores` threads of the same R session, default `data.table::getDTthreads()`
-  (which respects `OMP_THREAD_LIMIT`, `setDTthreads()` and CRAN's limits).
+  the C++ expansion (`cpp_expand_pattern()`) runs in `ncores` threads of the
+  same R session: default 2, `Inf` = `data.table::getDTthreads()` (which
+  respects `OMP_THREAD_LIMIT`, `setDTthreads()` and CRAN's limits). `parallel`
+  and `strategy` are deprecated and ignored (since 2026-11-04).
   - Code inside a threaded loop must not call R: take `REAL()`/`INTEGER()`
     pointers and allocate outputs before the loop, catch exceptions inside it
     and raise them after. Trips are independent and nothing is reduced across
     them, so results don't depend on the number of threads.
   - Any change to that path must give **identical results** with
-    `parallel = FALSE` and `parallel = TRUE` (Gate 1).
+    `ncores = 1` and `ncores = 2` (Gate 1).
   - Never use more than 2 threads in tests, examples or vignettes.
 
 ## A4. Messages, warnings and errors (cli)
@@ -217,8 +218,7 @@ user-facing conditions. `cli` goes in `Imports`.
     asserts on it; new tests must)
   - both a stop_times-based (`poa`) and a frequency-based (`saopaulo`) feed
     when behaviour can differ
-  - if the threaded path changed: `parallel = FALSE` vs `parallel = TRUE,
-    ncores = 2` give identical output
+  - if the threaded path changed: `ncores = 1` vs `ncores = 2` give identical output
 - Tests run on CRAN (no global skip in `tests/testthat.R`): keep them fast,
   use ≤ 2 cores, and write only to `tempdir()`. (`test_read_gtfs.R` currently
   copies and unzips `poa.zip` into the working directory; backlog.)
@@ -236,7 +236,7 @@ user-facing conditions. `cli` goes in `Imports`.
 - **A claimed speed-up needs evidence:** `bench::mark(old = ..., new = ...,
   check = FALSE)` on at least `poa.zip` (plus `saopaulo.zip` when frequencies
   matter), results compared with `all.equal()`, and timings recorded in the
-  plan or session log. Benchmark with `parallel = FALSE` unless parallel
+  plan or session log. Benchmark with `ncores = 1` unless parallel
   overhead is the subject. `bench` is a dev tool, not a dependency.
 - Don't add a hard dependency (Imports) without a plan that justifies it.
 
@@ -289,7 +289,7 @@ release. Credit external contributors.
 | `<<-` | Return values |
 | `print()`/`cat()`/`message()`/`stop()`/`warning()` in new code | `cli::cli_inform()`/`cli_abort()`/`cli_warn()`, informative output suppressed by `quiet` |
 | `options()`/`par()`/threads changed, not restored | `on.exit(..., add = TRUE)` |
-| More than 2 cores in tests/examples/vignettes | `ncores = 2` or `parallel = FALSE` |
+| More than 2 cores in tests/examples/vignettes | `ncores = 2` or `ncores = 1` |
 | `T`/`F` | `TRUE`/`FALSE` |
 | Unvalidated enumerated arg | `checkmate::assert_choice()` (A2) |
 | `==` on doubles or on `units` vs numeric | tolerance / `all.equal()`; compare `units` with `units::set_units()` |
@@ -307,7 +307,7 @@ release. Credit external contributors.
 [ ] new/changed args validated with checkmate
 [ ] GPS column types preserved (units km/h, m, s; ITime timestamp)
 [ ] works for stop_times-based and frequency-based feeds; tested on both when relevant
-[ ] threaded path: identical results parallel = FALSE vs TRUE; no R API inside threads
+[ ] threaded path: identical results ncores = 1 vs 2; no R API inside threads
 [ ] ≤ 2 cores and tempdir() only in tests/examples/vignettes
 [ ] cli::cli_abort/cli_warn/cli_inform (classed errors); touched functions fully migrated; messages respect quiet
 [ ] style matches the file (leading-comma data.table calls, explicit return())

@@ -409,6 +409,9 @@ feed_to_gps <- function(slice, routes, spatial_resolution, n_threads) {
   src <- res$src
   point <- tpl$point[src]
   ktk <- kt[keep]
+  # each trip starts at its first timed stop (#260), so cumdist restarts at 0 there
+  cd <- cumdist[point]
+  first_row <- cumsum(n_rows) - n_rows + 1L
 
   # route type of each converted trip, by shape: the last row of the trip in trips (with
   # a route_id) gives it, NA when its route is not in routes (a trip listed under two
@@ -442,8 +445,8 @@ feed_to_gps <- function(slice, routes, spatial_resolution, n_threads) {
     stop_id = tpl$stop_id[src],
     stop_sequence = tpl$stop_sequence[src],
     dist = res$dist,
-    # rounded as the columns from cpp_expand_pattern(), once per shape point
-    cumdist = round3(cumdist)[point],
+    # rounded as the columns from cpp_expand_pattern()
+    cumdist = round3(cd - rep(cd[first_row], n_rows)),
     trip_id = rep(ktk$trip_id, n_rows),
     speed = res$speed,
     timestamp = structure(res$timestamp %% 86400L, class = "ITime"),

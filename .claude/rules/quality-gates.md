@@ -24,7 +24,7 @@ All must hold for the files touched:
 |---|---|---|
 | Docs + cpp11 registration regenerated | `Rscript -e "devtools::document()"` then `git diff --stat man/ NAMESPACE R/cpp11.R src/cpp11.cpp` | No unexpected content drift (use `git diff`, not `git status`: with `core.autocrlf=true`, regeneration can rewrite line endings only); intended changes staged with the source |
 | Targeted tests | `Rscript -e "devtools::test(filter = '<fn>')"` for every touched function (files are `test_<fn>.R`) | 0 failures, 0 new warnings |
-| Parallel parity | if `gtfs2gps()` or anything it calls changed: run the affected test/MWE with `parallel = FALSE` and with `parallel = TRUE, ncores = 2` | Identical results |
+| Parallel parity | if `gtfs2gps()` or anything it calls changed: run the affected test/MWE with `ncores = 1` and with `ncores = 2` | Identical results |
 | Style | read the diff against the surrounding code | Matches the file (conventions A5); there is no `.lintr` here, so lintr is advisory only |
 | NEWS | user-facing change | Bullet under the development-version heading (conventions A9) |
 | pkgdown index | if an `@export` was added or removed: `Rscript -e "pkgdown::check_pkgdown()"` | No missing or stale topics (config lives in `pkgdown/_pkgdown.yml`) |
@@ -37,7 +37,7 @@ Gate 1, plus:
 
 | Check | Command | Pass |
 |---|---|---|
-| Full suite | `Rscript -e "devtools::test()"` (slow: `gtfs2gps()` runs in parallel by default) | 0 failures |
+| Full suite | `Rscript -e "devtools::test()"` (slow) | 0 failures |
 | CRAN check | `Rscript -e "devtools::check(args = '--as-cran')"` (background; ~5 minutes) | 0 errors, 0 warnings; each NOTE triaged (pre-existing vs new). The last CRAN submission was 0/0/0 (`cran-comments.md`) |
 | Review loop | parallel review lenses (`orchestrator-protocol.md`) | Converged: 0 open CRITICAL/MAJOR |
 | Package review | `r-package-reviewer` agent on changed files (local; if absent, apply the conventions checklist manually) | 0 CRITICAL/MAJOR |

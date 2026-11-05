@@ -1,55 +1,50 @@
 #' @title Convert GTFS to GPS-like data given a spatial resolution
 #'
-#' @description Convert GTFS data to GPS format by sampling points using a given
-#' spatial resolution. This function creates additional points in order to
-#' guarantee that two points in a same trip will have at most a given
+#' @description Convert GTFS data to GPS format by sampling points using a
+#' given spatial resolution. This function creates additional points in order
+#' to guarantee that two points in a same trip will have at most a given
 #' distance, indicated as a spatial resolution.
 #'
-#' Stops without times are placed along the shape at constant speed between the
-#' timed stops. \code{\link[gtfstools]{fix_gtfs}} can clean a feed before
+#' Stops without times are placed along the shape at constant speed between
+#' the timed stops. \code{\link[gtfstools]{fix_gtfs}} can clean a feed before
 #' converting it (e.g. duplicated rows and unused ids), but the stop times it
 #' interpolates may give spiky or infinite speeds here.
 #'
-#' @param gtfs_data A path to a GTFS file to be converted to GPS, or a GTFS data
-#' represented as a list of data.tables.
+#' @param gtfs_data A path to a GTFS file to be converted to GPS, or a GTFS
+#'        data represented as a list of data.tables.
 #' @param spatial_resolution The spatial resolution in meters: a number of at
-#' least 1, or a \code{units} length. Default is 100m.
-#' This function only creates points in order to guarantee that the minimum
-#' distance between two consecutive points will be at most the
-#' spatial_resolution. If a given shape has two consecutive points with a
-#' distance lower than the spatial resolution, the algorithm will not remove
-#' such points.
-#' @param parallel Decides whether the function should run in parallel. Defaults to FALSE.
-#' When TRUE, the points of the trips are computed in several threads of the
-#' current R session (when the package was compiled with OpenMP). The result is
-#' the same either way.
-#' @param ncores Number of threads to be used in parallel execution. When
-#'        `parallel = FALSE`, this argument is ignored. When `parallel = TRUE`,
-#'        then by default the function uses as many threads as
-#'        `data.table::getDTthreads()`.
-#' @param strategy This argument is deprecated and ignored. Please use arguments
-#' parallel and ncores instead.
-#' @param filepath Output file path. As default, the output is returned when gtfs2gps finishes.
-#' When this argument is set, each shape is saved into a txt file within filepath,
-#' named after its \code{shape_id}. Characters that can't be in a file name on some
-#' systems (such as \code{/}, \code{:} or \code{*}) and \code{\%} are written as
-#' \code{\%XX}, their hexadecimal code, so \code{utils::URLdecode()} gives the id back
-#' (e.g. \code{"a/b"} is saved as \code{a\%2Fb.txt}). In this case, no output is returned. See argument
-#' compress for another option.
-#' @param compress Argument that can be used only with filepath. When TRUE, it
-#' compresses the output files by saving them using rds format. Default value is FALSE.
-#' Note that compress guarantees that the data saved will be read in the same way as it
-#' was created in R. If not compress, the txt extension requires the data to be converted
-#' from ITime to string, and therefore they need to be manually converted back to ITime to
-#' be properly handled by gtfs2gps.
+#'        least 1, or a \code{units} length. Default is 100m. This function only
+#'        creates points in order to guarantee that the minimum distance between two
+#'        consecutive points will be at most the spatial_resolution. If a given shape
+#'        has two consecutive points with a distance lower than the spatial resolution,
+#'        the algorithm will not remove such points.
+#' @param parallel This argument is deprecated and ignored. Please use argument
+#'         ncores instead.
+#' @param ncores Number of threads used. Defaults to 2. If \code{Inf}, it uses
+#'        all threads available, as given by \code{data.table::getDTthreads()}.
+#' @param strategy This argument is deprecated and ignored. Please use argument
+#'        ncores instead.
+#' @param filepath Output file path. As default, the output is returned when gtfs2gps
+#'        finishes. When this argument is set, each shape is saved into a txt file
+#'        within filepath, named after its \code{shape_id}. Characters that can't be
+#'        in a file name on some systems (such as \code{/}, \code{:} or \code{*}) and
+#'        \code{\%} are written as \code{\%XX}, their hexadecimal code, so \code{utils::URLdecode()} gives the id back
+#'        (e.g. \code{"a/b"} is saved as \code{a\%2Fb.txt}). In this case, no output
+#'        is returned. See argument compress for another option.
+#' @param compress Argument that can be used only with filepath. When `TRUE`, it
+#'        compresses the output files by saving them using `.rds` format. Default value is
+#'        `FALSE`. Note that compress guarantees that the data saved will be read in the same way as it
+#'        was created in R. If not compress, the txt extension requires the data to be converted
+#'        from ITime to string, and therefore they need to be manually converted back to ITime to
+#'        be properly handled by gtfs2gps.
 #' @param continue Argument that can be used only with filepath. When TRUE, it
 #'        skips processing the shape identifiers that were already saved into
 #'        files. It is useful to continue processing a GTFS file that was stopped
-#'        for some reason. Default value is FALSE.
+#'        for some reason. Default value is `FALSE`.
 #' @param snap_method This argument is deprecated and ignored. Stops are now
-#' located along the shapes with `gtfstools::interpolate_shape_dist_traveled()`
-#' (see details).
-#' @param quiet Hide messages while processing the data? Defaults to FALSE.
+#'        located along the shapes with `gtfstools::interpolate_shape_dist_traveled()`
+#'        (see details).
+#' @param quiet Hide messages while processing the data. Defaults to `FALSE`.
 #'
 #' @details After creating geometry points for a given shape id, the `gtfs2gps()`
 #' function snaps the stops to the route geometry. The stops of each trip are
@@ -61,11 +56,16 @@
 #' a point of its own. Distances are great-circle distances on the sphere used
 #' by the s2 and sf packages, with a radius of 6,371,010 m.
 #'
-#' The `speed`, `cumdist`, and `cumtime` are based on the difference of distance
-#' and time between the current and previous row of the same trip. It means that
-#' the first data point at the first stop of each trip represents a stationary
-#' vehicle. The `adjust_speed()` function can be used to post-process the output
-#' to replace eventual `NA` values in the `speed` column.
+#' Each trip runs from its first to its last stop with a departure time: shape
+#' points (and stops without times) before the first one and after the last one
+#' have no time to be interpolated from, and are not returned. The `speed`,
+#' `cumdist`, and `cumtime` are based on the difference of distance and time
+#' between the current and previous row of the same trip. It means that the first
+#' data point of each trip, at its first stop, represents a stationary vehicle,
+#' with `dist`, `cumdist` and `cumtime` equal to zero: `cumdist` is the distance
+#' travelled from the first stop. The `adjust_speed()` function can be used to
+#' post-process the output to replace speeds outside a valid range, or eventual
+#' `NA` values (such as two stops at the same place and time).
 #'
 #' Each stop is presented as two data points for each trip in the output. The
 #' `timestamp` value in the first data point represents the time when the
@@ -104,8 +104,8 @@
 gtfs2gps <- function(
   gtfs_data,
   spatial_resolution = 100,
-  parallel = FALSE,
-  ncores = NULL,
+  parallel = NULL,
+  ncores = 2,
   strategy = NULL,
   filepath = NULL,
   compress = FALSE,
@@ -132,10 +132,27 @@ gtfs2gps <- function(
     cli::cli_warn(
       c(
         "Argument {.arg strategy} is deprecated and will be removed in a future version.",
-        "i" = "Use arguments {.arg parallel} and {.arg ncores} instead."
+        "i" = "Use argument {.arg ncores} instead."
       ),
       class = "deprecated_strategy"
     )
+  }
+
+  if (!is.null(parallel)) {
+    cli::cli_warn(
+      c(
+        "Argument {.arg parallel} is deprecated and ignored.",
+        "i" = "Use {.arg ncores} to set the number of threads: {.code ncores = 1} runs sequentially and {.code ncores = Inf} uses all available threads."
+      ),
+      class = "deprecated_parallel"
+    )
+  }
+
+  if (is.null(ncores)) {
+    ncores <- 2
+  } # back-compat: NULL was a valid value before
+  if (!identical(ncores, Inf)) {
+    checkmate::assert_count(ncores, positive = TRUE)
   }
 
   if (!is.null(snap_method)) {
@@ -168,7 +185,6 @@ gtfs2gps <- function(
   if (!is.null(filepath)) {
     checkmate::assert_directory_exists(filepath, access = "w")
   }
-  checkmate::assert_flag(parallel)
   # spatial_resolution is used in metres from here on (both st_segmentize() calls); a
   # units length is converted first
   if (inherits(spatial_resolution, "units")) {
@@ -323,18 +339,12 @@ gtfs2gps <- function(
 
   ###### PART 3. Convert the shapes ----------------------------------------------
 
-  n_threads <- 1L
-  if (parallel) {
-    checkmate::assert_count(ncores, positive = TRUE, null.ok = TRUE)
-    if (is.null(ncores)) {
-      ncores <- data.table::getDTthreads()
-    }
-    n_threads <- as.integer(min(ncores, .Machine$integer.max))
+  n_threads <- if (is.infinite(ncores)) data.table::getDTthreads() else ncores
+  n_threads <- as.integer(n_threads)
 
-    # threads are only used when the package was compiled with OpenMP
-    n_used <- if (cpp_openmp_available()) n_threads else 1L
-    cli::cli_inform("Using {n_used} thread{?s}")
-  }
+  # threads are only used when the package was compiled with OpenMP
+  n_used <- if (cpp_openmp_available()) n_threads else 1L
+  cli::cli_inform("Using {n_used} thread{?s}")
 
   cli::cli_progress_step("Processing the data")
   convert <- function(slice) {
@@ -539,8 +549,9 @@ gtfs2gps <- function(
     set_gps_units(output)
 
     # the speed checks use the counts per trip from cpp_expand_pattern() instead of
-    # scanning every row of output
-    if (sum(done_trips$n_na) > 1) {
+    # scanning every row of output. Trips start and end at timed stops (#260), so an
+    # NA speed comes from the data (two stops at the same time and place)
+    if (sum(done_trips$n_na) > 0) {
       cli::cli_inform("Some {.field speed} values are NA in the returned data.")
     }
 

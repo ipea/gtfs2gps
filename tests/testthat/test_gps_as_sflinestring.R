@@ -32,20 +32,20 @@ test_that("gps_as_sflinestring", {
 test_that("gps_as_sflinestring splits at every stop and keeps times", {
   poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"), quiet = TRUE)
 
-  # the roxygen example: 89 stop-to-stop segments, plus a first and a last
-  # segment ("-") for each of the 2 trips
+  # the roxygen example: 89 stop-to-stop segments; the trips start and end at a
+  # stop (#260), so there is no first or last segment ("-") outside the stops
   ex <- gtfstools::filter_by_shape_id(poa, c("T2-1", "A141-1")) |>
     filter_single_trip() |>
-    gtfs2gps(parallel = FALSE, quiet = TRUE) |>
+    gtfs2gps(ncores = 1, quiet = TRUE) |>
     gps_as_sflinestring()
-  expect_equal(nrow(ex), 93)
+  expect_equal(nrow(ex), 89)
   expect_equal(sum(ex$from_stop_id != "-" & ex$to_stop_id != "-"), 89)
   expect_false(anyNA(ex$cumtime))
 
   # a file written from the GPS data gives the same result
   gps <- gtfstools::filter_by_shape_id(poa, "176-1") |>
     filter_single_trip() |>
-    gtfs2gps(parallel = FALSE, quiet = TRUE)
+    gtfs2gps(ncores = 1, quiet = TRUE)
   gps_adj <- adjust_speed(gps)
   f <- tempfile(fileext = ".csv")
   on.exit(unlink(f), add = TRUE)
@@ -74,7 +74,7 @@ test_gtfs_midnight <- function(){
 }
 
 test_that("gps_as_sflinestring timestamps wrap at midnight", {
-  lines <- gtfs2gps(test_gtfs_midnight(), parallel = FALSE, quiet = TRUE) |>
+  lines <- gtfs2gps(test_gtfs_midnight(), ncores = 1, quiet = TRUE) |>
     gps_as_sflinestring()
 
   ts <- as.integer(c(lines$from_timestamp, lines$to_timestamp))

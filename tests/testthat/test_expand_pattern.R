@@ -37,6 +37,11 @@ test_that("cpp_expand_pattern gives the same result as the R reference", {
     , untimed = trip(1:9, replace(dep0, c(2, 3, 7), NA_integer_), replace(dep0 - 10L, c(2, 3, 7), NA_integer_))
     # a stop with an arrival but no departure time is not timed
     , arrival_only = trip(1:9, replace(dep0, 4, NA_integer_))
+    # first and last stops untimed: the rows before the second stop and after the
+    # eighth are not written (#260)
+    , untimed_ends = trip(1:9, replace(dep0, c(1, 9), NA_integer_), replace(dep0 - 10L, c(1, 9), NA_integer_))
+    # the first timed stop without an arrival time starts at its departure row
+    , no_first_arrival = trip(1:9, dep0, replace(dep0 - 10L, 1, NA_integer_))
   )
   # the template holds the times of the pattern's first trip
   tpl$departure_time <- replace(rep(NA_integer_, n), stop_rows, trips[[1]]$dep)
@@ -71,6 +76,17 @@ test_that("cpp_expand_pattern gives the same result as the R reference", {
   # the edge cases are reached
   expect_true(any(is.infinite(res$speed)))
   expect_true(any(is.nan(res$speed)))
+  # each trip starts stopped at its first timed stop, with dist and cumtime 0, and
+  # has no NA speed (NaN only from the zero_zero trip)
+  starts <- cumsum(res$n_rows[done]) - res$n_rows[done] + 1L
+  expect_identical(res$speed[starts], rep(1e-12, sum(done)))
+  expect_identical(res$dist[starts], rep(0, sum(done)))
+  expect_identical(res$cumtime[starts], rep(0, sum(done)))
+  by_trip_speed <- split(res$speed, rep(names(trips)[done], res$n_rows[done]))
+  expect_false(anyNA(unlist(by_trip_speed[names(by_trip_speed) != "zero_zero"])))
+  # the trimmed trips start and end where their timed stops are
+  expect_identical(res$src[starts[names(trips)[done] == "untimed_ends"]], 5L)
+  expect_identical(res$src[starts[names(trips)[done] == "no_first_arrival"]], 1L)
   # the midnight trip has times on both sides of 00:00
   by_trip <- split(res$timestamp, rep(names(trips)[done], res$n_rows[done]))
   expect_true(any(by_trip$midnight >= 86000L, na.rm = TRUE))

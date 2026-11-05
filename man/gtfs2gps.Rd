@@ -7,8 +7,8 @@
 gtfs2gps(
   gtfs_data,
   spatial_resolution = 100,
-  parallel = FALSE,
-  ncores = NULL,
+  parallel = NULL,
+  ncores = 2,
   strategy = NULL,
   filepath = NULL,
   compress = FALSE,
@@ -18,41 +18,36 @@ gtfs2gps(
 )
 }
 \arguments{
-\item{gtfs_data}{A path to a GTFS file to be converted to GPS, or a GTFS data
-represented as a list of data.tables.}
+\item{gtfs_data}{A path to a GTFS file to be converted to GPS, or a GTFS
+data represented as a list of data.tables.}
 
 \item{spatial_resolution}{The spatial resolution in meters: a number of at
-least 1, or a \code{units} length. Default is 100m.
-This function only creates points in order to guarantee that the minimum
-distance between two consecutive points will be at most the
-spatial_resolution. If a given shape has two consecutive points with a
-distance lower than the spatial resolution, the algorithm will not remove
-such points.}
+least 1, or a \code{units} length. Default is 100m. This function only
+creates points in order to guarantee that the minimum distance between two
+consecutive points will be at most the spatial_resolution. If a given shape
+has two consecutive points with a distance lower than the spatial resolution,
+the algorithm will not remove such points.}
 
-\item{parallel}{Decides whether the function should run in parallel. Defaults to FALSE.
-When TRUE, the points of the trips are computed in several threads of the
-current R session (when the package was compiled with OpenMP). The result is
-the same either way.}
+\item{parallel}{This argument is deprecated and ignored. Please use argument
+ncores instead.}
 
-\item{ncores}{Number of threads to be used in parallel execution. When
-\code{parallel = FALSE}, this argument is ignored. When \code{parallel = TRUE},
-then by default the function uses as many threads as
-\code{data.table::getDTthreads()}.}
+\item{ncores}{Number of threads used. Defaults to 2. If \code{Inf}, it uses
+all threads available, as given by \code{data.table::getDTthreads()}.}
 
-\item{strategy}{This argument is deprecated and ignored. Please use arguments
-parallel and ncores instead.}
+\item{strategy}{This argument is deprecated and ignored. Please use argument
+ncores instead.}
 
-\item{filepath}{Output file path. As default, the output is returned when gtfs2gps finishes.
-When this argument is set, each shape is saved into a txt file within filepath,
-named after its \code{shape_id}. Characters that can't be in a file name on some
-systems (such as \code{/}, \code{:} or \code{*}) and \code{\%} are written as
-\code{\%XX}, their hexadecimal code, so \code{utils::URLdecode()} gives the id back
-(e.g. \code{"a/b"} is saved as \code{a\%2Fb.txt}). In this case, no output is returned. See argument
-compress for another option.}
+\item{filepath}{Output file path. As default, the output is returned when gtfs2gps
+finishes. When this argument is set, each shape is saved into a txt file
+within filepath, named after its \code{shape_id}. Characters that can't be
+in a file name on some systems (such as \code{/}, \code{:} or \code{*}) and
+\code{\%} are written as \code{\%XX}, their hexadecimal code, so \code{utils::URLdecode()} gives the id back
+(e.g. \code{"a/b"} is saved as \code{a\%2Fb.txt}). In this case, no output
+is returned. See argument compress for another option.}
 
-\item{compress}{Argument that can be used only with filepath. When TRUE, it
-compresses the output files by saving them using rds format. Default value is FALSE.
-Note that compress guarantees that the data saved will be read in the same way as it
+\item{compress}{Argument that can be used only with filepath. When \code{TRUE}, it
+compresses the output files by saving them using \code{.rds} format. Default value is
+\code{FALSE}. Note that compress guarantees that the data saved will be read in the same way as it
 was created in R. If not compress, the txt extension requires the data to be converted
 from ITime to string, and therefore they need to be manually converted back to ITime to
 be properly handled by gtfs2gps.}
@@ -64,9 +59,9 @@ located along the shapes with \code{gtfstools::interpolate_shape_dist_traveled()
 \item{continue}{Argument that can be used only with filepath. When TRUE, it
 skips processing the shape identifiers that were already saved into
 files. It is useful to continue processing a GTFS file that was stopped
-for some reason. Default value is FALSE.}
+for some reason. Default value is \code{FALSE}.}
 
-\item{quiet}{Hide messages while processing the data? Defaults to FALSE.}
+\item{quiet}{Hide messages while processing the data. Defaults to \code{FALSE}.}
 }
 \value{
 A \code{data.table}, where each row represents a GPS point. The following
@@ -77,13 +72,13 @@ columns are returned (units of measurement in parenthesis): dist and cumdist
 than that, which keep their value (such as the 1e-12 km/h of stops).
 }
 \description{
-Convert GTFS data to GPS format by sampling points using a given
-spatial resolution. This function creates additional points in order to
-guarantee that two points in a same trip will have at most a given
+Convert GTFS data to GPS format by sampling points using a
+given spatial resolution. This function creates additional points in order
+to guarantee that two points in a same trip will have at most a given
 distance, indicated as a spatial resolution.
 
-Stops without times are placed along the shape at constant speed between the
-timed stops. \code{\link[gtfstools]{fix_gtfs}} can clean a feed before
+Stops without times are placed along the shape at constant speed between
+the timed stops. \code{\link[gtfstools]{fix_gtfs}} can clean a feed before
 converting it (e.g. duplicated rows and unused ids), but the stop times it
 interpolates may give spiky or infinite speeds here.
 }
@@ -98,11 +93,16 @@ the shape in high resolution, moved forward when needed so that each stop has
 a point of its own. Distances are great-circle distances on the sphere used
 by the s2 and sf packages, with a radius of 6,371,010 m.
 
-The \code{speed}, \code{cumdist}, and \code{cumtime} are based on the difference of distance
-and time between the current and previous row of the same trip. It means that
-the first data point at the first stop of each trip represents a stationary
-vehicle. The \code{adjust_speed()} function can be used to post-process the output
-to replace eventual \code{NA} values in the \code{speed} column.
+Each trip runs from its first to its last stop with a departure time: shape
+points (and stops without times) before the first one and after the last one
+have no time to be interpolated from, and are not returned. The \code{speed},
+\code{cumdist}, and \code{cumtime} are based on the difference of distance and time
+between the current and previous row of the same trip. It means that the first
+data point of each trip, at its first stop, represents a stationary vehicle,
+with \code{dist}, \code{cumdist} and \code{cumtime} equal to zero: \code{cumdist} is the distance
+travelled from the first stop. The \code{adjust_speed()} function can be used to
+post-process the output to replace speeds outside a valid range, or eventual
+\code{NA} values (such as two stops at the same place and time).
 
 Each stop is presented as two data points for each trip in the output. The
 \code{timestamp} value in the first data point represents the time when the

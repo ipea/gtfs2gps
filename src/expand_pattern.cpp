@@ -22,7 +22,9 @@ using namespace cpp11;
 //   of R without long double, as R does there);
 // - round() is nearbyint() and as.integer() truncates, NaN giving NA;
 // - dist, speed and cumtime are rounded to 3 decimals only when written out, as
-//   round(x * 1000) / 1000, a speed that would round to 0 keeping its value.
+//   round(x * 1000) / 1000, a speed that would round to 0 keeping its value;
+// - only the rows from the first to the last timed-stop row are written (#260),
+//   the first one with speed 1e-12 and dist 0.
 //
 // tpl_* are the columns of the stop pattern templates (one row per shape point),
 // concatenated; each trip reads its template at tpl_from (0-based), tpl_size rows.
@@ -122,20 +124,29 @@ bool join_trip(const inputs& in, int tpl_from, int n, int st_from, int size,
 
 // pass 1: status and number of output rows of a trip, without expanding it. A
 // timed stop row (non-NA departure) gives two rows; it bounds a segment once,
-// plus once more when its arrival time is also known
+// plus once more when its arrival time is also known. The rows written are those
+// from the first bounding row to the last one
 int count_trip(const inputs& in, int tpl_from, int n, int st_from, int size,
                std::vector<int>& dep, std::vector<int>& arr, int& n_rows) {
   n_rows = 0;
   if (!join_trip(in, tpl_from, n, st_from, size, dep, arr)) return 1;
-  int extra = 0, n_lim = 0;
+  // pos: position in the expanded rows; first and last bounding rows
+  int n_lim = 0, pos = 0, first = -1, last = -1;
   for (int r = 0; r < n; r++) {
     if (dep[r] != NA_INTEGER && in.tpl_has_stop[tpl_from + r] == TRUE) {
-      extra++;
-      n_lim += arr[r] != NA_INTEGER ? 2 : 1;
+      // the arrival row (pos) bounds only when its time is known; the stop row
+      // (pos + 1) always does
+      const bool arr_known = arr[r] != NA_INTEGER;
+      n_lim += arr_known ? 2 : 1;
+      if (first < 0) first = arr_known ? pos : pos + 1;
+      last = pos + 1;
+      pos += 2;
+    } else {
+      pos++;
     }
   }
   if (n_lim < 2) return 2;
-  n_rows = n + extra;
+  n_rows = last - first + 1;
   return 0;
 }
 
@@ -184,7 +195,11 @@ int expand_trip(const inputs& in, int tpl_from, int n, int st_from, int size,
   }
 
   std::vector<double> spd(n2, NA_REAL), ctm(n2, 0.0);
-  spd[0] = 1e-12;
+  // the first written row: the vehicle stopped at its first timed stop. lim has
+  // two rows or more (count_trip() fails the trip otherwise)
+  const int lo = lim.front();
+  const int hi = lim.back();
+  spd[lo] = 1e-12;
   bool last_point_was_stop = false;
 
   for (size_t i = 0; i + 1 < lim.size(); i++) {
@@ -231,8 +246,9 @@ int expand_trip(const inputs& in, int tpl_from, int n, int st_from, int size,
     if (ISNAN(spd[i])) ctm[i] = NA_REAL;
   }
 
-  for (int i = 0; i < n2; i++) {
-    const std::int64_t k = out_from + i;
+  dist[lo] = 0;
+  for (int i = lo; i <= hi; i++) {
+    const std::int64_t k = out_from + (i - lo);
     out.src[k] = src[i];
     out.dist[k] = round3(dist[i]);
     // a speed that would round to 0 keeps its value: the 1e-12 of stops, and the
@@ -242,7 +258,7 @@ int expand_trip(const inputs& in, int tpl_from, int n, int st_from, int size,
     out.timestamp[k] = ts[i];
     out.cumtime[k] = round3(ctm[i]);
   }
-  return n2;
+  return hi - lo + 1;
 }
 
 }  // namespace

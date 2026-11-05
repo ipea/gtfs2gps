@@ -48,10 +48,11 @@ update_dt <- function(trip_name, st_seq, st_dep, st_arr, tpl){
   # once per trip: diff() per segment (S3 dispatch) was the main cost of the loop
   dcd <- diff(cd)
   spd <- rep(NA_real_, length(src))
-  spd[1] <- 1e-12
   ctm <- numeric(length(src))
 
   lim0 <- which(!is.na(ts) & tpl$has_stop[src])
+  # the vehicle is stopped at its first timed stop
+  spd[lim0[1]] <- 1e-12
 
   for(i in 1:(length(lim0) - 1)){
     a <- lim0[i]
@@ -92,5 +93,10 @@ update_dt <- function(trip_name, st_seq, st_dep, st_arr, tpl){
   tiny <- which(s == 0 & spd != 0)
   s[tiny] <- spd[tiny]
 
-  return(list(src = src, dist = round3(dist), speed = s, timestamp = ts, cumtime = round3(ctm)))
+  # only the rows from the first to the last timed stop (#260), the first with dist 0
+  rows <- lim0[1]:lim0[length(lim0)]
+  dist[lim0[1]] <- 0
+
+  return(list(src = src[rows], dist = round3(dist)[rows], speed = s[rows],
+              timestamp = ts[rows], cumtime = round3(ctm)[rows]))
 }
