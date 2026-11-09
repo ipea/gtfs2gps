@@ -177,7 +177,7 @@ library(gtfs2gps)
 gtfs <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps")) |>
   gtfstools::filter_by_shape_id("T2-1") |>
   filter_single_trip()
-#> Unzipped the following files to /tmp/RtmphjGwSa/gtfsio:
+#> Unzipped the following files to /tmp/RtmpkG8Usr/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt

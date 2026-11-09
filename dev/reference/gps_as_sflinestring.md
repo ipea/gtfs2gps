@@ -35,7 +35,7 @@ interval between consecutive stops of each trip. Besides columns of
 library(gtfs2gps)
 
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmphjGwSa/gtfsio:
+#> Unzipped the following files to /tmp/RtmpkG8Usr/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
@@ -56,10 +56,10 @@ poa_subset <- gtfstools::filter_by_shape_id(poa, c("T2-1", "A141-1")) |>
 poa_gps <- gtfs2gps(poa_subset)
 #> ℹ Converting shapes to sf objects
 #> Using 2 threads
-#> ✔ Converting shapes to sf objects [27ms]
+#> ✔ Converting shapes to sf objects [23ms]
 #> 
 #> ℹ Processing the data
-#> ✔ Processing the data [53ms]
+#> ✔ Processing the data [43ms]
 #> 
 
 poa_gps_sf <- gps_as_sflinestring(poa_gps)

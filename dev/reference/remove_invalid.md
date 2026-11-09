@@ -52,7 +52,7 @@ A subset of the input GTFS data.
 
 ``` r
 poa <- read_gtfs(system.file("extdata/poa.zip", package = "gtfs2gps"))
-#> Unzipped the following files to /tmp/RtmphjGwSa/gtfsio:
+#> Unzipped the following files to /tmp/RtmpkG8Usr/gtfsio:
 #>   * agency.txt
 #>   * calendar.txt
 #>   * routes.txt
